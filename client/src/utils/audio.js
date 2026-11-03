@@ -127,6 +127,34 @@ class SoundFX {
       // Audio playback safety
     }
   }
+
+  // Sonido de error o advertencia (Beep grave)
+  playBeep() {
+    this.init();
+    if (!this.ctx) return;
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.setValueAtTime(180, now + 0.1);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.25);
+    } catch {
+      // Audio playback safety
+    }
+  }
+
+  // Sonido de éxito
+  playSuccess() {
+    this.playReadyChime();
+  }
 }
 
 export const sfx = new SoundFX();
