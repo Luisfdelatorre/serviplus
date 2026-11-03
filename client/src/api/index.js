@@ -112,7 +112,19 @@ export async function adminLogin(pin) {
   return json.data;
 }
 
-// 10. Consultar configuración del sistema
+// 10. Consultar configuración pública del kiosco y restaurante
+export async function fetchPublicConfig() {
+  try {
+    const res = await fetch('/api/config/public');
+    const json = await res.json();
+    if (json.success) return json.data;
+  } catch (err) {
+    console.warn('[Config] Error obteniendo configuración pública, usando defaults locales:', err);
+  }
+  return null;
+}
+
+// 11. Consultar configuración del sistema (Admin)
 export async function getAdminConfig() {
   const res = await fetch('/api/admin/config');
   const json = await res.json();
@@ -120,7 +132,7 @@ export async function getAdminConfig() {
   return json.data;
 }
 
-// 11. Guardar configuración del sistema en caliente
+// 12. Guardar configuración del sistema en caliente (Admin)
 export async function saveAdminConfig(configPayload) {
   const res = await fetch('/api/admin/config', {
     method: 'POST',

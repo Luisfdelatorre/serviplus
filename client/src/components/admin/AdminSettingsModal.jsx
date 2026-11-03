@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getAdminConfig, saveAdminConfig } from '../../api';
 import { sfx } from '../../utils/audio';
+import { KIOSK_CONFIG, updateKioskConfig } from '../../config/kioskConfig';
 import {
   Settings,
   CreditCard,
@@ -35,6 +36,7 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
       setLoading(true);
       const data = await getAdminConfig();
       setConfig(data);
+      if (data) updateKioskConfig(data);
     } catch (err) {
       console.error('Error loading config:', err);
     } finally {
@@ -46,7 +48,7 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
 
   const showToast = (msg) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(''), 3500);
+    setTimeout(() => setToastMessage(''), KIOSK_CONFIG.timeouts.toastTimeoutMs);
   };
 
   const handleSave = async () => {
@@ -54,6 +56,7 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
       setSaving(true);
       sfx.playTap();
       await saveAdminConfig(config);
+      updateKioskConfig(config);
       sfx.playSuccess();
       showToast('¡Configuración guardada y aplicada con éxito!');
     } catch (err) {
@@ -596,13 +599,34 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                         type="number"
                         min="15"
                         max="300"
-                        value={config.kiosk?.autoReturnSeconds || 30}
-                        onChange={(e) => setConfig({
-                          ...config,
-                          kiosk: { ...config.kiosk, autoReturnSeconds: parseInt(e.target.value, 10) || 30 }
-                        })}
+                        value={config.kiosk?.idleTimeoutSeconds || config.kiosk?.autoReturnSeconds || 90}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10) || 90;
+                          setConfig({
+                            ...config,
+                            kiosk: { ...config.kiosk, idleTimeoutSeconds: val, autoReturnSeconds: val }
+                          });
+                        }}
                       />
-                      <small className="help-text">Tiempo antes de regresar a la pantalla de bienvenida si no hay interacción.</small>
+                      <small className="help-text">Tiempo de inactividad antes de regresar a la pantalla de bienvenida (por defecto 90s).</small>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Segundos en pantalla de confirmación (Paso 5):</label>
+                      <input
+                        type="number"
+                        min="5"
+                        max="180"
+                        value={config.kiosk?.orderSuccessAutoCloseSeconds || 20}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10) || 20;
+                          setConfig({
+                            ...config,
+                            kiosk: { ...config.kiosk, orderSuccessAutoCloseSeconds: val }
+                          });
+                        }}
+                      />
+                      <small className="help-text">Cuenta regresiva antes de cerrar automáticamente tras pago exitoso (por defecto 20s).</small>
                     </div>
                   </div>
                 </div>

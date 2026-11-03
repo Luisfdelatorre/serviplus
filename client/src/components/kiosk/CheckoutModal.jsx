@@ -5,6 +5,7 @@ import { formatCOP } from '../../utils/format';
 import { getProductImageUrl } from '../../utils/productImages';
 import { sfx } from '../../utils/audio';
 import { socket } from '../../socket';
+import { KIOSK_CONFIG } from '../../config/kioskConfig';
 import './CheckoutModal.css';
 
 export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
@@ -18,8 +19,8 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
   const [tables, setTables] = useState([]);
   const [tableId, setTableId] = useState(null);
   const [tableGroup, setTableGroup] = useState('');
-  const [orderType, setOrderType] = useState('EAT_IN'); // 'EAT_IN' | 'TAKE_OUT'
-  const [paymentMethod, setPaymentMethod] = useState('WOMPI_QR');
+  const [orderType, setOrderType] = useState(KIOSK_CONFIG.orderDefaults.defaultOrderType); // 'EAT_IN' | 'TAKE_OUT'
+  const [paymentMethod, setPaymentMethod] = useState(KIOSK_CONFIG.orderDefaults.defaultPaymentMethod);
   const [createdOrderNumber, setCreatedOrderNumber] = useState(null);
   const [createdOrderId, setCreatedOrderId] = useState(null);
   const [createdReceiptCode, setCreatedReceiptCode] = useState(null);
@@ -30,9 +31,9 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
   const [receiptDestination, setReceiptDestination] = useState('');
   const [isSendingReceipt, setIsSendingReceipt] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [secondsRemaining, setSecondsRemaining] = useState(20);
+  const [secondsRemaining, setSecondsRemaining] = useState(KIOSK_CONFIG.timeouts.orderSuccessAutoCloseSeconds);
   const [completedOrderItems, setCompletedOrderItems] = useState([]);
-  const [activeReceiptTab, setActiveReceiptTab] = useState('qr'); // 'qr' | 'whatsapp' | 'sms'
+  const [activeReceiptTab, setActiveReceiptTab] = useState(KIOSK_CONFIG.orderDefaults.defaultReceiptTab); // 'qr' | 'whatsapp' | 'sms'
   const [receiptSentSuccess, setReceiptSentSuccess] = useState(false);
 
   // Estados de Wompi QR dinámico
@@ -68,14 +69,14 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
     if (isOpen) {
       setStep(1);
       setTableId(null);
-      setOrderType('EAT_IN');
+      setOrderType(KIOSK_CONFIG.orderDefaults.defaultOrderType);
       setCreatedReceiptCode(null);
       setCreatedReceiptUrl(null);
       setReceiptMode(null);
       setReceiptInput('');
       setReceiptDestination('');
       setIsSendingReceipt(false);
-      setSecondsRemaining(20);
+      setSecondsRemaining(KIOSK_CONFIG.timeouts.orderSuccessAutoCloseSeconds);
     }
   }, [isOpen]);
 
@@ -115,7 +116,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
           setQrLoading(true);
           setQrError('');
           const randomOrderTemp = Math.floor(100 + Math.random() * 900);
-          const data = await createWompiQr(randomOrderTemp, total, 'kiosco@serviplus.pos', {
+          const data = await createWompiQr(randomOrderTemp, total, KIOSK_CONFIG.orderDefaults.defaultCustomerEmail, {
             cart: cart.map((i) => ({ id: i.id, name: i.name, quantity: i.quantity, price: i.price, modifiers: i.modifiers })),
             tableId: orderType === 'EAT_IN' ? tableId : 0,
             orderType: orderType === 'EAT_IN' ? 1 : 2
@@ -181,7 +182,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
         } catch (e) {
           // Silencioso en caso de micro-corte de red
         }
-      }, 2500);
+      }, KIOSK_CONFIG.timeouts.wompiPollIntervalMs);
     }
 
     return () => {
@@ -222,7 +223,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
     setOrderType('EAT_IN');
     setTimeout(() => {
       setStep(3); // Ir a página de selección de mesas
-    }, 180);
+    }, KIOSK_CONFIG.timeouts.stepTransitionDelayMs);
   };
 
   const handleSelectTakeOut = () => {
@@ -231,7 +232,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
     setTableId(null);
     setTimeout(() => {
       setStep(4); // Para llevar no requiere mesa, ir directo a pago
-    }, 180);
+    }, KIOSK_CONFIG.timeouts.stepTransitionDelayMs);
   };
 
   const handleConfirmOrder = async (overrideParams = null) => {
@@ -247,7 +248,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
       const activeMethod = overrideParams?.paymentMethod || paymentMethod;
       const isPaidImmediately = overrideParams?.isPaid !== undefined ? overrideParams.isPaid : (activeMethod === 'WOMPI_QR');
       const orderPayload = {
-        employeeId: 1,
+        employeeId: KIOSK_CONFIG.orderDefaults.defaultEmployeeId,
         orderType: orderType === 'EAT_IN' ? 1 : 2,
         tableId: orderType === 'EAT_IN' ? tableId : null,
         paymentMethod: activeMethod,
@@ -280,9 +281,9 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
       setReceiptMode(null);
       setReceiptInput('');
       setReceiptDestination('');
-      setActiveReceiptTab('qr');
+      setActiveReceiptTab(KIOSK_CONFIG.orderDefaults.defaultReceiptTab);
       setReceiptSentSuccess(false);
-      setSecondsRemaining(20);
+      setSecondsRemaining(KIOSK_CONFIG.timeouts.orderSuccessAutoCloseSeconds);
       setStep(5);
     } catch (err) {
       alert('Error creando la orden: ' + err.message);
@@ -292,7 +293,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
   };
 
   const handleSendWhatsApp = () => {
-    if (!receiptInput.trim() || receiptInput.trim().length < 7) {
+    if (!receiptInput.trim() || receiptInput.trim().length < KIOSK_CONFIG.validation.phoneMinLength) {
       alert('Por favor ingresa un número de celular válido.');
       return;
     }
@@ -300,16 +301,16 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
     const cleanPhone = receiptInput.trim().replace(/\D/g, '');
     const fullReceiptUrl = window.location.origin + (createdReceiptUrl || `/p/p/${createdReceiptCode || ''}`);
     const message = encodeURIComponent(
-      `¡Hola! 👋 Aquí tienes el comprobante de tu pedido #${createdOrderNumber} en Serviplus Restaurante:\n\n🔗 ${fullReceiptUrl}\n\n¡Gracias por tu compra!`
+      KIOSK_CONFIG.messages.whatsappTemplate(createdOrderNumber, fullReceiptUrl, KIOSK_CONFIG.restaurant.name)
     );
-    const waUrl = `https://api.whatsapp.com/send?phone=57${cleanPhone.slice(-10)}&text=${message}`;
+    const waUrl = `https://api.whatsapp.com/send?phone=${KIOSK_CONFIG.validation.defaultCountryCode}${cleanPhone.slice(-10)}&text=${message}`;
     window.open(waUrl, '_blank');
     setReceiptSentSuccess(true);
     setReceiptDestination(cleanPhone);
   };
 
   const handleSendSMS = async () => {
-    if (!receiptInput.trim() || receiptInput.trim().length < 7) {
+    if (!receiptInput.trim() || receiptInput.trim().length < KIOSK_CONFIG.validation.phoneMinLength) {
       alert('Por favor ingresa un número de celular válido.');
       return;
     }
@@ -341,12 +342,12 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
       await sendDigitalReceipt(createdOrderId || createdOrderNumber, type, dest);
       setReceiptDestination(dest);
       setReceiptMode('sent');
-      setSecondsRemaining(5);
+      setSecondsRemaining(KIOSK_CONFIG.timeouts.receiptSentAutoCloseSeconds);
     } catch (e) {
       console.error(e);
       setReceiptDestination(receiptInput.trim());
       setReceiptMode('sent');
-      setSecondsRemaining(5);
+      setSecondsRemaining(KIOSK_CONFIG.timeouts.receiptSentAutoCloseSeconds);
     } finally {
       setIsSendingReceipt(false);
     }
@@ -1017,7 +1018,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
                     {(activeReceiptTab === 'whatsapp' || activeReceiptTab === 'sms') && !receiptSentSuccess && (
                       <div className="checkout-phone-tab-box">
                         <div className="checkout-phone-screen-display">
-                          <span className="phone-prefix">+57</span>
+                          <span className="phone-prefix">{KIOSK_CONFIG.validation.phonePrefix}</span>
                           <span className={`phone-number-text ${!receiptInput ? 'empty' : ''}`}>
                             {receiptInput || 'Ingresa tu número de celular'}
                           </span>
@@ -1033,7 +1034,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
                                 sfx.playTap();
                                 if (k === 'C') setReceiptInput('');
                                 else if (k === '⌫') setReceiptInput((p) => p.slice(0, -1));
-                                else if (receiptInput.length < 10) setReceiptInput((p) => p + k);
+                                else if (receiptInput.length < KIOSK_CONFIG.validation.phoneMaxLength) setReceiptInput((p) => p + k);
                               }}
                               className={`checkout-compact-key ${k === 'C' ? 'clear' : k === '⌫' ? 'del' : ''}`}
                             >
@@ -1046,7 +1047,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
                           {activeReceiptTab === 'whatsapp' ? (
                             <button
                               type="button"
-                              disabled={receiptInput.length < 7}
+                              disabled={receiptInput.length < KIOSK_CONFIG.validation.phoneMinLength}
                               onClick={handleSendWhatsApp}
                               className="checkout-btn-send-whatsapp"
                             >
@@ -1056,7 +1057,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
                           ) : (
                             <button
                               type="button"
-                              disabled={receiptInput.length < 7 || isSendingReceipt}
+                              disabled={receiptInput.length < KIOSK_CONFIG.validation.phoneMinLength || isSendingReceipt}
                               onClick={handleSendSMS}
                               className="checkout-btn-send-sms"
                             >
@@ -1074,7 +1075,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
                         <div className="checkout-feedback-icon">✓</div>
                         <div className="checkout-feedback-title">¡Comprobante enviado!</div>
                         <p className="checkout-feedback-desc">
-                          Enviado exitosamente a <strong>+57 {receiptDestination}</strong>
+                          Enviado exitosamente a <strong>{KIOSK_CONFIG.validation.phonePrefix} {receiptDestination}</strong>
                         </p>
                       </div>
                     )}
@@ -1093,14 +1094,14 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
                 <div className="receipt-paper-ticket">
                   {/* Ícono de encabezado */}
                   <div className="receipt-ticket-logo-circle">
-                    <span>🥙</span>
+                    <span>{KIOSK_CONFIG.restaurant.logoEmoji}</span>
                   </div>
 
                   {/* Encabezado del Comercio */}
                   <div className="receipt-ticket-header">
-                    <h3 className="receipt-store-name">SERVIPLUS RESTAURANTE</h3>
-                    <p className="receipt-fiscal-sub">NIT: 901.234.567-8</p>
-                    <p className="receipt-fiscal-sub">Calle 72 # 45-12, Bogotá</p>
+                    <h3 className="receipt-store-name">{KIOSK_CONFIG.restaurant.name}</h3>
+                    <p className="receipt-fiscal-sub">NIT: {KIOSK_CONFIG.restaurant.nit}</p>
+                    <p className="receipt-fiscal-sub">{KIOSK_CONFIG.restaurant.address}</p>
                   </div>
 
                   <div className="receipt-dashed-separator" />
@@ -1172,7 +1173,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
                   {/* Pie de Recibo */}
                   <div className="receipt-ticket-footer">
                     <p className="receipt-thank-you">¡Gracias por tu compra!</p>
-                    <p className="receipt-claim-msg">Conserva este ticket para retirar tu pedido en mostrador.</p>
+                    <p className="receipt-claim-msg">{KIOSK_CONFIG.restaurant.receiptFooter}</p>
                   </div>
 
                   {/* Borde Perforado Inferior */}

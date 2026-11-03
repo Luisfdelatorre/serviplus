@@ -2,7 +2,8 @@ import React, { useEffect } from 'react';
 import { useSocket } from './hooks/useSocket';
 import { useMenuStore } from './store/useMenuStore';
 import { useKdsStore } from './store/useKdsStore';
-import { fetchMenu, fetchActiveOrders } from './api';
+import { fetchMenu, fetchActiveOrders, fetchPublicConfig } from './api';
+import { updateKioskConfig } from './config/kioskConfig';
 import { Header } from './components/common/Header';
 import { KdsGrid } from './components/kds/KdsGrid';
 import { KioskView } from './components/kiosk/KioskView';
@@ -99,15 +100,19 @@ export function App() {
   useEffect(() => {
     async function loadInitialData() {
       try {
-        const [menuData, ordersData] = await Promise.all([
+        const [menuData, ordersData, publicConfig] = await Promise.all([
           fetchMenu().catch(() => []),
-          fetchActiveOrders().catch(() => [])
+          fetchActiveOrders().catch(() => []),
+          fetchPublicConfig().catch(() => null)
         ]);
         if (menuData && menuData.length > 0) {
           setCategories(menuData);
         }
         if (ordersData && ordersData.length > 0) {
           setActiveOrders(ordersData);
+        }
+        if (publicConfig) {
+          updateKioskConfig(publicConfig);
         }
       } catch (err) {
         console.error('Error cargando datos iniciales:', err);

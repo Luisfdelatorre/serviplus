@@ -519,6 +519,27 @@ app.post('/api/admin/auth', async (req, res) => {
     }
 });
 
+// Configuración pública para el Kiosco y Recibos (sin credenciales privadas)
+app.get('/api/config/public', (req, res) => {
+    try {
+        const current = loadAppConfig();
+        res.json({
+            success: true,
+            data: {
+                restaurant: current.restaurant,
+                kiosk: current.kiosk,
+                wompi: {
+                    publicKey: current.wompi?.mode === 'sandbox' ? current.wompi?.sandbox?.publicKey : current.wompi?.publicKey,
+                    mode: current.wompi?.mode,
+                    methods: current.wompi?.methods
+                }
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // Consultar configuración actual
 app.get('/api/admin/config', (req, res) => {
     try {

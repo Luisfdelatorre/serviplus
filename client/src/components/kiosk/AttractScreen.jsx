@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { sfx } from '../../utils/audio';
 import { useMenuStore } from '../../store/useMenuStore';
 import { Shield } from 'lucide-react';
+import { KIOSK_CONFIG } from '../../config/kioskConfig';
 import './AttractScreen.css';
 
 export function AttractScreen({ onStart }) {
@@ -15,7 +16,7 @@ export function AttractScreen({ onStart }) {
     sfx.playReadyChime();
     setTimeout(() => {
       onStart();
-    }, 180);
+    }, KIOSK_CONFIG.timeouts.stepTransitionDelayMs);
   };
 
   return (

@@ -10,6 +10,7 @@ import { AttractScreen } from './AttractScreen';
 import { sfx } from '../../utils/audio';
 import { getCategoryImageUrl, getCategoryIcon } from '../../utils/productImages';
 import { enterFullscreen, exitFullscreen } from '../../utils/fullscreen';
+import { KIOSK_CONFIG } from '../../config/kioskConfig';
 import './KioskView.css';
 
 function getCategorySubtitle(catName = '') {
@@ -44,8 +45,8 @@ export function KioskView() {
   const total = getTotalAmount();
   const totalItems = cart.reduce((sum, i) => sum + i.quantity, 0);
 
-  const IDLE_TIMEOUT_SECONDS = 90; // 1.5 minutos de inactividad para reiniciar
-  const WARNING_SECONDS = 15; // Aviso 15s antes
+  const IDLE_TIMEOUT_SECONDS = KIOSK_CONFIG.timeouts.idleTimeoutSeconds;
+  const WARNING_SECONDS = KIOSK_CONFIG.timeouts.idleWarningSeconds;
 
   // Detección de inactividad
   useEffect(() => {
