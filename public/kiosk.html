@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title> Serviplus - Smart Kiosk & KDS POS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/kiosk.css">
+</head>
+
+<body>
+
+  <!-- TOP NAVIGATION BAR -->
+  <header class="nav-bar">
+    <div class="brand">
+      <span>Serviplus</span>
+      <span class="brand-badge">KIOSK & KDS</span>
+    </div>
+
+    <nav class="nav-tabs">
+      <button class="nav-btn active" data-view="kiosk">
+        <span>🍔</span> Kiosk Autoservicio
+      </button>
+      <button class="nav-btn" data-view="frontdesk">
+        <span>🖥️</span> Front Desk Caja
+      </button>
+      <button class="nav-btn" data-view="kds">
+        <span>👨‍🍳</span> KDS Cocina
+      </button>
+      <button class="nav-btn" data-view="turns">
+        <span>📢</span> Monitor de Turnos
+      </button>
+    </nav>
+
+    <div class="conn-status">
+      <div id="conn-dot" class="status-dot"></div>
+      <span id="conn-text">Online</span>
+    </div>
+  </header>
+
+  <!-- VIEW 1: KIOSK CLIENTES (MCDONALD'S STYLE - IPAD HORIZONTAL) -->
+  <main id="view-kiosk" class="view-section active">
+    <div class="kiosk-layout">
+      <!-- Columna 1: Categorías Vertical -->
+      <aside class="kiosk-categories" id="kiosk-cats">
+        <!-- Renderizado dinámico -->
+      </aside>
+
+      <!-- Columna 2: Catálogo de Productos y Banner -->
+      <section class="kiosk-catalog">
+        <!-- Banner Superior Apetitoso -->
+        <div class="kiosk-banner">
+          <img src="/images/banner.jpg" alt="Deliciosos Platos y Comidas" class="kiosk-banner-bg">
+          <div class="kiosk-banner-overlay">
+            <span class="kiosk-banner-pill">🔥 ¡RECIÉN PREPARADO!</span>
+            <div class="kiosk-banner-headline">Disfruta tu comida favorita</div>
+            <div class="kiosk-banner-sub">Toca cualquier producto para añadirlo a tu orden</div>
+          </div>
+        </div>
+
+        <!-- Subheader del Catálogo con Barra de Búsqueda -->
+        <div class="kiosk-catalog-header">
+          <div class="kiosk-catalog-title-wrap">
+            <h2 id="kiosk-cat-title" class="kiosk-catalog-title">Cargando menú...</h2>
+            <span id="kiosk-items-count-badge" class="kiosk-items-badge">0 productos</span>
+          </div>
+
+          <div class="kiosk-search-box">
+            <span class="kiosk-search-icon">🔍</span>
+            <input type="text" id="kiosk-search-input" placeholder="Buscar producto..."
+              oninput="handleSearch(this.value)">
+            <button id="kiosk-search-clear" class="kiosk-search-clear" onclick="clearSearch()">✕</button>
+          </div>
+        </div>
+
+        <!-- Grid de Productos -->
+        <div class="products-grid" id="kiosk-products">
+          <!-- Renderizado dinámico -->
+        </div>
+      </section>
+
+      <!-- Columna 3: Carrito / Ticket de Pedido -->
+      <aside class="kiosk-cart">
+        <div class="cart-header">
+          <div class="cart-title-row">
+            <span class="cart-title">Mi Pedido</span>
+            <span id="cart-items-count" class="cart-count-badge">0 ítems</span>
+          </div>
+          <div class="order-type-toggle">
+            <button class="type-toggle-btn active" id="btn-eat-in" onclick="setOrderType('EAT_IN')">
+              🍽️ Comer Aquí
+            </button>
+            <button class="type-toggle-btn" id="btn-take-out" onclick="setOrderType('TAKE_OUT')">
+              🥡 Para Llevar
+            </button>
+          </div>
+        </div>
+
+        <div class="cart-items" id="cart-items-list">
+          <div class="cart-empty">
+            <div class="cart-empty-icon">🥙</div>
+            <p><strong>Tu orden está vacía</strong><br>Selecciona productos a la izquierda para empezar.</p>
+          </div>
+        </div>
+
+        <div class="cart-summary">
+          <div class="cart-total-row">
+            <span class="cart-total-label">Total a Pagar:</span>
+            <span id="cart-total-amount" class="cart-total-num">$0.00</span>
+          </div>
+          <button id="cart-checkout-btn" class="cart-checkout-btn" onclick="openCheckout(false)" disabled>
+            <span>Finalizar y Pagar</span>
+          </button>
+          <button id="cart-cancel-btn" class="cancel-order-btn" onclick="cancelCurrentOrder()">
+            Cancelar Pedido
+          </button>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- VIEW 2: FRONT DESK (CAJA / MOSTRADOR) -->
+  <main id="view-frontdesk" class="view-section">
+    <div class="frontdesk-bar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-weight:800;color:var(--text-main);">Atendido por:</span>
+        <select id="cashier-dropdown" class="cashier-select">
+          <!-- Opciones de empleados -->
+        </select>
+      </div>
+      <div>
+        <span style="color:var(--text-secondary);font-size:0.9rem;font-weight:600;">Modo Cajero: Efectivo, Tarjeta o QR
+          Wompi</span>
+      </div>
+    </div>
+
+    <div class="kiosk-layout">
+      <aside class="kiosk-categories" id="frontdesk-cats">
+        <!-- Mismas categorías -->
+      </aside>
+
+      <section class="kiosk-catalog">
+        <div class="kiosk-catalog-header">
+          <div class="kiosk-catalog-title-wrap">
+            <h2 id="frontdesk-cat-title" class="kiosk-catalog-title">Menú de Mostrador</h2>
+          </div>
+          <div class="kiosk-search-box">
+            <span class="kiosk-search-icon">🔍</span>
+            <input type="text" id="frontdesk-search-input" placeholder="Buscar producto..."
+              oninput="handleSearch(this.value)">
+          </div>
+        </div>
+        <div class="products-grid" id="frontdesk-products">
+          <!-- Productos optimizados para caja -->
+        </div>
+      </section>
+
+      <aside class="kiosk-cart">
+        <div class="cart-header">
+          <div class="cart-title-row">
+            <span class="cart-title">Orden Mostrador</span>
+            <span id="frontdesk-items-count" class="cart-count-badge">0 ítems</span>
+          </div>
+        </div>
+        <div class="cart-items" id="frontdesk-cart-items">
+          <div class="cart-empty">
+            <div class="cart-empty-icon">🖥️</div>
+            <p><strong>Sin productos</strong><br>Toca los productos para cobrar.</p>
+          </div>
+        </div>
+        <div class="cart-summary">
+          <div class="cart-total-row">
+            <span class="cart-total-label">Total a Cobrar:</span>
+            <span id="frontdesk-total-amount" class="cart-total-num">$0.00</span>
+          </div>
+          <button class="cart-checkout-btn" onclick="openCheckout(true)">
+            <span>💵 Cobrar Orden</span>
+          </button>
+          <button class="cancel-order-btn" onclick="cancelCurrentOrder()">
+            Limpiar Pedido
+          </button>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- VIEW 3: KDS (KITCHEN DISPLAY SYSTEM) -->
+  <main id="view-kds" class="view-section">
+    <div class="kds-container">
+      <div class="kds-header">
+        <h2 style="font-size:1.8rem;font-weight:900;">👨‍🍳 Monitor de Cocina (KDS)</h2>
+        <div class="kds-stats">
+          <div class="stat-pill stat-green" id="kds-green-count">🟢 0 Recientes</div>
+          <div class="stat-pill stat-yellow" id="kds-yellow-count">🟡 0 En preparación</div>
+          <div class="stat-pill stat-red" id="kds-red-count">🔴 0 Urgentes</div>
+          <div class="stat-pill stat-total" id="kds-active-count">0 Activas</div>
+        </div>
+      </div>
+      <div class="kds-grid" id="kds-orders-grid">
+        <!-- Tarjetas de órdenes en tiempo real -->
+      </div>
+    </div>
+  </main>
+
+  <!-- VIEW 4: MONITOR DE TURNOS (PÚBLICO) -->
+  <main id="view-turns" class="view-section">
+    <div class="turns-layout">
+      <!-- Columna En Preparación -->
+      <div class="turns-col prep">
+        <div class="turns-col-header">🟡 EN PREPARACIÓN</div>
+        <div class="turns-numbers-grid" id="turns-prep-list">
+          <!-- Números de turnos -->
+        </div>
+      </div>
+
+      <!-- Columna Listos -->
+      <div class="turns-col ready">
+        <div class="turns-col-header">🟢 ¡LISTOS PARA RETIRAR!</div>
+        <div class="turns-numbers-grid" id="turns-ready-list">
+          <!-- Números de turnos listos -->
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- CHECKOUT MODAL -->
+  <div id="checkout-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h3 class="modal-title">Confirmar y Pagar</h3>
+      <div style="font-size:2.4rem;font-weight:900;color:var(--brand-red);" id="modal-total-text">$0.00</div>
+
+      <!-- Selector de métodos de pago -->
+      <div class="payment-options">
+        <button id="pay-opt-wompi-qr" class="pay-btn active" onclick="selectPaymentMethod('WOMPI_QR')">
+          <span style="font-size:1.8rem;">📱</span>
+          <span>QR Wompi / Nequi</span>
+        </button>
+        <button id="pay-opt-cash" class="pay-btn" onclick="selectPaymentMethod('CASH')">
+          <span style="font-size:1.8rem;">💵</span>
+          <span>Efectivo</span>
+        </button>
+        <button id="pay-opt-dataphone" class="pay-btn" onclick="selectPaymentMethod('DATAPHONE')">
+          <span style="font-size:1.8rem;">💳</span>
+          <span>Datáfono</span>
+        </button>
+      </div>
+
+      <!-- Caja para QR Wompi -->
+      <div id="qr-payment-box">
+        <p style="font-size:0.95rem;color:var(--text-secondary);font-weight:600;margin-bottom:8px;">
+          Escanea con tu App Nequi, Bancolombia o Daviplata:
+        </p>
+        <div class="qr-container">
+          <img id="wompi-qr-img" src="" alt="QR Wompi" style="display:block;width:190px;height:190px;">
+          <div id="wompi-amount-display" style="font-size:1.15rem;font-weight:900;color:var(--brand-green);margin-top:6px;">$0 COP</div>
+        </div>
+      </div>
+
+      <!-- Caja para Cobro en Efectivo (con calculadora de cambio) -->
+      <div id="cash-payment-box" class="cash-calc" style="display:none;">
+        <label style="font-weight:800;font-size:0.95rem;color:var(--text-main);">Efectivo Recibido:</label>
+        <input type="number" id="cash-tendered-input" class="cash-input" placeholder="$0" oninput="calcCashChange()">
+        <div class="quick-bills">
+          <button class="bill-btn" onclick="calcCashChange(10)">$10.000</button>
+          <button class="bill-btn" onclick="calcCashChange(20)">$20.000</button>
+          <button class="bill-btn" onclick="calcCashChange(50)">$50.000</button>
+          <button class="bill-btn" onclick="calcCashChange(100)">$100.000</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+          <span style="font-size:1rem;font-weight:800;color:var(--text-secondary);">Cambio / Vueltas:</span>
+          <span id="cash-change-display" style="font-size:1.6rem;font-weight:900;color:var(--brand-green);">$0</span>
+        </div>
+      </div>
+
+      <button id="confirm-order-btn" class="cart-checkout-btn" onclick="confirmOrder()">
+        ✅ Confirmar y Enviar a Cocina
+      </button>
+
+      <button class="close-modal-btn" onclick="closeCheckout()">Cerrar / Volver</button>
+    </div>
+  </div>
+
+  <!-- SUCCESS MODAL (TURNO GENERADO) -->
+  <div id="success-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width:440px;">
+      <div style="font-size:3.5rem;">🎉</div>
+      <h3 style="font-size:1.8rem;font-weight:900;color:var(--text-main);">¡Orden Confirmada!</h3>
+      <p style="color:var(--text-secondary);font-weight:600;">Tu pedido ha sido enviado a la cocina.</p>
+
+      <div
+        style="background:var(--brand-yellow-light);border:2px solid var(--brand-yellow);padding:20px;border-radius:var(--radius-xl);margin:12px 0;">
+        <span style="font-size:0.95rem;color:#b45309;font-weight:800;text-transform:uppercase;">Tu Número de
+          Turno:</span>
+        <div id="success-order-num"
+          style="font-size:4.5rem;font-weight:900;color:var(--brand-red);letter-spacing:-2px;">#00</div>
+      </div>
+
+      <div id="success-order-id" style="font-size:0.85rem;color:var(--text-muted);font-weight:700;">Orden Aldelo ID: 0
+      </div>
+      <p style="font-size:0.92rem;color:var(--text-secondary);font-weight:600;margin-top:6px;">Mira el monitor de turnos
+        cuando tu pedido esté listo para retirar.</p>
+      <button class="cart-checkout-btn" style="margin-top:14px;" onclick="closeSuccessModal()">Listo / Nueva
+        Orden</button>
+    </div>
+  </div>
+
+  <!-- SOCKET.IO CLIENT SCRIPT -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- APP SCRIPT -->
+  <script src="/js/app.js?v=20261025_9"></script>
+</body>
+
+</html>

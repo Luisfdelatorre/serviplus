@@ -1,0 +1,72 @@
+<div ui-content-for="actividad">
+  <span>Login1</span>
+</div>
+
+
+
+
+	<div class="btn-group pull-right" ui-content-for="rigthbuttom" >
+			
+			
+<div class="icon-preparacion "  ng-class="{'bgray':visorcolor==2,'':visorcolor==1,}" ng-click="prepaorder()" style="display: block;">
+			</div>
+		<div class="icon-ready" ng-class="{'bgray':visorcolor==1,'':visorcolor==2,}" ng-click="readyorder()" style="display: block;">
+			</div>
+			</div>
+      
+
+
+<div id="content" >
+
+<div class="visor-order visororder" id="{{order.oid}}" ng-if="order.St == visorvalue"
+	 ng-repeat="order in ordenupdate " style="left:{{order.left}};top:{{order.top}}"  >
+	<div class="" ng-class="{'visor-header-green':order.St=='1','visor-header-gray':order.St=='2','redblink':order.flash}"   >
+		<div class="visor-orden">{{order.oid}}</div>
+		<div class="visor-mesa">{{order.Ma}}</div>
+		<div class="visor-time">{{order.t}}</div>
+		<div class="visor-timeout">{{order.Lt}}</div>
+		<div class="visor-nombre">{{order.T | currency:"$":2}}</div>
+	</div>
+	<div class="visor-order-plato-slider" ng-repeat="item in order.items">
+		<div class="visor-order-plato-wrap" cancel="0" estado="ready" orderid="104">
+			<div class="visor-order-plato-time">
+				<div class="visor-order-plato-time-ico" id="visor-order-plato-time-ico-104">
+				</div>
+				<div class="visor-order-plato-time-name" id="visor-order-plato-time-104">{{item.delay}}</div>
+			</div>
+			<div class="visor-order-plato">
+				<div class="visor-order-plato-name" ng-class="{'text-line':item.esta==2}"  >{{item.Q}} {{item.MIT}}</div>
+				<div class="visor-order-plato-cantidad">{{item.EP | currency:"$":2}}</div>
+			</div>
+			<div class="visor-order-plato-descripcion"><lu><br><br><br></lu></div>
+		</div>
+		<div class="visor-order-plato-ready" >
+		
+		</div>
+	</div>
+</div>
+	
+
+
+	
+	
+	
+	
+	
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

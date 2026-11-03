@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Serviplus - Monitor de Turnos (TV Screen Board)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <!-- Google Fonts: Inter & Titan One / Chango / Black Han Sans for the chunky headline -->
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700;800&family=Inter:wght@500;700;800;900&family=Rubik:wght@800;900&display=swap" rel="stylesheet"/>
+  <style data-purpose="typography">
+    .font-chunky {
+      font-family: 'Rubik', 'Fredoka', 'Impact', sans-serif;
+      letter-spacing: 0.05em;
+    }
+    .font-sub-banner {
+      font-family: 'Rubik', 'Inter', sans-serif;
+      letter-spacing: 0.04em;
+    }
+  </style>
+  <style data-purpose="custom-layout">
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #0d1215;
+    }
+    
+    .tv-screen {
+      background-color: #f8fafc;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+
+    .table-row-odd {
+      background-color: #ffffff;
+      border: 1px solid rgba(226, 232, 240, 0.9);
+    }
+    .table-row-even {
+      background-color: rgba(248, 250, 252, 0.8);
+      border: 1px solid rgba(241, 245, 249, 1);
+    }
+
+    @keyframes pulseCheckmark {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+      }
+      50% {
+        transform: scale(1.22);
+        box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.45);
+      }
+    }
+    .pulse-check {
+      animation: pulseCheckmark 1.4s infinite ease-in-out;
+      display: inline-flex;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-0 md:p-6 select-none overflow-x-hidden">
+
+  <!-- BEGIN: OrderBoardContainer -->
+  <main class="tv-screen w-full max-w-[1240px] aspect-[16/9] min-h-[720px] flex flex-col justify-between overflow-hidden shadow-2xl relative text-slate-800" style="border: 1px solid #e2e8f0; border-radius: 20px; box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.12);">
+    
+    <!-- BEGIN: TopHeaderSection -->
+    <header class="w-full flex flex-col shrink-0 bg-white border-b border-slate-200 shadow-sm" data-purpose="top-announcements">
+      <div class="px-8 py-3.5 flex items-center justify-between border-b border-slate-100">
+        <div class="flex items-center gap-3">
+          <div class="flex items-center font-black tracking-tight text-2xl">
+            <span style="color: #E53935;">Servi</span><span class="text-slate-900">plus</span>
+          </div>
+          <span class="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full text-amber-900 bg-amber-100 border border-amber-200">Order Monitor</span>
+        </div>
+        <h1 class="font-black uppercase tracking-wider text-xl sm:text-2xl text-slate-800 flex items-center gap-2">
+          Track Your Order
+        </h1>
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2 text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>Live Status
+          </div>
+          <button onclick="toggleFullScreen()" title="Pantalla Completa" class="text-slate-400 hover:text-slate-700 text-xs px-2 py-1 rounded border border-slate-200">
+            ⛶
+          </button>
+        </div>
+      </div>
+      <div class="bg-amber-400 px-6 py-2 text-center shadow-sm flex items-center justify-center gap-2">
+        <span class="text-slate-950 font-black text-xs sm:text-sm tracking-wider uppercase">⚡ ¡Pide en nuestro Kiosk autoservicio y ahorra tiempo! / Order ahead on our app &amp; skip the line!</span>
+      </div>
+    </header>
+    <!-- END: TopHeaderSection -->
+
+    <!-- BEGIN: OrderListSection -->
+    <section class="flex-1 w-full px-5 sm:px-10 py-2 sm:py-3 flex flex-col justify-between" data-purpose="order-status-table">
+      <div class="grid grid-cols-12 gap-3 sm:gap-4 items-center px-4 py-2 text-slate-500 font-extrabold text-xs sm:text-sm tracking-wider uppercase border-b border-slate-200">
+        <div class="col-span-3">Turno / Cliente</div>
+        <div class="col-span-6">Estado y Progreso</div>
+        <div class="col-span-3 text-center">Ubicación / Entrega</div>
+      </div>
+      
+      <div class="flex-1 flex flex-col justify-start py-1.5 space-y-1.5" id="tv-orders-container">
+        <!-- Renderizado dinámico -->
+      </div>
+    </section>
+    <!-- END: OrderListSection -->
+
+    <!-- BEGIN: BottomPagination -->
+    <footer class="w-full pb-3 flex justify-center items-center gap-2" data-purpose="pagination-indicator" id="tv-pagination">
+      <div class="w-8 h-8 rounded-full bg-[#00B074] text-white flex items-center justify-center font-black text-sm shadow-md">1</div>
+    </footer>
+    <!-- END: BottomPagination -->
+  </main>
+  <!-- END: OrderBoardContainer -->
+
+  <!-- Socket.io -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    let activeOrders = [];
+    let currentPage = 1;
+    const pageSize = 8;
+
+    function getElapsedMinutes(dateStr) {
+      if (!dateStr) return 0;
+      const created = new Date(dateStr).getTime();
+      const diff = Date.now() - created;
+      return Math.max(0, Math.floor(diff / 60000));
+    }
+
+    function getOrderKdsStatus(order) {
+      if (order.kdsStatus === 'SERVED' || order.packagerPrinted) return 'SERVED';
+      if (order.tableReady || order.kdsStatus === 'READY') return 'READY';
+      return 'PREPARING';
+    }
+
+    async function fetchOrders() {
+      try {
+        const res = await fetch('/api/orders/active?_t=' + Date.now());
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          activeOrders = json.data;
+          renderTVBoard();
+        }
+      } catch (err) {
+        console.error('[TV Monitor] Error fetching orders:', err);
+      }
+    }
+
+    function renderTVBoard() {
+      const container = document.getElementById('tv-orders-container');
+      const pagination = document.getElementById('tv-pagination');
+      if (!container) return;
+
+      const validOrders = activeOrders.filter(o => o.status !== '3');
+
+      // 1. Listos: TableReady = True dentro de últimas 10 horas
+      const readyOrders = validOrders.filter(o => {
+        return getOrderKdsStatus(o) === 'READY' && getElapsedMinutes(o.createdAt) <= (10 * 60);
+      }).sort((a, b) => {
+        const tA = a.createdAt ? new Date(a.createdAt).getTime() : a.id;
+        const tB = b.createdAt ? new Date(b.createdAt).getTime() : b.id;
+        return (tB - tA) || (b.id - a.id);
+      });
+
+      // 2. En Preparación
+      const prepOrders = validOrders.filter(o => {
+        return getOrderKdsStatus(o) === 'PREPARING';
+      }).sort((a, b) => {
+        const tA = a.createdAt ? new Date(a.createdAt).getTime() : a.id;
+        const tB = b.createdAt ? new Date(b.createdAt).getTime() : b.id;
+        return (tA - tB) || (a.id - b.id);
+      });
+
+      const allOrders = [...readyOrders, ...prepOrders];
+
+      if (allOrders.length === 0) {
+        container.innerHTML = `
+          <div class="flex-1 flex flex-col items-center justify-center py-16 text-slate-400">
+            <span style="font-size:3.5rem;">🎉</span>
+            <div class="font-extrabold text-xl mt-3 text-slate-600">No hay órdenes pendientes en este momento</div>
+            <p class="text-sm text-slate-400 mt-1">Las órdenes tomadas en Kiosk o Caja aparecerán aquí automáticamente</p>
+          </div>
+        `;
+        if (pagination) pagination.innerHTML = '';
+        return;
+      }
+
+      const totalPages = Math.ceil(allOrders.length / pageSize);
+      if (currentPage > totalPages) currentPage = 1;
+
+      const start = (currentPage - 1) * pageSize;
+      const pageOrders = allOrders.slice(start, start + pageSize);
+
+      container.innerHTML = pageOrders.map((o, idx) => {
+        const isReady = getOrderKdsStatus(o) === 'READY';
+        const rowClass = (idx % 2 === 0) ? 'table-row-odd shadow-xs' : 'table-row-even';
+
+        if (isReady) {
+          const locText = o.tableId ? `Mesa ${o.tableId}` : 'Mostrador';
+          const locBg = o.tableId ? 'bg-[#F59E0B]' : 'bg-[#E53935]';
+
+          return `
+            <article class="grid grid-cols-12 gap-3 sm:gap-4 items-center px-4 py-2 rounded-xl ${rowClass} transition-all">
+              <div class="col-span-3 font-black text-slate-800 text-sm sm:text-base flex items-center gap-2 truncate">
+                <span class="text-lg text-emerald-600 font-black">#${o.orderNumber}</span>
+                <span class="text-xs font-bold text-slate-500 uppercase">${o.tableId ? `Mesa ${o.tableId}` : 'Retirar'}</span>
+              </div>
+              <div class="col-span-6">
+                <div class="w-full bg-[#00B074] h-7 sm:h-8 rounded-full flex items-center justify-between px-3.5 text-white font-extrabold text-xs sm:text-sm shadow-sm">
+                  <span class="tracking-wide">¡Listo para retirar! / It's ready!</span>
+                  <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white text-[#00B074] text-xs font-black pulse-check shadow-xs">✓</span>
+                </div>
+              </div>
+              <div class="col-span-3 flex justify-center">
+                <span class="inline-block w-36 sm:w-44 text-center py-1 sm:py-1.5 px-3 rounded-full ${locBg} text-white font-black text-xs sm:text-sm tracking-wider shadow-sm uppercase">
+                  ${locText}
+                </span>
+              </div>
+            </article>
+          `;
+        } else {
+          const elapsed = getElapsedMinutes(o.createdAt);
+          const maxPrep = o.maxPrepTime || o.prepTime || 10;
+          const remaining = Math.max(0, maxPrep - elapsed);
+          const pct = Math.min(95, Math.max(12, Math.round((elapsed / maxPrep) * 100)));
+
+          let textStatus = '¡Preparando!';
+          if (pct < 25) {
+            textStatus = '¡Recibida en Cocina!';
+          } else {
+            textStatus = `¡Preparando! (${remaining} min restantes)`;
+          }
+
+          return `
+            <article class="grid grid-cols-12 gap-3 sm:gap-4 items-center px-4 py-2 rounded-xl ${rowClass} transition-all">
+              <div class="col-span-3 font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2 truncate">
+                <span class="text-base font-black text-slate-900">#${o.orderNumber}</span>
+                <span class="text-xs font-semibold text-slate-500 truncate">${o.tableId ? `Mesa ${o.tableId}` : 'Mostrador'}</span>
+              </div>
+              <div class="col-span-6">
+                <div class="w-full bg-slate-100 border border-slate-200 h-7 sm:h-8 rounded-full overflow-hidden flex relative shadow-inner">
+                  <div class="bg-[#00B074] h-full flex items-center px-3.5 text-white font-bold text-xs sm:text-sm tracking-wide transition-all duration-500" style="width: ${pct}%;">
+                    <span class="truncate whitespace-nowrap">${textStatus}</span>
+                  </div>
+                  <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-slate-500">${pct}%</span>
+                </div>
+              </div>
+              <div class="col-span-3 flex justify-center">
+                <span class="inline-flex items-center gap-1 py-1 px-3 rounded-full bg-slate-100 text-slate-600 border border-slate-200/90 font-bold text-xs sm:text-sm shadow-xs">
+                  <span class="text-amber-500">⏱️</span> ~${remaining} min est.
+                </span>
+              </div>
+            </article>
+          `;
+        }
+      }).join('');
+
+      // Paginación
+      if (pagination) {
+        if (totalPages <= 1) {
+          pagination.innerHTML = `
+            <div class="w-8 h-8 rounded-full bg-[#00B074] text-white flex items-center justify-center font-black text-sm shadow-md">1</div>
+          `;
+        } else {
+          pagination.innerHTML = Array.from({ length: totalPages }).map((_, i) => {
+            const num = i + 1;
+            const active = num === currentPage;
+            return `
+              <button onclick="goToPage(${num})" class="w-8 h-8 rounded-full font-black text-xs transition-all shadow-sm ${active ? 'bg-[#00B074] text-white scale-110 shadow-md' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}">
+                ${num}
+              </button>
+            `;
+          }).join('');
+        }
+      }
+    }
+
+    function goToPage(page) {
+      currentPage = page;
+      renderTVBoard();
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+
+    // Auto-rotar páginas SOLO si hay más de 1 página (evita parpadeos innecesarios)
+    setInterval(() => {
+      const validOrders = activeOrders.filter(o => o.status !== '3' && getOrderKdsStatus(o) !== 'SERVED');
+      const totalPages = Math.ceil(validOrders.length / pageSize);
+      if (totalPages > 1) {
+        currentPage = (currentPage % totalPages) + 1;
+        renderTVBoard();
+      }
+    }, 10000);
+
+    // Socket.io Sincronización en tiempo real (instantáneo)
+    const socket = io();
+    socket.on('connect', () => {
+      console.log('[TV Monitor] Connected to Socket.io');
+      fetchOrders();
+    });
+    socket.on('order:new', () => fetchOrders());
+    socket.on('order:update', () => fetchOrders());
+    socket.on('order:status_changed', () => fetchOrders());
+    socket.on('kds:status_changed', () => fetchOrders());
+    socket.on('kds:state_changed', () => fetchOrders());
+    socket.on('aldelo:order_status_updated', () => fetchOrders());
+
+    // Carga inicial y sondeo de seguridad cada 60 segundos (no cada 15s)
+    fetchOrders();
+    setInterval(fetchOrders, 60000);
+  </script>
+</body>
+</html>

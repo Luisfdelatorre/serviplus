@@ -1,0 +1,312 @@
+/* ==========================================================================
+   ATTRACT SCREEN (TAP TO START / BIENVENIDA QUIOSCO) STYLES
+   ========================================================================== */
+
+/* Contenedor Principal Fullscreen */
+.attract-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  background: linear-gradient(145deg, #f7f5ec 0%, #ece6d8 50%, #f3eee3 100%);
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32px 24px 28px 24px;
+  box-sizing: border-box;
+}
+
+/* Patrón de Fondo Orgánico Panera / Kebab */
+.attract-bg-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.18;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Ondas Expansivas / Ripple Corner */
+.attract-ripple-container {
+  position: absolute;
+  top: 30px;
+  right: 50px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.attract-ripple-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid rgba(88, 129, 87, 0.4);
+  animation: attractWave 2.8s infinite cubic-bezier(0.2, 0.8, 0.4, 1);
+  pointer-events: none;
+}
+
+.attract-ripple-ring.ring-1 {
+  width: 90px;
+  height: 90px;
+  animation-delay: 0s;
+}
+
+.attract-ripple-ring.ring-2 {
+  width: 130px;
+  height: 130px;
+  animation-delay: 0.6s;
+}
+
+.attract-ripple-ring.ring-3 {
+  width: 170px;
+  height: 170px;
+  animation-delay: 1.2s;
+}
+
+@keyframes attractWave {
+  0% {
+    transform: translate(-50%, -50%) scale(0.6);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.4);
+    opacity: 0;
+  }
+}
+
+/* Header: Welcome & Headline */
+.attract-header {
+  z-index: 10;
+  text-align: center;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Pill de Marca Superior */
+.attract-brand-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1.5px solid #d4c5ab;
+  border-radius: 9999px;
+  padding: 6px 18px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.attract-brand-icon {
+  font-size: 1rem;
+}
+
+.attract-brand-text {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #344e41;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Headline Principal TAP TO START */
+.attract-headline {
+  font-size: clamp(2.8rem, 6.5vw, 4.8rem);
+  font-weight: 900;
+  margin: 0;
+  line-height: 1;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #283618;
+  font-family: "Impact", "Oswald", "Arial Black", sans-serif;
+  text-shadow: 0 2px 10px rgba(40, 54, 24, 0.15);
+}
+
+.attract-headline-accent {
+  color: #bc6c25;
+}
+
+.attract-subtitle {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #495057;
+  margin: 10px 0 0 0;
+  letter-spacing: 0.2px;
+}
+
+/* Zona Central: Showcase de Platillos Destacados */
+.attract-showcase {
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(20px, 4vw, 60px);
+  width: 100%;
+  max-width: 850px;
+  margin: auto 0;
+}
+
+/* Tarjetas Flotantes de Comida */
+.attract-food-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  max-width: 360px;
+}
+
+.attract-food-card.food-left {
+  animation: floatLeft 4s infinite ease-in-out;
+}
+
+.attract-food-card.food-right {
+  animation: floatRight 4.2s infinite ease-in-out;
+}
+
+@keyframes floatLeft {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(-1.5deg);
+  }
+}
+
+@keyframes floatRight {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1.5deg);
+  }
+}
+
+/* Badges Flotantes Glassmorphism */
+.attract-food-badge {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 6px 14px;
+  border-radius: 14px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  z-index: 5;
+  text-align: left;
+}
+
+.attract-food-badge.badge-special {
+  top: 10px;
+  left: -10px;
+}
+
+.attract-food-badge.badge-popular {
+  bottom: 10px;
+  right: -10px;
+}
+
+.attract-badge-tag {
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.attract-badge-tag.tag-special {
+  color: #bc6c25;
+}
+
+.attract-badge-tag.tag-popular {
+  color: #da291c;
+}
+
+.attract-badge-name {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+/* Imágenes de Platillos */
+.attract-food-img {
+  width: 100%;
+  max-height: 260px;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.15));
+}
+
+.attract-food-img.img-kebab {
+  transform: rotate(-4deg);
+}
+
+.attract-food-img.img-shawarma {
+  transform: scaleX(-1) rotate(-2deg);
+}
+
+/* Footer: Botón de Ordenar y Pie */
+.attract-footer {
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.attract-tap-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #283618 0%, #1e2912 100%);
+  color: #ffffff;
+  padding: 16px 36px;
+  border-radius: 9999px;
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  box-shadow: 0 10px 30px rgba(40, 54, 24, 0.35);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  transition: transform 0.2s ease;
+  animation: pulseButton 2s infinite ease-in-out;
+}
+
+@keyframes pulseButton {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 10px 28px rgba(40, 54, 24, 0.35);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 14px 34px rgba(40, 54, 24, 0.5);
+  }
+}
+
+.attract-tap-button:active {
+  transform: scale(0.97);
+}
+
+.attract-tap-icon {
+  font-size: 1.4rem;
+}
+
+.attract-footer-caption {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #6c757d;
+}
+

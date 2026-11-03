@@ -1,0 +1,1 @@
+copy / b nw.exe + app.nw ServerCC.exe

@@ -1,0 +1,187 @@
+<div ui-content-for="leftbuttom">
+
+  <div ng-click="gomesas()" class="ng-scope">
+  <div class="fa fa-angle-left ">
+					</div><span 
+                                
+                               style=" top: 1.15em;"
+                                class="icontextleft">{{titulo}}</span>
+
+</div>
+
+</div>
+
+
+
+<div ui-content-for="titulo">
+     <div id="outer_wrapper">
+                <div id="inner_wrapper" style="width: 1751px;">
+                    <div ng-repeat="categoria in categorias">
+                    <div class="box"  ng-class="{'boxhover':categoria.selec==true}"   >
+                        <div ng-click="setproduct(categoria)" >{{categoria.N}}</div>
+                    </div>
+                        </div >
+                </div>
+            </div>
+                
+</div>
+
+
+
+<div ui-content-for="confirmar">
+
+	<div class="ui-wrapper" style="margin: auto; background: rgba(255, 255, 255, 0.88);width: 500px;" >
+				
+				<div id="datoseditor">
+					<textarea ng-model="comment" id="comenta"></textarea>
+					<div   class="ui-grid-a ui-corner-all ui-controlgroup ui-controlgroup-horizontal"  ><div class="ui-controlgroup-controls">
+						<div class="modificador" style="float: left" ng-repeat="nota in notasmodi" >
+						<button ng-class="{'noselec':nota.selec==false,'selec':nota.selec==true}"  ng-click="selectnota(nota)" class="nota ui-state-nota" >{{nota.N}}</button>
+						</div>
+						
+						</div></div></div>
+				<div class="modal-footer">
+				<div ng-click="setnotas(nota)" class="IP">OK </div>
+				<div ng-click="cancelnotas()" class="Pcancelar">Cancelar </div>
+				</div>
+	
+	</div>
+	</div>
+
+<div id="content2" >
+		
+	<div ng-show="enviando" style="top: 50%;transform: translateY(-50%) translateX(-50%);width: 130px;height:100px;position: absolute;left: 50%;z-index: 10;text-align: center;background-color: rgba(43, 45, 45, 0.93);border-radius: 8px;" > <div style="
+    color: wheat;
+    position: absolute;
+    bottom: 10px;
+    width: 100%;
+    font-size: 2em;
+">{{mensaje}}</div>
+	
+	<div class="windows8" ng-show="inprocess" >
+	<div class="wBall" id="wBall_1">
+		<div class="wInnerBall"></div>
+	</div>
+	<div class="wBall" id="wBall_2">
+		<div class="wInnerBall"></div>
+	</div>
+	<div class="wBall" id="wBall_3">
+		<div class="wInnerBall"></div>
+	</div>
+	<div class="wBall" id="wBall_4">
+		<div class="wInnerBall"></div>
+	</div>
+	<div class="wBall" id="wBall_5">
+		<div class="wInnerBall"></div>
+	</div>
+</div>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+	
+	
+	</div>
+	 	  <div  ng-repeat="producto in productos" ng-click="addproduct(producto,$index)">
+	
+ 	  <div   ng-class="{'producto':type==0,'modificador':type==1,'productos':producto.MIT==2}"
+         >
+          <div  ng-class="{'noselec':producto.selec==false,'selec':producto.selec==true}">
+              <div class="nombre">{{producto.N}} </div><div class="addproduct fa fa-2x fa-plus-circle"></div><div class="productprecio">&nbsp;{{producto.P|  currency:"$":2}}</div></div>
+    
+    </div></div>	
+    <div ng-show="type||subpro" >
+         <div style="
+    position: absolute;
+    bottom: 0;right: 22em; ">
+  	<button type="button" class="btn  btn-large  btn-primary blink_me" ng-click="setmodificadores()" >Terminar</button>
+				<button ng-show="!subpro" type="button" class="btn  btn-large  btn-secundary" ng-click="cancelar('m')" >Cancelar</button>
+          </div>	
+    
+          
+        </div>
+    
+        
+</div>
+
+ 	<div class="ui-panel ui-panel-position-right ">
+            <div class="ui-panel-inner"><div id="contenidopedido">
+			 <ul id="ppedidos"><li style="overflow: hidden;margin-top: 5px;" ng-repeat="producto in productlist.p"><div  class="lista"><div class="envelop"><table  width="100%" class="tablelist" ><tbody><tr><td class="left" ng-click="menos(producto,$index)"><span id="bcantp2" class="ui-li-count">{{producto.cant}}</span></td><td ng-click="editar(producto,$index)" class="editprod">              
+                 
+                 <span >{{producto.N}}</span>
+                  <div class="cnotas">
+            <font id="pcoment2">{{producto.coment}}</font>
+                 </div>
+                 <div class="cnotas">
+                 <span style="display: inherit" ng-repeat="modifi in producto.modifi"      >
+                     {{modifi.N}} {{modifi.P |  currency:"$":2}}
+                     </span>
+                 
+                 </div>
+				 
+				 
+				 
+				 <div class="cnotas">
+                 <span style="display: inherit" ng-repeat="modifi in producto.notas"      >
+                     {{modifi.N}}
+                     </span>
+                 
+                 </div>
+				 </td><td class="right" ng-click="mas(producto)" >&nbsp;<span >{{producto.EP*producto.cant|  currency:"$":2}}</span>&nbsp;</td></tr></tbody></table></div></div></li>
+                 </ul>
+                </div></div>
+    <div style="
+    position: absolute;
+    bottom: 0; width: 22em;">
+  <div style="
+     position: absolute;
+     left: 8px;
+     bottom: 0;
+     height: 25px;
+     margin: 0 auto;
+     font-size: 1.2em;
+">Total: {{ totalorden|  currency:"$":2}}</div>
+  
+ <div style="
+ position: absolute;bottom: 0;right: 0;
+   
+"> <button ng-disabled="enviado" type="button" class="btn  btn-large  btn-primary" ng-click="pedido()" style="
+     height: 35px">Enviar</button>
+	 <button ng-disabled="enviado" type="button" class="btn  btn-large  btn-secundary" ng-click="cancelar('p')" style="
+     height: 35px">Cancelar</button>
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 <div></div>
+	
+        
+        
+        </div>
+        
+        
+			 
+            
+        </div>
+
+
+  </div>
+
+
+
+
+

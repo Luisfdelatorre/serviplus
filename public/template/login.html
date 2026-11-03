@@ -1,0 +1,67 @@
+<div ui-content-for="title">
+  <span>SuperBike</span>
+</div>
+<div ui-content-for="actividad">
+  <span>Login1</span>
+</div>
+
+
+
+
+
+	
+
+
+<div  ui-content-for="confirmar">
+	<div class="ngdialog-buttons ng-scope " >
+
+	<div ng-show="getipval" style="top: 50%;transform: translateY(-50%) translateX(-50%);width: 200px;height:120px;position: absolute;left: 50%;z-index: 10;text-align: center;background-color: rgba(43, 45, 45, 0.93);border-radius: 8px;" > <div style="
+   color: white;
+    position: absolute;
+		top:10%;
+     width: 100%;
+    font-size: 1.2em;
+">Digite el Server-Ip
+		
+		<input style="background-color: rgb(83, 89, 93);color: white; margin: 10px ;font-size: .7em;" ng-model="inputip"  type="text" ng-class="{'border_red':errorip==true,'':errorip==false}"  name="ip" >
+		
+		
+		<br>
+		<button style=" font-size: .7em;" class="btn   btn-primary" ng-click="setipval()"  ng-class="{'blink_me':testiptimer==true,'':testiptimer==false}" >OK</button>
+		</div>
+
+	</div>
+	</div>
+	
+	
+</div>
+
+
+
+
+
+
+
+
+    <div >
+	<div class="ui-wrapper">
+		<div id="NumTitle" style="text-align: center;">Digita tu Codigo</div>
+		<div id="keyvaluelist" class="keyvaluelist">
+			<div class={{circle[0]}} ng-class="{'red':red==true,'':red==false}"></div>
+			<div class={{circle[1]}} ng-class="{'red':red==true,'':red==false}"></div>
+			<div class={{circle[2]}} ng-class="{'red':red==true,'':red==false}"></div>
+			<div class={{circle[3]}} ng-class="{'red':red==true,'':red==false}"></div>
+		</div>
+	</div>
+	<div data-role="none" name="default" id="keycontent" class="keycontent" style="width: 240px;display: block;    margin: auto;">
+		<button ng-click="clickkey(key)"  data-role="none" class="ui-state-default" value="1" ng-repeat="key in keys" >
+			<span>{{key.value}}</span>
+		</button>
+	
+		
+	
+					</div>
+				</div>
+    
+    
+ 

@@ -1,0 +1,15 @@
+{
+  "watch": [
+    "server.js",
+    "serverAldelo.js",
+    "server/"
+  ],
+  "ignore": [
+    "kds_state.*",
+    "*.log",
+    "public/",
+    "node_modules/",
+    ".git/"
+  ],
+  "ext": "js,mjs,cjs"
+}

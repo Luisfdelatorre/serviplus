@@ -1,0 +1,1 @@
+print c:\nodejs\nwjs64\recibo.txt /d:LPT2

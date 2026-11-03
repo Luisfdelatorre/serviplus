@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title> Serviplus - Smart Kiosk & KDS POS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;600;700;800;900&display=swap"
+    rel="stylesheet">
+  <!-- Tailwind CSS v3 with Plugins (Preflight disabled to preserve kiosk.css) -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+    tailwind.config = {
+      corePlugins: {
+        preflight: false,
+      },
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            display: ['"Outfit"', 'sans-serif'],
+            heading: ['"Outfit"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#ECFDF5',
+              100: '#D1FAE5',
+              400: '#34D399',
+              500: '#10B981',
+              600: '#059669',
+              700: '#047857',
+            },
+            accent: {
+              amber: '#F59E0B',
+              yellow: '#FBBF24',
+              red: '#EF4444'
+            }
+          },
+          boxShadow: {
+            'subtle': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+            'card': '0 10px 30px -4px rgba(16, 185, 129, 0.12)',
+            'btn-brand': '0 10px 25px -3px rgba(16, 185, 129, 0.4)'
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="/css/kiosk.css?v=20261026_3">
+</head>
+
+<body>
+
+  <!-- TOP NAVIGATION BAR -->
+  <header class="nav-bar">
+    <div class="brand">
+      <span>Serviplus</span>
+      <span class="brand-badge" data-i18n="nav_brand_sub">KIOSK & KDS</span>
+    </div>
+
+    <nav class="nav-tabs">
+      <button class="nav-btn active" data-view="kiosk">
+        <span>🍔</span> <span data-i18n="nav_kiosk">Kiosk Autoservicio</span>
+      </button>
+      <button class="nav-btn" data-view="frontdesk">
+        <span>🖥️</span> <span data-i18n="nav_frontdesk">Front Desk Caja</span>
+      </button>
+      <button class="nav-btn" data-view="kds">
+        <span>👨‍🍳</span> <span data-i18n="nav_kds">KDS Cocina</span>
+      </button>
+      <button class="nav-btn" data-view="turns">
+        <span>📢</span> <span data-i18n="nav_turns">Monitor de Turnos</span>
+      </button>
+    </nav>
+
+    <div class="nav-actions">
+      <!-- Language Switcher: ES (Default) / EN -->
+      <div class="lang-switch-group">
+        <button id="lang-btn-es" class="lang-switch-btn active" data-lang="es" onclick="setLanguage('es')">
+          <span>🇪🇸</span> ES
+        </button>
+        <button id="lang-btn-en" class="lang-switch-btn" data-lang="en" onclick="setLanguage('en')">
+          <span>🇺🇸</span> EN
+        </button>
+      </div>
+
+      <div class="conn-status">
+        <div id="conn-dot" class="status-dot"></div>
+        <span id="conn-text" data-i18n="status_online">En línea</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- VIEW 1: KIOSK CLIENTES (MCDONALD'S STYLE - IPAD HORIZONTAL) -->
+  <main id="view-kiosk" class="view-section active">
+    <div class="kiosk-layout">
+      <!-- Columna 1: Categorías Vertical -->
+      <aside class="kiosk-categories" id="kiosk-cats">
+        <!-- Renderizado dinámico -->
+      </aside>
+
+      <!-- Columna 2: Catálogo de Productos y Banner -->
+      <section class="kiosk-catalog">
+        <!-- Banner Superior Apetitoso -->
+        <div class="kiosk-banner">
+          <img src="/images/banner.jpg" alt="Deliciosos Platos y Comidas" class="kiosk-banner-bg">
+          <div class="kiosk-banner-overlay">
+            <span class="kiosk-banner-pill" data-i18n="banner_pill">🔥 ¡RECIÉN PREPARADO!</span>
+            <div class="kiosk-banner-headline" data-i18n="banner_headline">Disfruta tu comida favorita</div>
+            <div class="kiosk-banner-sub" data-i18n="banner_sub">Toca cualquier producto para añadirlo a tu orden</div>
+          </div>
+        </div>
+
+        <!-- Subheader del Catálogo con Barra de Búsqueda -->
+        <div class="kiosk-catalog-header">
+          <div class="kiosk-catalog-title-wrap">
+            <h2 id="kiosk-cat-title" class="kiosk-catalog-title" data-i18n="loading_menu">Cargando menú...</h2>
+            <span id="kiosk-items-count-badge" class="kiosk-items-badge">0 productos</span>
+          </div>
+
+          <div class="kiosk-search-box">
+            <span class="kiosk-search-icon">🔍</span>
+            <input type="text" id="kiosk-search-input" placeholder="Buscar producto..."
+              data-i18n-placeholder="search_placeholder" oninput="handleSearch(this.value)">
+            <button id="kiosk-search-clear" class="kiosk-search-clear" onclick="clearSearch()">✕</button>
+          </div>
+        </div>
+
+        <!-- Grid de Productos -->
+        <div class="products-grid" id="kiosk-products">
+          <!-- Renderizado dinámico -->
+        </div>
+      </section>
+
+      <!-- Columna 3: Carrito / Ticket de Pedido -->
+      <aside class="kiosk-cart">
+        <div class="cart-header">
+          <div class="cart-title-row">
+            <span class="cart-title" data-i18n="cart_title">Mi Pedido</span>
+            <span id="cart-items-count" class="cart-count-badge">0 ítems</span>
+          </div>
+          <div class="order-type-toggle">
+            <button class="type-toggle-btn active" id="btn-eat-in" onclick="setOrderType('EAT_IN')"
+              data-i18n="cart_eat_in">
+              🍽️ Comer Aquí
+            </button>
+            <button class="type-toggle-btn" id="btn-take-out" onclick="setOrderType('TAKE_OUT')"
+              data-i18n="cart_take_out">
+              🥡 Para Llevar
+            </button>
+          </div>
+        </div>
+
+        <div class="cart-items" id="cart-items-list">
+          <div class="cart-empty">
+            <div class="cart-empty-icon">🥙</div>
+            <p><strong data-i18n="cart_empty_title">Tu orden está vacía</strong><br><span
+                data-i18n="cart_empty_desc">Selecciona productos a la izquierda para empezar.</span></p>
+          </div>
+        </div>
+
+        <div class="cart-summary">
+          <div class="cart-total-row">
+            <span class="cart-total-label" data-i18n="cart_total">Total a Pagar:</span>
+            <span id="cart-total-amount" class="cart-total-num">$0.00</span>
+          </div>
+          <button id="cart-checkout-btn" class="cart-checkout-btn" onclick="openCheckout(false)" disabled>
+            <span data-i18n="cart_checkout">💳 Finalizar y Pagar</span>
+          </button>
+          <button id="cart-cancel-btn" class="cancel-order-btn" onclick="cancelCurrentOrder()" data-i18n="cart_cancel">
+            Cancelar Pedido
+          </button>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- VIEW 2: FRONT DESK (CAJA / MOSTRADOR) -->
+  <main id="view-frontdesk" class="view-section">
+    <div class="frontdesk-bar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-weight:800;color:var(--text-main);" data-i18n="fd_attended_by">Atendido por:</span>
+        <select id="cashier-dropdown" class="cashier-select">
+          <!-- Opciones de empleados -->
+        </select>
+      </div>
+      <div>
+        <span style="color:var(--text-secondary);font-size:0.9rem;font-weight:600;" data-i18n="fd_cashier_mode">Modo
+          Cajero: Efectivo, Tarjeta o QR Wompi</span>
+      </div>
+    </div>
+
+    <div class="kiosk-layout">
+      <aside class="kiosk-categories" id="frontdesk-cats">
+        <!-- Mismas categorías -->
+      </aside>
+
+      <section class="kiosk-catalog">
+        <div class="kiosk-catalog-header">
+          <div class="kiosk-catalog-title-wrap">
+            <h2 id="frontdesk-cat-title" class="kiosk-catalog-title" data-i18n="fd_menu_title">Menú de Mostrador</h2>
+          </div>
+          <div class="kiosk-search-box">
+            <span class="kiosk-search-icon">🔍</span>
+            <input type="text" id="frontdesk-search-input" placeholder="Buscar producto..."
+              data-i18n-placeholder="search_placeholder" oninput="handleSearch(this.value)">
+          </div>
+        </div>
+        <div class="products-grid" id="frontdesk-products">
+          <!-- Productos optimizados para caja -->
+        </div>
+      </section>
+
+      <aside class="kiosk-cart">
+        <div class="cart-header">
+          <div class="cart-title-row">
+            <span class="cart-title" data-i18n="fd_order_title">Orden Mostrador</span>
+            <span id="frontdesk-items-count" class="cart-count-badge">0 ítems</span>
+          </div>
+        </div>
+        <div class="cart-items" id="frontdesk-cart-items">
+          <div class="cart-empty">
+            <div class="cart-empty-icon">🖥️</div>
+            <p><strong data-i18n="fd_cart_empty_title">Sin productos</strong><br><span
+                data-i18n="fd_cart_empty_desc">Toca los productos para cobrar.</span></p>
+          </div>
+        </div>
+        <div class="cart-summary">
+          <div class="cart-total-row">
+            <span class="cart-total-label" data-i18n="fd_total_label">Total a Cobrar:</span>
+            <span id="frontdesk-total-amount" class="cart-total-num">$0.00</span>
+          </div>
+          <button class="cart-checkout-btn" onclick="openCheckout(true)">
+            <span data-i18n="fd_collect_btn">💵 Cobrar Orden</span>
+          </button>
+          <button class="cancel-order-btn" onclick="cancelCurrentOrder()" data-i18n="fd_clear_btn">
+            Limpiar Pedido
+          </button>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- VIEW 3: KDS (KITCHEN DISPLAY SYSTEM - ESTILO COMERCIAL) -->
+  <main id="view-kds" class="view-section">
+    <!-- Top Bar KDS estilo Comercial (Industrial) -->
+    <div class="kds-topbar">
+      <div class="kds-topbar-left">
+        <button class="kds-menu-btn" title="Menú KDS" onclick="toggleKdsFullscreen()">☰</button>
+        <span class="kds-clock" id="kds-live-clock">--:-- --</span>
+      </div>
+
+      <div class="kds-topbar-center">
+        <div class="kds-filter-capsule">
+          <button class="kds-tab-pill active" id="kds-tab-prep" onclick="setKdsFilter('PREP')">
+            <span id="kds-prep-count">0</span> <span>En Preparación</span>
+          </button>
+          <button class="kds-tab-pill" id="kds-tab-ready" onclick="setKdsFilter('READY')">
+            <span id="kds-ready-count">0</span> <span>Listas</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="kds-topbar-right">
+        <!-- Selector de Escala de Tarjetas -->
+        <div class="kds-scale-pill-group" title="Tamaño de tarjetas de cocina">
+          <span class="kds-scale-icon">📐</span>
+          <button type="button" class="kds-scale-pill" id="kds-scale-btn-compact" onclick="setKdsCardScale('compact')"
+            title="Compacto (5 columnas)">S</button>
+          <button type="button" class="kds-scale-pill active" id="kds-scale-btn-normal"
+            onclick="setKdsCardScale('normal')" title="Normal (4 columnas)">M</button>
+          <button type="button" class="kds-scale-pill" id="kds-scale-btn-large" onclick="setKdsCardScale('large')"
+            title="Grande (3 columnas)">L</button>
+        </div>
+
+        <!-- Botón Auto-Ajuste Dinámico por contenido -->
+        <button type="button" class="kds-autofit-btn" id="kds-autofit-btn" onclick="toggleKdsDynamicFit()"
+          title="Ajuste Dinámico: Las tarjetas se adaptan a la cantidad de productos para mostrar más órdenes en pantalla">
+          <span style="font-size:0.9rem;">⚡</span> <span>Auto-Ajuste</span>
+        </button>
+
+        <div class="kds-pagination" id="kds-pagination-controls">
+          <button class="kds-page-btn active" onclick="setKdsPage(1)">1</button>
+          <button class="kds-page-btn" onclick="setKdsPage(2)">2</button>
+          <button class="kds-page-btn" onclick="setKdsPage(3)">3</button>
+        </div>
+        <button class="kds-fullscreen-btn" onclick="toggleKdsFullscreen()" title="Pantalla Completa Cocina"
+          data-i18n-title="kds_fullscreen_tip">⛶</button>
+      </div>
+    </div>
+
+    <div class="kds-container">
+      <div class="kds-grid" id="kds-orders-grid">
+        <!-- Renderizado dinámico de tarjetas 2x4 estilo comercial -->
+      </div>
+    </div>
+  </main>
+
+  <!-- VIEW 4: MONITOR DE TURNOS (STATUS BOARD DIGITAL SIGNAGE) -->
+  <main id="view-turns" class="view-section" style="padding:16px;max-width:1280px;margin:0 auto;">
+    <div
+      class="tv-screen w-full aspect-[16/9] min-h-[660px] flex flex-col justify-between overflow-hidden shadow-2xl relative text-slate-800"
+      style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 20px; box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.12);">
+
+      <!-- TopHeaderSection -->
+      <header class="w-full flex flex-col shrink-0 bg-white border-b border-slate-200 shadow-sm"
+        data-purpose="top-announcements">
+        <div class="px-6 sm:px-8 py-3 flex items-center justify-between border-b border-slate-100">
+          <div class="flex items-center gap-3">
+            <div class="flex items-center font-black tracking-tight text-2xl">
+              <span style="color: #E53935;">Servi</span><span class="text-slate-900">plus</span>
+            </div>
+            <span
+              class="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full text-amber-900 bg-amber-100 border border-amber-200">Order
+              Monitor</span>
+          </div>
+          <h1 class="font-black uppercase tracking-wider text-xl sm:text-2xl text-slate-800 flex items-center gap-2">
+            Track Your Order
+          </h1>
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>Live Status
+            </div>
+            <a href="/turns" target="_blank" title="Abrir en Pantalla Completa para TV"
+              class="text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg border border-slate-200 flex items-center gap-1 transition">
+              <span>📺</span> Modo TV
+            </a>
+          </div>
+        </div>
+        <div class="bg-amber-400 px-6 py-2 text-center shadow-sm flex items-center justify-center gap-2">
+          <span class="text-slate-950 font-black text-xs sm:text-sm tracking-wider uppercase">⚡ ¡Pide en nuestro Kiosk
+            autoservicio y ahorra tiempo! / Order ahead on our app &amp; skip the line!</span>
+        </div>
+      </header>
+
+      <!-- OrderListSection -->
+      <section class="flex-1 w-full px-4 sm:px-8 py-2 sm:py-3 flex flex-col justify-between"
+        data-purpose="order-status-table">
+        <div
+          class="grid grid-cols-12 gap-3 sm:gap-4 items-center px-4 py-2 text-slate-500 font-extrabold text-xs sm:text-sm tracking-wider uppercase border-b border-slate-200">
+          <div class="col-span-3">Turno / Cliente</div>
+          <div class="col-span-6">Estado y Progreso</div>
+          <div class="col-span-3 text-center">Ubicación / Entrega</div>
+        </div>
+
+        <div class="flex-1 flex flex-col justify-start py-1.5 space-y-1.5" id="turns-modern-rows">
+          <!-- Renderizado dinámico de órdenes -->
+        </div>
+
+        <!-- Hidden legacy containers for compatibility -->
+        <div id="turns-prep-list" style="display:none;"></div>
+        <div id="turns-ready-list" style="display:none;"></div>
+      </section>
+
+      <!-- BottomPagination -->
+      <footer class="w-full pb-3 flex justify-center items-center gap-2" data-purpose="pagination-indicator"
+        id="turns-pagination">
+        <div
+          class="w-8 h-8 rounded-full bg-[#00B074] text-white flex items-center justify-center font-black text-sm shadow-md">
+          1</div>
+      </footer>
+    </div>
+  </main>
+
+  <!-- CHECKOUT MODAL (SELECCIÓN DE IDENTIFICADOR / LOCALIZADOR / MESA -> PAGO) -->
+  <div id="checkout-modal" class="modal-overlay">
+    <main
+      class="relative z-10 w-full max-w-2xl bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-slate-100 max-h-[96vh]">
+      <!-- BEGIN: TopHeader (Minimal: Brand on left, 3 Progress Pills on right) -->
+      <header
+        class="bg-gradient-to-r from-slate-50 via-white to-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <span class="font-heading font-extrabold text-2xl tracking-tight text-red-600">Servi<span
+              class="text-slate-800">plus</span></span>
+          <span
+            class="bg-amber-400 text-slate-900 font-bold text-[10px] tracking-wider px-2 py-0.5 rounded-md uppercase">
+            KIOSK
+          </span>
+        </div>
+        <!-- Progress Pills -->
+        <div class="flex space-x-1.5 items-center">
+          <div class="w-8 h-1.5 rounded-full bg-emerald-600 transition-all" id="step-dot-1"></div>
+          <div class="w-8 h-1.5 rounded-full bg-slate-200 transition-all" id="step-dot-2"></div>
+          <div class="w-8 h-1.5 rounded-full bg-slate-200 transition-all" id="step-dot-3"></div>
+        </div>
+      </header>
+      <!-- END: TopHeader -->
+
+      <!-- BEGIN: ScrollableContentSection -->
+      <div class="flex-1 overflow-y-auto no-scrollbar p-5 sm:p-6 space-y-4" style="max-height: calc(96vh - 165px);">
+        <!-- PASO 1: SELECCIONAR LOCALIZADOR / MESA -->
+        <div id="checkout-step-1" class="checkout-step">
+          <!-- Dining Option Selector (Tabs) -->
+          <section data-purpose="dining-mode-selector">
+            <div class="bg-slate-100/80 p-1.5 rounded-2xl grid grid-cols-2 gap-2 border border-slate-200/60">
+              <!-- Option: Comer Aquí (Active) -->
+              <button
+                class="flex items-center justify-center space-x-2.5 py-3 px-4 rounded-xl font-heading font-bold text-base transition-all duration-150 bg-white text-emerald-700 shadow-sm border border-slate-800 ring-1 ring-slate-800 cursor-pointer"
+                id="btn-eat-in" type="button" onclick="setOrderType('EAT_IN')">
+                <span class="text-xl">🍽️</span>
+                <span data-i18n="dining_eat_in">Comer en Salón</span>
+                <span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase"
+                  id="badge-eat-in" data-i18n="badge_active">ACTIVO</span>
+              </button>
+              <!-- Option: Para Llevar -->
+              <button
+                class="flex items-center justify-center space-x-2.5 py-3 px-4 rounded-xl font-heading font-semibold text-slate-600 hover:text-slate-800 transition-all duration-150 bg-slate-100/60 border border-slate-300 cursor-pointer"
+                id="btn-takeaway" type="button" onclick="setOrderType('TAKE_OUT')">
+                <span class="text-xl">🛍️</span>
+                <span data-i18n="dining_takeout">Para Llevar</span>
+                <span class="bg-slate-200 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase"
+                  id="badge-takeout" data-i18n="badge_active" style="display:none;">ACTIVO</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- Step Instructions Title -->
+          <section class="text-center px-2 my-4" data-purpose="instructional-banner">
+            <h2 class="text-xl sm:text-2xl font-extrabold font-heading text-slate-900 tracking-tight"
+              id="modal-title-instruction" data-i18n="prompt_select_table">
+              ¿Cuál es tu número de localizador o mesa?
+            </h2>
+          </section>
+
+          <!-- Quick Selector Grid (1 to 27) -->
+          <section data-purpose="interactive-number-grid" id="eat-in-table-container">
+            <div class="grid grid-cols-6 sm:grid-cols-6 gap-2 sm:gap-2.5" id="number-grid">
+              <!-- Dinámico (1 al 27) -->
+            </div>
+          </section>
+
+          <!-- Takeout notice card -->
+          <section id="takeout-container" style="display:none;" class="takeout-notice-card my-3">
+            <div style="font-size:3rem;">🛍️</div>
+            <div style="font-weight:900;font-size:1.25rem;color:var(--text-main);" data-i18n="takeout_card_title">Pedido
+              Para Llevar</div>
+            <p style="color:var(--text-secondary);font-size:0.9rem;font-weight:600;max-width:340px;line-height:1.4;"
+              data-i18n="takeout_card_desc">
+              Tu pedido será empacado para llevar. Al confirmar el pago recibirás tu <strong>Número de Turno</strong>
+              para retirar en barra.
+            </p>
+          </section>
+        </div>
+
+        <!-- PASO 2: SELECCIÓN DE PAGO Y CONFIRMACIÓN -->
+        <div id="checkout-step-2" class="checkout-step" style="display:none;">
+          <div
+            class="step-summary-chip p-3 rounded-xl bg-slate-50 border border-slate-200 flex justify-between items-center cursor-pointer"
+            onclick="goToStep(1)">
+            <div class="flex items-center space-x-2">
+              <span id="chip-type-icon" class="text-xl">🍽️</span>
+              <span id="chip-type-text" class="font-bold text-slate-800 text-sm">Mesa #14</span>
+            </div>
+            <span class="text-xs text-brand-600 font-bold underline" data-i18n="chip_change">Cambiar</span>
+          </div>
+
+          <div class="text-center py-2">
+            <div class="text-3xl font-extrabold text-slate-900" id="modal-total-text">$0.00</div>
+            <p class="text-xs font-semibold text-slate-500" data-i18n="modal_total_label">Total a pagar</p>
+          </div>
+
+          <!-- Selector de métodos de pago -->
+          <div class="payment-options grid grid-cols-3 gap-2">
+            <button id="pay-opt-wompi-qr" class="pay-btn active" onclick="selectPaymentMethod('WOMPI_QR')">
+              <span style="font-size:1.6rem;">📱</span>
+              <span style="font-size:0.8rem;" data-i18n="pay_opt_wompi">QR Wompi</span>
+            </button>
+            <button id="pay-opt-cash" class="pay-btn" onclick="selectPaymentMethod('CASH')">
+              <span style="font-size:1.6rem;">💵</span>
+              <span style="font-size:0.8rem;" data-i18n="pay_opt_cash">Efectivo</span>
+            </button>
+            <button id="pay-opt-dataphone" class="pay-btn" onclick="selectPaymentMethod('DATAPHONE')">
+              <span style="font-size:1.6rem;">💳</span>
+              <span style="font-size:0.8rem;" data-i18n="pay_opt_dataphone">Datáfono</span>
+            </button>
+          </div>
+
+          <!-- Caja para QR Wompi -->
+          <div id="qr-payment-box" class="text-center my-2">
+            <p style="font-size:0.85rem;color:var(--text-secondary);font-weight:600;margin-bottom:6px;"
+              data-i18n="wompi_prompt">
+              Escanea con tu App Nequi, Bancolombia o Daviplata:
+            </p>
+            <div class="qr-container inline-block p-3 bg-white border border-slate-200 rounded-xl shadow-xs">
+              <img id="wompi-qr-img" src="" alt="QR Wompi"
+                style="display:block;width:150px;height:150px;margin:0 auto;">
+              <div id="wompi-amount-display"
+                style="font-size:1.15rem;font-weight:900;color:var(--brand-green);margin-top:6px;">$0 COP</div>
+            </div>
+          </div>
+
+          <!-- Caja para Cobro en Efectivo -->
+          <div id="cash-payment-box" class="cash-calc" style="display:none;">
+            <label style="font-weight:800;font-size:0.9rem;color:var(--text-main);"
+              data-i18n="cash_received_label">Efectivo Recibido:</label>
+            <input type="number" id="cash-tendered-input" class="cash-input" placeholder="$0"
+              oninput="calcCashChange()">
+            <div class="quick-bills">
+              <button class="bill-btn" onclick="calcCashChange(10)">$10.000</button>
+              <button class="bill-btn" onclick="calcCashChange(20)">$20.000</button>
+              <button class="bill-btn" onclick="calcCashChange(50)">$50.000</button>
+              <button class="bill-btn" onclick="calcCashChange(100)">$100.000</button>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+              <span style="font-size:0.9rem;font-weight:800;color:var(--text-secondary);"
+                data-i18n="cash_change_label">Cambio:</span>
+              <span id="cash-change-display"
+                style="font-size:1.4rem;font-weight:900;color:var(--brand-green);">$0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- END: ScrollableContentSection -->
+
+      <!-- BEGIN: BottomActionFooter -->
+      <footer class="bg-white border-t border-slate-200/80 p-4 sm:p-5 flex flex-col sm:flex-row items-center gap-3">
+        <!-- Cancel / Go back button -->
+        <button
+          class="w-full sm:w-auto order-2 sm:order-1 px-5 py-3 rounded-2xl border-2 border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-sm tracking-wide transition flex items-center justify-center space-x-2 cursor-pointer"
+          type="button" id="btn-back-cancel" onclick="handleModalBack()">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 19l-7-7m0 0l7-7m-7 7h18" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+            </path>
+          </svg>
+          <span id="btn-back-text" data-i18n="btn_back_menu">Volver al Menú</span>
+        </button>
+        <!-- Primary Confirm & Pay Button -->
+        <button
+          class="touch-press w-full sm:flex-1 order-1 sm:order-2 py-4 px-6 rounded-2xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white font-heading font-extrabold text-base sm:text-lg shadow-btn-brand flex items-center justify-between transition-all group cursor-pointer"
+          id="btn-submit" type="button" onclick="handleModalSubmit()">
+          <span class="flex items-center space-x-2">
+            <span id="btn-submit-label" data-i18n="btn_continue_pay">Continuar al Pago</span>
+            <svg class="h-5 w-5 transform group-hover:translate-x-1 transition" fill="none" stroke="currentColor"
+              viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5">
+              </path>
+            </svg>
+          </span>
+          <span class="bg-black/15 text-white text-sm font-bold py-1 px-3 rounded-xl border border-white/20"
+            id="btn-submit-price">
+            $0.00
+          </span>
+        </button>
+      </footer>
+      <!-- END: BottomActionFooter -->
+    </main>
+  </div>
+
+  <!-- SUCCESS MODAL (TURNO / STAND ASIGNADO) -->
+  <div id="success-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width:440px;">
+      <div style="font-size:3.5rem;">🎉</div>
+      <h3 style="font-size:1.8rem;font-weight:900;color:var(--text-main);" data-i18n="success_title">¡Orden Confirmada!
+      </h3>
+      <p style="color:var(--text-secondary);font-weight:600;" data-i18n="success_desc">Tu pedido ha sido enviado a la
+        cocina.</p>
+
+      <div
+        style="background:var(--brand-yellow-light);border:2px solid var(--brand-yellow);padding:18px;border-radius:var(--radius-xl);margin:10px 0;">
+        <span id="success-badge-label" style="font-size:0.95rem;color:#b45309;font-weight:800;text-transform:uppercase;"
+          data-i18n="success_table_label">
+          Tu Mesa:
+        </span>
+        <div id="success-order-num"
+          style="font-size:4.2rem;font-weight:900;color:var(--brand-red);letter-spacing:-2px;">#00</div>
+        <div id="success-stand-instruction" style="font-size:0.92rem;color:#92400e;font-weight:700;margin-top:4px;">
+          Lleva este número a tu mesa. Enseguida te llevamos tu comida.
+        </div>
+      </div>
+
+      <div id="success-order-id" style="font-size:0.85rem;color:var(--text-muted);font-weight:700;">Orden Aldelo ID: 0
+      </div>
+      <button class="cart-checkout-btn" style="margin-top:14px;" onclick="closeSuccessModal()"
+        data-i18n="success_btn_done">Listo / Nueva Orden</button>
+    </div>
+  </div>
+
+  <!-- SOCKET.IO CLIENT SCRIPT -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- I18N SCRIPT -->
+  <script src="/js/i18n.js?v=20261025"></script>
+  <!-- APP SCRIPT -->
+  <script src="/js/app.js?v=20261026_6"></script>
+</body>
+
+</html>

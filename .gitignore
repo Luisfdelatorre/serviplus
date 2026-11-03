@@ -1,0 +1,50 @@
+# Node dependencies
+node_modules/
+**/node_modules/
+
+# Production build artifacts
+client/dist/
+dist/
+build/
+**/build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime dynamic states & Access lock files
+*.ldb
+kds_state.dat
+kds_receipts.json
+
+# Legacy NW.js runtime binaries (2016)
+*.exe
+*.dll
+*.msi
+*.pak
+*.bin
+*.nexe
+app.nw
+icudtl.dat
+
+# Backups and temporary folders
+B/
+New folder/
+Aldelo/
+pnacl/
+printer/build/
+*.rar
+*.zip
+*.7z
+
+# Environment files and OS metadata
+.env
+.env.local
+.env.*.local
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

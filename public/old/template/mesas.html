@@ -1,0 +1,113 @@
+<div ui-content-for="actividad">
+  <span>Login1</span>
+</div>
+
+<div ui-content-for="rigthbuttom" class="btn btn-navbar" >
+	<div class="loadern" ng-show="reloadt" ></div>
+		<i class="fa fa-user" ng-click="doLogout()" ></i>
+		<div class="icontext  whitecolor" >{{mesero}}</div>
+				</div> 
+
+
+
+<div ui-content-for="leftbuttom" >
+	<span style="width: 60px;top: 1.15em;" class="icontextleft">{{mesero}}</span>
+</div>
+
+
+
+
+
+
+      
+<div ui-content-for="titulo">
+     <div id="outer_wrapper">
+                <div id="inner_wrapper" style="width: 1351px;">
+                    <div ng-repeat="grupo in grupos">
+                    <div class="box"  ng-class="{'boxhover':grupo.selec==true}"   >
+                        <div ng-click="setgrupo(grupo)" >{{grupo.m}}</div>
+                    </div>
+                        </div >
+                </div>
+            </div>
+                
+</div>
+
+
+<div id="content" >
+	
+	
+ 	<div ng-if="mesa.G == mesag"  ng-repeat="mesa in mesas " >
+		<div ng-class="{'mesa':mesa.color==false,'mesau':mesa.color==true}"  >
+		<div  class="c1" ng-click="setmesa(mesa)">{{mesa.oid}}</div>
+		<div  class="c2" ng-click="setmesa(mesa)"></div>
+		<div  class="c3" ng-click="setmesa(mesa)"></div>
+		<div  class="c4" ng-click="setmesa(mesa)"></div>
+		<div class="number" ng-click="setmesa(mesa)">{{mesa.N}}</div>
+		<div  class="persona">{{mesa.M}}</div>
+		<div id="time"></div>
+		<div  class="consumo">{{mesa.T}}</div>
+		<div  class="porcentaje"></div><!-- {{mesa.P| currency:"$":2 }} -->
+		</div>
+	</div>
+</div>
+
+<div  ui-content-for="confirmar">
+	<div class="ngdialog-buttons ng-scope " >
+		<div class="pagopreout">
+	
+<div >
+	<div class="ui-wrapper">
+		<div id="NumTitle" style="text-align: center;">Digita tu Codigo</div>
+		<div id="keyvaluelist" class="keyvaluelist">
+			<div class={{circle[0]}} ></div>
+			<div class={{circle[1]}} ></div>
+			<div class={{circle[2]}} ></div>
+			<div class={{circle[3]}} ></div>
+		</div>
+	</div>
+	<div data-role="none" name="default" id="keycontent" class="keycontent" style="width: 260px;display: block;    margin: auto;">
+		<button ng-click="clickkey(key)"  data-role="none" class="ui-state-default" value="1" ng-repeat="key in keys" >
+			<span>{{key.value}}</span>
+		</button>
+	
+		
+	
+					</div>
+				</div>
+			
+			
+		</div>
+	</div>
+	
+	
+</div>
+
+<div  ui-content-for="numpersonas">
+	<div class="ui-wrapper" style="margin: auto; background: rgba(255, 255, 255, 0.88);width: 375px; height:380px;" >
+          <div> <div class="namePer"> Numero de Personas</div><div ng-click="cancelmesa()" id="Numcan" class="fa fa-user-times"> </div></div>
+		
+		<div id="selectperson" style="margin: 0 0;top: 10%;"><div class="keynumber"  ng-repeat="key in numkey " ><div ng-click="clickperkey(key)" >{{key}}</div></div>
+				
+				
+				
+            </div></div>
+	
+	
+	</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
