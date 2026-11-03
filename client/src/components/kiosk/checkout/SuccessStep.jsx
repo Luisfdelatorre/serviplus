@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import QRCode from 'qrcode';
 import { sfx } from '../../../utils/audio';
 import { KIOSK_CONFIG } from '../../../config/kioskConfig';
 import { ThermalReceiptTicket } from './ThermalReceiptTicket';
@@ -25,7 +26,24 @@ export function SuccessStep({
   onSendSMS,
   onFinish
 }) {
+  const [localQrDataUrl, setLocalQrDataUrl] = useState('');
   const qrFullUrl = `${window.location.origin}${createdReceiptUrl || `/p/p/${createdReceiptCode || 'SP-24'}`}`;
+
+  useEffect(() => {
+    QRCode.toDataURL(qrFullUrl, {
+      width: 220,
+      margin: 1,
+      color: {
+        dark: '#000000',
+        light: '#ffffff'
+      },
+      errorCorrectionLevel: 'M'
+    })
+      .then((url) => setLocalQrDataUrl(url))
+      .catch((err) => {
+        console.warn('[SuccessStep] Error generating local QR:', err);
+      });
+  }, [qrFullUrl]);
 
   return (
     <div className="checkout-success-split-layout animate-step-fade">
@@ -115,8 +133,8 @@ export function SuccessStep({
               <div className="checkout-qr-view-box">
                 <div className="checkout-qr-inner-card">
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrFullUrl)}`}
-                    alt="QR Factura Digital"
+                    src={localQrDataUrl || `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrFullUrl)}`}
+                    alt="Código QR Factura Digital"
                     className="checkout-receipt-qr-img"
                   />
                 </div>

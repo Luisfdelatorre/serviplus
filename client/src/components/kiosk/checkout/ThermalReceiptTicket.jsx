@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { formatCOP } from '../../../utils/format';
 import { KIOSK_CONFIG } from '../../../config/kioskConfig';
 
@@ -13,6 +13,7 @@ export function ThermalReceiptTicket({
   dateStr,
   timeStr
 }) {
+  const [logoFailed, setLogoFailed] = useState(false);
   const now = new Date();
   const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
   const displayDate = dateStr || `${String(now.getDate()).padStart(2, '0')}/${months[now.getMonth()]}/${now.getFullYear()}`;
@@ -35,22 +36,22 @@ export function ThermalReceiptTicket({
   return (
     <div className="receipt-paper-ticket">
       {/* Banner / Logotipo Panorámico Kebab & Shawarma */}
-      <div className="receipt-ticket-logo-banner">
-        <img
-          src={KIOSK_CONFIG.restaurant.logoUrl || '/images/kebab_brand_banner.png'}
-          alt="Kebab & Shawarma"
-          className="receipt-ticket-banner-img"
-          onError={(e) => {
-            e.currentTarget.style.display = 'none';
-            if (e.currentTarget.nextElementSibling) e.currentTarget.nextElementSibling.style.display = 'inline-block';
-          }}
-        />
-        <span style={{ display: 'none', fontSize: '1.4rem' }}>{KIOSK_CONFIG.restaurant.logoEmoji}</span>
-      </div>
+      {!logoFailed && (
+        <div className="receipt-ticket-logo-banner">
+          <img
+            src={KIOSK_CONFIG.restaurant.logoUrl || '/images/kebab_brand_banner.png'}
+            alt="Kebab & Shawarma"
+            className="receipt-ticket-banner-img"
+            onError={() => setLogoFailed(true)}
+          />
+        </div>
+      )}
 
       {/* Encabezado del Comercio */}
       <div className="receipt-ticket-header">
-        <h3 className="receipt-store-name">{KIOSK_CONFIG.restaurant.name}</h3>
+        {logoFailed && (
+          <h3 className="receipt-store-name">{KIOSK_CONFIG.restaurant.logoEmoji} {KIOSK_CONFIG.restaurant.name}</h3>
+        )}
         <p className="receipt-fiscal-sub">NIT: {KIOSK_CONFIG.restaurant.nit}</p>
         <p className="receipt-fiscal-sub">{KIOSK_CONFIG.restaurant.address}</p>
       </div>
