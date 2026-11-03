@@ -1093,17 +1093,17 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
               <div className="checkout-success-right-col">
                 <div className="receipt-paper-ticket">
                   {/* Logo de encabezado del restaurante Kebab */}
-                  <div className="receipt-ticket-logo-circle">
+                  <div className="receipt-ticket-logo-banner">
                     <img
-                      src={KIOSK_CONFIG.restaurant.logoUrl || '/images/kebab_logo.png'}
-                      alt="Logo Kebab"
-                      className="receipt-ticket-logo-img"
+                      src="/images/kebab_brand_banner.png"
+                      alt="Kebab & Shawarma"
+                      className="receipt-ticket-banner-img"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
                         if (e.currentTarget.nextElementSibling) e.currentTarget.nextElementSibling.style.display = 'inline-block';
                       }}
                     />
-                    <span style={{ display: 'none' }}>{KIOSK_CONFIG.restaurant.logoEmoji}</span>
+                    <span style={{ display: 'none', fontSize: '1.4rem' }}>{KIOSK_CONFIG.restaurant.logoEmoji}</span>
                   </div>
 
                   {/* Encabezado del Comercio */}

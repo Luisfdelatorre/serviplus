@@ -80,12 +80,12 @@ export const KIOSK_CONFIG = {
   // 4. IDENTIDAD Y DATOS FISCALES DEL RESTAURANTE
   // -------------------------------------------------------------
   restaurant: {
-    name: 'SERVIPLUS RESTAURANTE',
+    name: 'KEBAB & SHAWARMA',
     legalName: 'Serviplus SAS',
     nit: '901.234.567-8',
     address: 'Calle 72 # 45-12, Bogotá',
     phone: '+57 300 123 4567',
-    logoUrl: '/images/kebab_logo.png',
+    logoUrl: '/images/kebab_brand_banner.png',
     logoEmoji: '🥙',
     dianResolution: 'Resolución DIAN No. 18764000001 del 2024',
     receiptFooter: '¡Gracias por tu compra! Conserva este ticket para retirar tu pedido en mostrador.',
