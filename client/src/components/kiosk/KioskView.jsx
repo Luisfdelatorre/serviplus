@@ -5,7 +5,7 @@ import { useKdsStore } from '../../store/useKdsStore';
 import { formatCOP } from '../../utils/format';
 import { ProductCard } from './ProductCard';
 import { CartDrawer } from './CartDrawer';
-import { CheckoutModal } from './CheckoutModal';
+import { CheckoutView } from './checkout/CheckoutView';
 import { AttractScreen } from './AttractScreen';
 import { sfx } from '../../utils/audio';
 import { getCategoryImageUrl, getCategoryIcon } from '../../utils/productImages';
@@ -364,15 +364,17 @@ export function KioskView() {
         }}
       />
 
-      {/* Modal de Checkout */}
-      <CheckoutModal
-        isOpen={isCheckoutOpen}
-        onClose={() => setIsCheckoutOpen(false)}
-        onOrderCompleted={() => {
-          setIsCheckoutOpen(false);
-          setIsAttractActive(true);
-        }}
-      />
+      {/* Vista Inmersiva de Checkout a Pantalla Completa (No Modal) */}
+      {isCheckoutOpen && (
+        <CheckoutView
+          isOpen={isCheckoutOpen}
+          onClose={() => setIsCheckoutOpen(false)}
+          onOrderCompleted={() => {
+            setIsCheckoutOpen(false);
+            setIsAttractActive(true);
+          }}
+        />
+      )}
 
       {/* Modal de Advertencia por Inactividad (15s antes del reset) */}
       {showIdleWarning && (
