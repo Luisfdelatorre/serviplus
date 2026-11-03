@@ -1,41 +1,50 @@
-var express = require('express'),
-    bodyparser = require('body-parser'),
-    jwt = require('jsonwebtoken'),
-    path = require('path'),
-    fs = require('fs');
+const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
+const jwt = require('jsonwebtoken');
+const path = require('path');
+const os = require('os');
+const moment = require('moment');
+const ADODB = require('node-adodb');
 
-var http = require('http');
-var app = express();
-var server = http.createServer(app);
-var socketIo = require('socket.io');
-var io = socketIo(server, { cors: { origin: '*' } });
-io.on('connection', function (clientSocket) {
-    // Retransmitir sincronizacion de navegacion entre pantallas KDS (Mirroring)
-    clientSocket.on('kds:mirror_sync', function (data) {
+// Cargar configuración
+let appConfig = {};
+try { appConfig = require('./config.json'); } catch (e) { }
+const dbConnString = (appConfig.db && appConfig.db.connectionString) || 'Provider=Microsoft.Jet.OLEDB.4.0;Data Source=C:\\SP\\B\\kebab.mdb;';
+const connection = ADODB.open(dbConnString);
+
+const aldeloService = require('./server/aldeloService');
+const receiptService = require('./server/receiptService');
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, { cors: { origin: '*' } });
+
+const JWT_KEY = 'Medalla6571';
+let dataordenes = {};
+let ordenesreplace = {};
+let stdata = { StationID: 1 };
+let SalesTaxRate = 0;
+let GSTRate = 0;
+
+// Manejadores globales de errores para estabilidad
+process.on('uncaughtException', (err) => {
+    console.error('[Process Error]:', err.message);
+});
+process.on('unhandledRejection', (reason) => {
+    console.error('[Unhandled Rejection]:', reason);
+});
+
+// Socket.io: comunicación en tiempo real y sincronización Mirroring KDS
+io.on('connection', (clientSocket) => {
+    clientSocket.on('kds:mirror_sync', (data) => {
         clientSocket.broadcast.emit('kds:mirror_sync', data);
     });
 });
-var os = require("os");
-var config = [];
-var templateg;
-var template;
-config.key = 'Medalla6571';
-var ADODB = require('./node_modules/node-adodb/lib/client');
-var jwt, dataordenes = {}, dataordenestotal = {}, ordenesreplace = {}
-datamodifiers = {};
-var connection = ADODB.open('Provider=Microsoft.Jet.OLEDB.4.0;Data Source=C:\\SP\\B\\kebab.mdb;');
-ADODB.debug = true;
-var stdata = { StationID: 1, printername: [], printertitle: [] };
-var SalesTaxRate = 0, GSTRate = 0;
 
-process.on('uncaughtException', function (err) {
-    console.error('[Process Error]:', err.message);
-});
-process.on('unhandledRejection', function (reason) {
-    console.error('[Unhandled Rejection]:', reason);
-});
-app.use(function (req, res, next) {
-    var origin = req.headers.origin || '*';
+// Middleware CORS
+app.use((req, res, next) => {
+    const origin = req.headers.origin || '*';
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
     res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type,Authorization');
@@ -45,16 +54,15 @@ app.use(function (req, res, next) {
     }
     next();
 });
-var moment = require('moment');
-app.use(bodyparser.urlencoded({
-    extended: false
-}));
-app.use(bodyparser.json());
 
-const aldeloService = require('./server/aldeloService');
-const receiptService = require('./server/receiptService');
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 
-// API routes para Kiosk y KDS
+// ============================================================================
+// 1. API MODERNA (KIOSK AUTOSERVICIO, KDS Y TURNOS)
+// ============================================================================
+
+// Menú completo con categorías y modificadores
 app.get('/api/menu', async (req, res) => {
     try {
         const categories = await aldeloService.getMenu();
@@ -65,6 +73,7 @@ app.get('/api/menu', async (req, res) => {
     }
 });
 
+// Lista de empleados / cajeros
 app.get('/api/employees', async (req, res) => {
     try {
         const employees = await aldeloService.getEmployees();
@@ -74,6 +83,19 @@ app.get('/api/employees', async (req, res) => {
     }
 });
 
+// Mesas activas de comedor
+app.get('/api/tables', async (req, res) => {
+    try {
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        const tables = await aldeloService.getTables();
+        res.json({ success: true, data: tables });
+    } catch (err) {
+        console.error('Error in /api/tables:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Órdenes activas (KDS, Monitor de turnos, Caja)
 app.get('/api/orders/active', async (req, res) => {
     try {
         const orders = await aldeloService.getActiveOrders();
@@ -83,32 +105,7 @@ app.get('/api/orders/active', async (req, res) => {
     }
 });
 
-app.get('/api/tables', async (req, res) => {
-    try {
-        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-        const sql = `
-            SELECT t.DineInTableID as id, t.DineInTableText as name, t.TableGroupID as groupId, g.TableGroupText as groupName, t.DineInTableInActive as inActive
-            FROM DineInTables t
-            LEFT JOIN DineInTableGroups g ON t.TableGroupID = g.TableGroupID
-            WHERE (t.DineInTableInActive = False OR t.DineInTableInActive IS NULL)
-        `;
-        connection.query(sql).on('done', function (data) {
-            const sorted = (data.records || []).sort((a, b) => {
-                const numA = parseInt(a.name || a.id, 10);
-                const numB = parseInt(b.name || b.id, 10);
-                if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-                return String(a.name || a.id).localeCompare(String(b.name || b.id));
-            });
-            res.json({ success: true, data: sorted });
-        }).on('fail', function (err) {
-            res.status(500).json({ success: false, error: err.message });
-        });
-    } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
-    }
-});
-
-// 4. Crear orden (desde Kiosk o Front Desk)
+// Crear orden (Kiosk o Caja)
 app.post('/api/orders', async (req, res) => {
     try {
         const { employeeId, items, paymentMethod, notes, tableId, guestNumber, orderType, isPaid } = req.body;
@@ -147,12 +144,8 @@ app.post('/api/orders', async (req, res) => {
             }
         }
 
-        // Refrescar el visor clásico de inmediato
-        try {
-            pedidomesa();
-        } catch (e) {
-            console.error('[POST /api/orders] pedidomesa err:', e.message);
-        }
+        // Sincronizar visor clásico si está activo
+        try { pedidomesa(); } catch (e) { }
 
         res.status(201).json({ success: true, data: responseData });
     } catch (err) {
@@ -170,13 +163,13 @@ app.post('/api/orders', async (req, res) => {
     }
 });
 
-// 4.1 Enviar recibo digital (Email o SMS) y endpoints de Recibo Digital
+// Solicitar Recibo Digital (Email / SMS)
 app.post('/api/orders/:id/receipt', async (req, res) => {
     try {
         const orderId = parseInt(req.params.id, 10);
         const { type, destination } = req.body;
         const receiptInfo = receiptService.generateReceiptCode(orderId);
-        console.log('[Receipt] Recibo digital solicitado para Orden #' + orderId + ': tipo=' + type + ', destino=' + destination + ', url=' + receiptInfo.path);
+        console.log(`[Receipt] Recibo digital solicitado para Orden #${orderId}: tipo=${type}, destino=${destination}, url=${receiptInfo.path}`);
         res.json({
             success: true,
             data: {
@@ -186,7 +179,7 @@ app.post('/api/orders/:id/receipt', async (req, res) => {
                 transactionRef: receiptInfo.transactionRef,
                 receiptFullUrl: receiptInfo.fullUrl
             },
-            message: 'Recibo digital enviado con éxito a ' + destination
+            message: `Recibo digital enviado con éxito a ${destination}`
         });
     } catch (err) {
         console.error('Error in POST /api/orders/:id/receipt:', err);
@@ -194,7 +187,7 @@ app.post('/api/orders/:id/receipt', async (req, res) => {
     }
 });
 
-// API para consultar JSON de un Recibo por su código único de 13 caracteres
+// Consultar datos JSON de un recibo por su código único de 13 caracteres
 app.get('/api/receipts/:code', async (req, res) => {
     try {
         const { code } = req.params;
@@ -244,23 +237,19 @@ app.get(['/p/:code', '/receipt/:code', '/r/:code'], async (req, res) => {
     }
 });
 
-// 5. Actualizar estado de orden según especificación Aldelo POS:
-// 1 = OpenOrder (Orden abierta / pendiente)
-// 2 = SettledOrder (Orden pagada y cerrada)
-// 3 = VoidedOrder (Orden anulada)
+// Actualizar estado de orden según especificación Aldelo POS (1=Open, 2=Settled, 3=Voided)
 app.put('/api/orders/:id/status', async (req, res) => {
     try {
-        const orderId = parseInt(req.params.id);
-        const { status, tableReady } = req.body;
+        const orderId = parseInt(req.params.id, 10);
+        const { status, tableReady, paymentMethod, employeeId } = req.body;
 
-        await aldeloService.updateOrderStatus(orderId, status, tableReady);
+        await aldeloService.updateOrderStatus(orderId, status, tableReady, paymentMethod, employeeId);
 
         if (io) {
-            io.emit('order:status_changed', { orderId, status, tableReady });
+            io.emit('order:status_changed', { orderId, status, tableReady, isPaid: status === '2' });
             console.log(`[Order Status] Order #${orderId} changed to ${status}${tableReady !== undefined ? ` (tableReady: ${tableReady})` : ''}`);
         }
 
-        // Refrescar el visor clásico de inmediato
         try { pedidomesa(); } catch (e) { }
 
         res.json({ success: true, data: { orderId, status, tableReady } });
@@ -270,12 +259,10 @@ app.put('/api/orders/:id/status', async (req, res) => {
     }
 });
 
-// 5b. Estado operativo exclusivo de COCINA (KDS):
-// PENDING (Pendiente), COOKING (Cocinando), READY (Listo para retiro), SERVED (Despachado de cocina)
-// NO interviene con OrderStatus de Aldelo (el flujo contable y de caja queda intacto).
+// Estado operativo exclusivo de Cocina (KDS: PENDING, COOKING, READY, SERVED)
 app.put('/api/orders/:id/kds-status', async (req, res) => {
     try {
-        const orderId = parseInt(req.params.id);
+        const orderId = parseInt(req.params.id, 10);
         const { kdsStatus, itemChecks } = req.body;
 
         const result = await aldeloService.updateKdsStatus(orderId, kdsStatus, itemChecks);
@@ -290,7 +277,6 @@ app.put('/api/orders/:id/kds-status', async (req, res) => {
             console.log(`[KDS Status] Order #${orderId} KDS status updated to ${result.kdsStatus}`);
         }
 
-        // Refrescar visor clásico si aplica
         try { pedidomesa(); } catch (e) { }
 
         res.json({ success: true, data: result });
@@ -300,21 +286,15 @@ app.put('/api/orders/:id/kds-status', async (req, res) => {
     }
 });
 
-// 6. Wompi Payments Integration (Colombia COP)
-// Endpoint para crear el Payment Intent de Wompi (Colombia COP)
+// Integración de Pagos Wompi (Colombia COP)
 app.post('/api/payments/wompi/intent', (req, res) => {
     try {
         const { amount, reference: customRef } = req.body;
         const aldeloAmount = parseFloat(amount) || 0;
-
-        // En Colombia los valores de Aldelo vienen en miles (ej: 8 = 8.000 COP, 2.5 = 2.500 COP)
         const amountInCOP = Math.round(aldeloAmount * 1000);
-        // Wompi exige amount_in_cents (en centavos de peso COP)
         const amountInCents = amountInCOP * 100;
         const reference = customRef || `SP-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-        let appConfig = {};
-        try { appConfig = require('./config.json'); } catch (e) { }
         const wompiConfig = appConfig.wompi || {};
         const publicKey = wompiConfig.publicKey || 'pub_prod_F4z65GfEwT9z3P';
         const integritySecret = wompiConfig.integritySecret || '';
@@ -323,7 +303,6 @@ app.post('/api/payments/wompi/intent', (req, res) => {
         let signature = '';
         if (integritySecret) {
             const crypto = require('crypto');
-            // Firma de integridad oficial Wompi: SHA256(reference + amountInCents + currency + integritySecret)
             const rawSignature = `${reference}${amountInCents}${currency}${integritySecret}`;
             signature = crypto.createHash('sha256').update(rawSignature).digest('hex');
         }
@@ -335,15 +314,7 @@ app.post('/api/payments/wompi/intent', (req, res) => {
 
         res.json({
             success: true,
-            data: {
-                reference,
-                amountInCOP,
-                amountInCents,
-                currency,
-                publicKey,
-                signature,
-                checkoutUrl
-            }
+            data: { reference, amountInCOP, amountInCents, currency, publicKey, signature, checkoutUrl }
         });
     } catch (err) {
         console.error('Error generating Wompi intent:', err);
@@ -371,25 +342,33 @@ app.post('/api/payments/wompi/webhook', (req, res) => {
     }
 });
 
-// 1. Ruta principal / : Cargar directamente la aplicación clásica
+// ============================================================================
+// 2. RUTAS WEB Y REDIRECCIONES
+// ============================================================================
+
+// Aplicación clásica (Angular)
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
-// Redirigir cualquier enlace antiguo de /old hacia la ruta raíz /#/mesas
 app.get(['/old', '/old/*'], (req, res) => {
     res.redirect('/#/mesas');
 });
 
-// 2. Ruta modern: Nueva aplicación Kiosk & KDS
-app.get(['/modern', '/modern/*', '/kiosk'], (req, res) => {
+// Aplicación moderna alternativa
+app.get(['/modern', '/modern/*'], (req, res) => {
     res.sendFile(path.join(__dirname, 'public/modern/index.html'));
 });
 
-// 3. Ruta react: Nueva aplicación React Kiosk & KDS (SPA)
+// Aplicación React (SPA Kiosk & KDS)
 app.use('/react', express.static(path.join(__dirname, 'client/dist')));
 app.get(['/react', '/react/*'], (req, res) => {
     res.sendFile(path.join(__dirname, 'client/dist/index.html'));
+});
+
+// Acceso directo a Kiosk Autoservicio en Pantalla Completa
+app.get(['/kiosk', '/autoservice', '/kiosk-fs', '/kiosk-fullscreen'], (req, res) => {
+    res.redirect('/react/?tab=kiosk&fullscreen=true');
 });
 
 // Redirigir al visor clásico
@@ -397,9 +376,311 @@ app.get('/visor', (req, res) => {
     res.redirect('/#/visor');
 });
 
-app.get("/report", function (req, res) {
+// Monitor de Turnos (TV Screen Status Board)
+app.get(['/turns', '/monitor'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'modern', 'turns.html'));
+});
+
+// Ping de descubrimiento de conectividad
+app.all('/ping', (req, res) => {
+    const key = (req.body && req.body.key) || (req.query && req.query.key) || req.ip || '127.0.0.1';
+    res.json({ code: 0, responseip: key });
+});
+
+// ============================================================================
+// 3. ENDPOINTS COMPATIBILIDAD POS CLÁSICO (ANGULAR)
+// ============================================================================
+
+// Autenticación por código de acceso de empleado
+app.post('/auth/login', (req, res) => {
+    const key = (req.body && req.body.key) || '';
+    const SQL = `SELECT EmployeeID as id, MiddleInitial as M, FirstName as N, LastName as LN, DineInNotAvail as Vr FROM EmployeeFiles WHERE (AccessCode='${key.replace(/'/g, "''")}')`;
+    connection.query(SQL).on('done', (data) => {
+        if (data.records && data.records.length > 0) {
+            data.records[0].AccessCode = key;
+            const token = jwt_encode(JWT_KEY, data.records[0]);
+            res.json({
+                code: 0,
+                setup: data.records,
+                response: { token: token.o, refresh_token: token.r }
+            });
+        } else {
+            res.json({ code: 1, response: 0 });
+        }
+    }).on('fail', () => {
+        res.json({ code: 1, response: 0 });
+    });
+});
+
+// Refresco de token JWT
+app.post('/auth/delegation', (req, res) => {
+    const tokenr = req.body && req.body.refresh_token;
+    const decoded = jwt_decode(tokenr, JWT_KEY + '_');
+    if (decoded !== 'error' && decoded.SQL) {
+        connection.query(decoded.SQL).on('done', (data) => {
+            if (data.records && data.records.length > 0) {
+                const token = jwt_encode(JWT_KEY, data.records[0]);
+                res.json({ code: 0, response: { token: token.o, refresh_token: token.r } });
+            } else {
+                res.json({ code: 1, response: 0 });
+            }
+        }).on('fail', () => {
+            res.json({ code: 1, response: 0 });
+        });
+    } else {
+        res.json({ code: 1, response: 0 });
+    }
+});
+
+// Mesas y grupos de mesas para el salón clásico
+app.post('/home/mesas', (req, res) => {
     try {
-        const dateParam = parseInt(req.query.date) || 0;
+        const token = req.body && req.body.atoken;
+        const decoded = jwt_decode(token, JWT_KEY);
+        if (decoded !== 'error' && decoded.SQL) {
+            connection.query(decoded.SQL).on('done', () => {
+                const SQL = "SELECT DineInTables.DineInTableID AS id, DineInTables.DineInTableText AS N, DineInTableGroups.TableGroupText AS G, DineInTableGroups.TableGroupID as Gid FROM DineInTableGroups INNER JOIN DineInTables ON DineInTableGroups.TableGroupID = DineInTables.TableGroupID";
+                connection.query(SQL).on('done', (data) => {
+                    const grupos = {};
+                    (data.records || []).forEach((mesa) => {
+                        grupos[mesa.Gid] = { m: mesa.G, selec: false };
+                    });
+                    res.json({ code: 0, response: { mesas: data.records, grupos } });
+                }).on('fail', () => res.json({ code: 1, response: 0 }));
+            }).on('fail', () => res.json({ code: 1, response: 0 }));
+        } else {
+            res.json({ code: 1, response: 0 });
+        }
+    } catch (err) {
+        res.json({ code: 1, response: 0 });
+    }
+});
+
+// Estado y tiempo transcurrido de mesas activas
+app.post('/home/mesastat', (req, res) => {
+    try {
+        const token = req.body && req.body.atoken;
+        const decoded = jwt_decode(token, JWT_KEY);
+        if (decoded !== 'error' && decoded.SQL) {
+            connection.query(decoded.SQL).on('done', () => {
+                const mesas = {};
+                for (const id in dataordenes) {
+                    const orden = dataordenes[id];
+                    if (orden && orden.St === 1) {
+                        const da = new Date(orden.Ot);
+                        const daf = (Date.now() - da) / 1000;
+                        let formattedTime = '';
+                        if (daf < 60) {
+                            formattedTime = daf.toFixed(0) + 'Seg';
+                        } else if (daf < 3600) {
+                            formattedTime = (daf / 60).toFixed(1) + ' Min';
+                        } else {
+                            formattedTime = (daf / 3600).toFixed(1) + 'Hr';
+                        }
+
+                        mesas[orden.tid] = {
+                            oid: orden.oid,
+                            id: orden.tid,
+                            M: orden.Mo,
+                            time: formattedTime,
+                            GN: orden.GN,
+                            T: orden.AmountDue
+                        };
+                    }
+                }
+                res.json({ code: 0, response: { mesas } });
+            }).on('fail', () => res.json({ code: 1, response: 0 }));
+        } else {
+            res.json({ code: 1, response: 0 });
+        }
+    } catch (err) {
+        res.json({ code: 1, response: 0 });
+    }
+});
+
+// Visor clásico de cocina
+app.all('/home/visor', (req, res) => {
+    try {
+        const last = parseInt((req.body && req.body.last) || (req.query && req.query.last), 10) || 0;
+        const ordenesin = {};
+        const ordenesout = [];
+
+        for (const id in dataordenes) {
+            const orden = dataordenes[id];
+            if (!orden) continue;
+            if (orden.oid > last) {
+                ordenesin[orden.oid] = orden;
+            }
+            if (orden.St === 2) {
+                ordenesout.push({ id: orden.oid, Lt: orden.Lt });
+            }
+        }
+        res.json({
+            code: 0,
+            response: {
+                ordenesin,
+                ordenesout,
+                ordenesreplace
+            }
+        });
+    } catch (err) {
+        console.error('Error in /home/visor:', err);
+        res.json({ code: 1, response: 0 });
+    }
+});
+
+// Categorías del menú para mesero clásico
+app.post('/home/categorias', (req, res) => {
+    const token = req.body && req.body.atoken;
+    const decoded = jwt_decode(token, JWT_KEY);
+    if (decoded !== 'error' && decoded.SQL) {
+        connection.query(decoded.SQL).on('done', (data) => {
+            if (data.records && data.records.length > 0) {
+                const SQL = "SELECT MenuGroupID as id, MenuGroupText as N, DisplayIndex as DI from MenuGroups WHERE (DisplayIndex >= 0) ORDER BY DisplayIndex";
+                connection.query(SQL).on('done', (grpData) => {
+                    res.json({ code: 0, response: { categorias: grpData.records } });
+                }).on('fail', () => res.json({ code: 1, response: 0 }));
+            } else {
+                res.json({ code: 1, response: 0 });
+            }
+        }).on('fail', () => res.json({ code: 1, response: 0 }));
+    } else {
+        res.json({ code: 1, response: 0 });
+    }
+});
+
+// Productos y modificadores para mesero clásico
+app.post('/home/product', (req, res) => {
+    const token = req.body && req.body.atoken;
+    const decoded = jwt_decode(token, JWT_KEY);
+    if (decoded !== 'error' && decoded.SQL) {
+        connection.query(decoded.SQL).on('done', (data) => {
+            if (data.records && data.records.length > 0) {
+                const SQL = "SELECT ScriptDetails AS SDS, MenuItems.MenuItemInActive as MIIA, MenuItems.MenuItemNotification as MINI, MenuItems.barcode, MenuItems.MenuItemType as MIT, MenuItems.MenuItemPopUpHeaderID as MIPHID, MenuItems.MenuGroupid as M, MenuItems.MenuItemID AS id, MenuItems.MenuItemText AS N, MenuItems.DefaultUnitPrice AS P, MenuItems.DisplayIndex as I FROM MenuItems, MenuGroups WHERE (((MenuItems.MenuGroupid)=[MenuGroups].[MenuGroupID]))";
+                connection.query(SQL).on('done', (prodData) => {
+                    const SQLMods = "SELECT DISTINCT MenuModifiers.MenuModifierID AS id, MenuModifiers.MenuModifierText AS N, MenuModifiers.AdditionalCost AS P, MenuModifierPopUps.MenuItemID as MID FROM MenuModifiers, MenuModifierPopUps WHERE (((MenuModifiers.MenuModifierID)=[MenuModifierPopUps].[MenuModifierID]))";
+                    connection.query(SQLMods, 1).on('done', (modData) => {
+                        res.json({
+                            code: 0,
+                            response: {
+                                product: prodData.records,
+                                modifi: modData.records
+                            }
+                        });
+                    }).on('fail', () => res.json({ code: 1, response: 0 }));
+                }).on('fail', () => res.json({ code: 1, response: 0 }));
+            } else {
+                res.json({ code: 1, response: 0 });
+            }
+        }).on('fail', () => res.json({ code: 1, response: 0 }));
+    } else {
+        res.json({ code: 1, response: 0 });
+    }
+});
+
+// Crear pedido desde terminal de mesero clásico
+app.post('/home/pedido', (req, res) => {
+    try {
+        const token = req.body && req.body.atoken;
+        const pedido = typeof req.body.list === 'string' ? JSON.parse(req.body.list) : req.body.list;
+        const decoded = jwt_decode(token, JWT_KEY);
+
+        if (decoded !== 'error' && decoded.SQL) {
+            const dtoday = Date.now();
+            const datehoy = dtoday / 86400000 + 25569 - 1 / 6;
+
+            connection.query(decoded.SQL).on('done', (data) => {
+                if (data.records && data.records.length > 0) {
+                    const PID = (pedido && pedido.pid) || 0;
+                    const curStationID = (stdata && stdata.StationID) ? stdata.StationID : 1;
+                    const curSalesTax = (typeof SalesTaxRate === 'number' && !isNaN(SalesTaxRate)) ? SalesTaxRate : 0;
+                    const curGSTRate = (typeof GSTRate === 'number' && !isNaN(GSTRate)) ? GSTRate : 0;
+                    const amountDue = (pedido && pedido.h && pedido.h.AmountDue) || 0;
+                    const tax1 = (amountDue * curSalesTax) || 0;
+                    const tax2 = (amountDue * curGSTRate) || 0;
+
+                    let SQL;
+                    if (PID > 0) {
+                        SQL = `SELECT OrderID AS id FROM OrderHeaders WHERE OrderID=${PID}`;
+                    } else {
+                        SQL = `INSERT INTO OrderHeaders (OrderDateTime,EmployeeID,StationID,OrderType,DineInTableID,DeliveryCharge,DeliveryComp,SalesTaxRate,DiscountTaxable,OrderStatus,AmountDue,Kitchen1AlreadyPrinted,Kitchen2AlreadyPrinted,Kitchen3AlreadyPrinted,BarAlreadyPrinted,PackagerAlreadyPrinted,SubTotal,DiscountAmountUsed,SurchargeAmountUsed,SalesTaxAmountUsed,GSTRate,GSTAmountUsed,TableReady,GuestNumber,GuestCheckPrinted,ServerBankAmount,Kitchen4AlreadyPrinted,Kitchen5AlreadyPrinted,Kitchen6AlreadyPrinted,LiquorTaxRate,LiquorTaxAmount,RemoteSiteNumber,RemoteOrigRowID,StoreNumber,BarTabPreAuth,RowGUID) VALUES(${datehoy},${pedido.h.EmployeeID || 1},${curStationID},1,${pedido.h.DineInTableID || 1},0,0,${curSalesTax},0,1,${amountDue},1,1,1,1,0,${amountDue},0,0,${tax1},${curGSTRate},${tax2},0,${pedido.h.GuestNumber || 1},0,0,1,1,1,0,0,1,0,0,0,${rowid()})`;
+                    }
+
+                    const items = (pedido && pedido.p) || [];
+                    const leng = items.length;
+
+                    connection.executeScalar(SQL, 'SELECT @@Identity AS id').on('done', (data1) => {
+                        if (data1.records && data1.records.length > 0) {
+                            const orderid = (PID > 0) ? PID : data1.records[0].id;
+                            if (leng === 0) {
+                                pedidomesa();
+                                return res.json({ code: 0, pedid: orderid, response: 0 });
+                            }
+
+                            let insertedCount = 0;
+                            items.forEach((item) => {
+                                let text = '';
+                                let values = '';
+                                let i = 1;
+                                const comment = item.coment || '';
+
+                                if (item.modifi && item.modifi.length > 0) {
+                                    item.modifi.forEach((mi) => {
+                                        text += `,Mod${i}ID,Mod${i}Cost`;
+                                        values += `,${mi.id},${mi.P == null ? 0 : mi.P}`;
+                                        i++;
+                                    });
+                                }
+                                if (item.notas && item.notas.length > 0) {
+                                    item.notas.forEach((mi) => {
+                                        text += `,Mod${i}ID,Mod${i}Cost`;
+                                        values += `,${mi.id},${mi.P == null ? 0 : mi.P}`;
+                                        i++;
+                                    });
+                                }
+
+                                const ep = (item.EP != null ? item.EP : item.P) * item.cant;
+                                const SQL2 = `INSERT INTO OrderTransactions (ShortNote,DiscountTaxable,GSTTaxable,OrderID,MenuItemID,MenuItemUnitPrice,Quantity,ExtendedPrice,TransactionStatus,NotificationStatus,RowGUID${text}) VALUES('${comment.replace(/'/g, "''")}',1,-1,${orderid},${item.id},${item.P},${item.cant},${ep},1,2,${rowid()}${values})`;
+
+                                connection.executeScalar(SQL2, 'SELECT @@Identity AS id').on('done', () => {
+                                    insertedCount++;
+                                    if (insertedCount >= leng) {
+                                        pedidomesa();
+                                        res.json({ code: 0, pedid: orderid, response: 0 });
+                                    }
+                                }).on('fail', (itemErr) => {
+                                    console.error('Error inserting item in OrderTransactions:', itemErr);
+                                    insertedCount++;
+                                    if (insertedCount >= leng) {
+                                        pedidomesa();
+                                        res.json({ code: 0, pedid: orderid, response: 0 });
+                                    }
+                                });
+                            });
+                        } else {
+                            res.json({ code: 1, response: "errortoken" });
+                        }
+                    }).on('fail', (headerErr) => {
+                        console.error('Error in OrderHeader insert:', headerErr);
+                        res.status(500).json({ code: 1, error: headerErr.message });
+                    });
+                } else {
+                    res.json({ code: 1, response: 0 });
+                }
+            }).on('fail', () => res.status(401).json({ code: 1, response: 0 }));
+        } else {
+            res.json({ code: 1, response: 0 });
+        }
+    } catch (outerErr) {
+        console.error('Error in /home/pedido:', outerErr);
+        res.status(500).json({ code: 1, error: outerErr.message });
+    }
+});
+
+// Reporte de ventas y domicilios por mesero/empleado
+app.get('/report', (req, res) => {
+    try {
+        const dateParam = parseInt(req.query.date, 10) || 0;
         const date = new Date();
         const startDate = new Date(1900, 0, 1);
         const millisecondsInDay = 86400000;
@@ -430,739 +711,194 @@ app.get("/report", function (req, res) {
             ON EmployeeFiles.EmployeeID = OrderHeaders.EmployeeID 
             WHERE OrderHeaders.OrderDateTime >= ${initime} AND OrderHeaders.OrderDateTime < ${finitime}`;
 
-        let datamap = {};
-        connection.query(SQL).on("done", function (data) {
-            if (data && data.records) {
-                let temdata = data.records;
-                let profit = 0;
-                if (temdata.length > 0) {
-                    temdata.forEach(function (record) {
-                        record.OrderDateTime = moment.utc(record.OrderDateTime).local().format('MM-DD HH:mm');
-                        if (!datamap[record.EmployeeID])
-                            datamap[record.EmployeeID] = { "name": '', "total": 0, "pay": 0, "list": [] };
-                        datamap[record.EmployeeID].list.push(record);
-                        datamap[record.EmployeeID].total += record.DefaultUnitPrice;
-                        datamap[record.EmployeeID].pay += (record.ItemDelComp || 0);
-                        datamap[record.EmployeeID].name = `${record.FirstName} ${record.LastName}`;
-                        profit += record.DefaultUnitPrice - (record.ItemDelComp || 0);
-                    });
+        connection.query(SQL).on('done', (data) => {
+            const datamap = {};
+            let profit = 0;
+            const records = (data && data.records) || [];
+            records.forEach((record) => {
+                record.OrderDateTime = moment.utc(record.OrderDateTime).local().format('MM-DD HH:mm');
+                if (!datamap[record.EmployeeID]) {
+                    datamap[record.EmployeeID] = { name: '', total: 0, pay: 0, list: [] };
                 }
-                res.json({ code: 1, profit: profit, response: datamap });
-            } else {
-                res.json({ code: 1, profit: 0, response: {} });
-            }
+                datamap[record.EmployeeID].list.push(record);
+                datamap[record.EmployeeID].total += record.DefaultUnitPrice;
+                datamap[record.EmployeeID].pay += (record.ItemDelComp || 0);
+                datamap[record.EmployeeID].name = `${record.FirstName} ${record.LastName}`;
+                profit += record.DefaultUnitPrice - (record.ItemDelComp || 0);
+            });
+            res.json({ code: 1, profit, response: datamap });
+        }).on('fail', (err) => {
+            console.error('Error in /report query:', err);
+            res.status(500).json({ code: 1, response: 0 });
         });
     } catch (err) {
-        console.error("Error fetching report:", err);
+        console.error('Error fetching report:', err);
         res.status(500).json({ code: 1, response: 0 });
     }
 });
-app.post('/auth/login', function (req, res) {
 
-    var SQL = "SELECT EmployeeID as id, MiddleInitial as M, FirstName as N,LastName as LN, DineInNotAvail as Vr FROM EmployeeFiles WHERE (AccessCode='" + req.body.key + "')";
-    connection.query(SQL).on('done', function (data) {
-        if (data.records.length > 0) {
-            var str = '{ "code": 0, "setup": ' + JSON.stringify(data.records);
-            data.records[0].AccessCode = req.body.key;
-            var token = jwt_encode(config.key, data.records[0]);
-            str += ', "response": {"token":"' + token.o + '","refresh_token":"' + token.r + '"}}';
-            var obj = JSON.parse(str);
+// Servir archivos estáticos
+app.use(express.static(path.join(__dirname, 'public')));
 
-        } else {
-            var str = '{ "code": 1, "response":0}';
-            var obj = JSON.parse(str);
-
-        }
-        res.send(obj);
-    });
-
-});
-app.post('/auth/delegation', function (req, res) {
-    var tokenr = req.body.refresh_token;
-    var decoded = jwt_decode(tokenr, config.key + '_');
-    if (decoded != 'error') {
-        connection.query(decoded.SQL).on('done', function (data) {
-            if (data.records.length > 0) {
-                var token = jwt_encode(config.key, data.records[0]);
-                var str = '{ "code": 0, "response": {"token":"' + token.o + '","refresh_token":"' + token.r + '"}}';
-                var obj = JSON.parse(str);
-                res.send(obj);
-            } else {
-                var str = '{ "code": 1, "response":0}';
-                var obj = JSON.parse(str);
-                res.send(obj);
-            }
-        });
-    } else {
-        var str = '{ "code": 1, "response":0}';
-        var obj = JSON.parse(str);
-        res.send(obj);
-    }
-});
-app.all('/ping', function (req, res) {
-    var key = (req.body && req.body.key) || (req.query && req.query.key) || '127.0.0.1';
-    res.json({ code: 0, responseip: key });
-});
-app.post('/home/mesas', function (req, res) {
-    try {
-        var token = req.body.atoken;
-        var decoded = jwt_decode(token, config.key);
-        if (decoded != 'error') {
-            connection.query(decoded.SQL).on('done', function (data) {
-                var SQL = "SELECT DineInTables.DineInTableID AS id, DineInTables.DineInTableText AS N, DineInTableGroups.TableGroupText AS G, DineInTableGroups.TableGroupID as Gid FROM DineInTableGroups INNER JOIN DineInTables ON DineInTableGroups.TableGroupID = DineInTables.TableGroupID";
-                connection.query(SQL).on('done', function (data) {
-                    var grupos = {};
-                    data.records.forEach(function (mesa) {
-                        grupos[mesa.Gid] = {
-                            'm': mesa.G,
-                            'selec': false
-                        };
-                    })
-                    var str = '{ "code": 0, "response":{"mesas":' + JSON.stringify(data.records) + ',"grupos":' + JSON.stringify(grupos) + '}}';
-                    var obj = JSON.parse(str);
-                    res.send(obj);
-                });
-            });
-
-        } else {
-            var str = '{ "code": 1, "response":0}';
-            var obj = JSON.parse(str);
-            res.send(obj);
-        }
-    } catch (err) {
-        var str = '{ "code": 1, "response":0}';
-        var obj = JSON.parse(str);
-        res.send(obj);
-    }
-});
-app.post('/home/mesastat', function (req, res) {
-    try {
-        var token = req.body.atoken;
-        var decoded = jwt_decode(token, config.key);
-        if (decoded != 'error') {
-            connection.query(decoded.SQL).on('done', function (d) {
-                var mesas = {};
-                if (Object.keys(dataordenes).length > 0) {
-                    var orden;
-                    for (id in dataordenes) {
-                        orden = dataordenes[id];
-
-                        if (orden.St == 1) {
-                            mesas[orden.tid] = {
-                                'oid': orden.oid,
-                                'id': orden.tid,
-                                'M': orden.Mo,
-                                'time': [],
-                                'GN': orden.GN,
-                                'T': orden.AmountDue
-                            };
-
-
-
-                            var da = new Date(orden.Ot);
-                            var da2 = new Date();
-                            var daf = (da2 - da) / 1000;
-                            if (daf < 60) {
-                                daf = daf.toFixed(0) + 'Seg'
-                            } else if (daf >= 60 && daf < 3600) {
-                                daf = daf / 60;
-                                daf = daf.toFixed(1) + ' Min'
-
-                            } else {
-                                daf = daf / 3600;
-                                daf = daf.toFixed(1) + 'Hr'
-                            }
-                            mesas[orden.tid].time = daf;
-                            //console.log(JSON.stringify(mesas));	
-                        }
-                    }
-
-
-                }
-
-
-                var str = '{ "code": 0, "response":{"mesas":' + JSON.stringify(mesas) + '}}';
-                var obj = JSON.parse(str);
-                res.send(obj);
-            });
-        } else {
-            var str = '{ "code": 1, "response":0}';
-            var obj = JSON.parse(str);
-            res.send(obj);
-        }
-    } catch (err) {
-        var str = '{ "code": 1, "response":0}';
-        var obj = JSON.parse(str);
-        res.send(obj);
-    }
-
-});
-app.all('/home/visor', function (req, res) {
-    try {
-        var last = parseInt(req.body && req.body.last) || parseInt(req.query && req.query.last) || 0;
-        var ordenesin = {}, ordenespartial = {}, ordenesout = [];
-
-        if (Object.keys(dataordenes).length > 0) {
-            var orden;
-            for (id in dataordenes) {
-                orden = dataordenes[id];
-                if (orden.oid > last) {
-                    ordenesin[orden.oid] = orden;
-                }
-                if (orden.St == 2) {
-                    ordenesout.push({ 'id': orden.oid, 'Lt': orden.Lt });
-                }
-            }
-        }
-        res.json({
-            code: 0,
-            response: {
-                ordenesin: ordenesin,
-                ordenesout: ordenesout,
-                ordenesreplace: ordenesreplace
-            }
-        });
-    } catch (err) {
-        console.error('Error in /home/visor:', err);
-        res.json({ code: 1, response: 0 });
-    }
-});
-app.post('/home/categorias', function (req, res) {
-    // printZebra("123", "POS58");
-    var token = req.body.atoken;
-    var decoded = jwt_decode(token, config.key);
-
-    if (decoded != 'error') {
-        connection.query(decoded.SQL).on('done', function (data) {
-            if (data.records.length > 0) {
-                var SQL = "SELECT MenuGroupID as id, MenuGroupText as N, DisplayIndex as DI from MenuGroups WHERE (DisplayIndex >= 0) ORDER BY DisplayIndex";
-                connection.query(SQL).on('done', function (data) {
-                    var str = '{ "code": 0, "response":{"categorias":' + JSON.stringify(data.records) + '}}';
-                    var obj = JSON.parse(str);
-                    res.send(obj);
-                });
-
-            } else {
-                var str = '{ "code": 1, "response":0}';
-                var obj = JSON.parse(str);
-
-            }
-        });
-
-    } else {
-        var str = '{ "code": 1, "response":0}';
-        var obj = JSON.parse(str);
-        res.send(obj);
-    }
-
-});
-app.post('/home/product', function (req, res) {
-    var token = req.body.atoken;
-    var decoded = jwt_decode(token, config.key);
-    connection.query(decoded.SQL).on('done', function (data) {
-        if (data.records.length > 0) {
-            var id = req.body.id;
-            var SQL = "SELECT ScriptDetails AS SDS, MenuItems.MenuItemInActive as MIIA,MenuItems.MenuItemNotification as MINI,MenuItems.barcode,MenuItems.MenuItemType as MIT,MenuItems.MenuItemPopUpHeaderID as MIPHID,MenuItems.MenuGroupid as M, MenuItems.MenuItemID AS id, MenuItems.MenuItemText AS N, MenuItems.DefaultUnitPrice AS P, MenuItems.DisplayIndex as I FROM MenuItems, MenuGroups WHERE (((MenuItems.MenuGroupid)=[MenuGroups].[MenuGroupID]) )";
-            //console.log(SQL); 
-            connection.query(SQL).on('done', function (data) {
-                // console.log(JSON.stringify(data.records)); 
-                var SQL = "SELECT DISTINCT MenuModifiers.MenuModifierID AS id, MenuModifiers.MenuModifierText AS N, MenuModifiers.AdditionalCost AS P, MenuModifierPopUps.MenuItemID as MID FROM MenuModifiers, MenuModifierPopUps WHERE (((MenuModifiers.MenuModifierID)=[MenuModifierPopUps].[MenuModifierID]))";
-                connection.query(SQL, 1).on('done', function (data2, ii) {
-                    var str = '{ "code": 0, "response":{"product":' + JSON.stringify(data.records) + ',"modifi":' + JSON.stringify(data2.records) + '}}';
-                    var obj = JSON.parse(str);
-                    res.send(obj);
-                });
-            });
-        } else {
-            var str = '{ "code": 1, "response":0}';
-            var obj = JSON.parse(str);
-            res.send(obj);
-        }
-    });
-});
-app.post('/home/pedido', function (req, res) {
-    try {
-        var token = req.body.atoken;
-        var pedido = typeof req.body.list === 'string' ? JSON.parse(req.body.list) : req.body.list;
-        var decoded = jwt_decode(token, config.key);
-
-        if (decoded != 'error') {
-            var dtoday = Date.now();
-            var datehoy = dtoday / 86400000 + 25569 - 1 / 6;
-            var dres = (datehoy - parseInt(datehoy)) * 100000 - 1;
-            var idres = parseInt(dres) / 100000;
-            var initime = datehoy - idres;
-            var orderid;
-
-            fs.readFile('recibotemplate.txt', 'utf8', function (err, contents) {
-                if (!err && contents) templateg = contents;
-            });
-
-            connection.query(decoded.SQL).on('done', function (data) {
-                if (data.records && data.records.length > 0) {
-                    var today = new Date();
-                    var dtoday = today.toLocaleDateString();
-                    var dtime = today.toLocaleTimeString();
-                    var prodcutoslist = ['', '', '', '', '', '', '', '', ''];
-                    var PID = pedido.pid || 0;
-                    var SQL;
-
-                    var curStationID = (stdata && stdata.StationID) ? stdata.StationID : 1;
-                    var curSalesTax = (typeof SalesTaxRate === 'number' && !isNaN(SalesTaxRate)) ? SalesTaxRate : 0;
-                    var curGSTRate = (typeof GSTRate === 'number' && !isNaN(GSTRate)) ? GSTRate : 0;
-                    var tax1 = ((pedido.h.AmountDue || 0) * curSalesTax) || 0;
-                    var tax2 = ((pedido.h.AmountDue || 0) * curGSTRate) || 0;
-
-                    if (PID > 0) {
-                        SQL = "SELECT OrderID AS id FROM OrderHeaders WHERE OrderID=" + PID;
-                    } else {
-                        SQL = 'INSERT INTO OrderHeaders ( OrderDateTime,EmployeeID,StationID,OrderType,DineInTableID,DeliveryCharge,DeliveryComp,SalesTaxRate,DiscountTaxable,OrderStatus,AmountDue,Kitchen1AlreadyPrinted,Kitchen2AlreadyPrinted,Kitchen3AlreadyPrinted,BarAlreadyPrinted,PackagerAlreadyPrinted,SubTotal,DiscountAmountUsed,SurchargeAmountUsed,SalesTaxAmountUsed,GSTRate,GSTAmountUsed,TableReady,GuestNumber,GuestCheckPrinted,ServerBankAmount,Kitchen4AlreadyPrinted,Kitchen5AlreadyPrinted,Kitchen6AlreadyPrinted,LiquorTaxRate,LiquorTaxAmount,RemoteSiteNumber,RemoteOrigRowID,StoreNumber,BarTabPreAuth,RowGUID)VALUES(' + datehoy + ',' + (pedido.h.EmployeeID || 1) + ',' + curStationID + ',1,' + (pedido.h.DineInTableID || 1) + ',0,0,' + curSalesTax + ',0,1,' + (pedido.h.AmountDue || 0) + ',1,1,1,1,0,' + (pedido.h.AmountDue || 0) + ',0,0,' + tax1 + ',' + curGSTRate + ',' + tax2 + ',0,' + (pedido.h.GuestNumber || 1) + ',0,0,1,1,1,0,0,1,0,0,0,' + rowid() + ')';
-                    }
-
-                    var insert = 0;
-                    var leng = (pedido.p && pedido.p.length) ? pedido.p.length : 0;
-
-                    connection.executeScalar(SQL, 'SELECT @@Identity AS id').on('done', function (data1) {
-                        if (data1.records && data1.records.length > 0) {
-                            orderid = (PID > 0) ? PID : data1.records[0].id;
-                            var time = 0;
-                            insert = 0;
-
-                            if (leng === 0) {
-                                pedidomesa();
-                                return res.json({ code: 0, pedid: orderid, response: 0 });
-                            }
-
-                            pedido.p.forEach(function (item) {
-                                var SQL2 = 'INSERT INTO OrderTransactions (ShortNote,DiscountTaxable,GSTTaxable,OrderID,MenuItemID,MenuItemUnitPrice,Quantity,ExtendedPrice,TransactionStatus,NotificationStatus,RowGUID';
-                                var text = '';
-                                var values = '';
-                                var i = 1;
-                                var comment = item.coment || '';
-                                var temp = item.cant + '  ' + (item.N || '') + '\n';
-                                if (comment) {
-                                    temp += '   >' + comment + '\n';
-                                }
-
-                                if (item.modifi && item.modifi.length > 0) {
-                                    item.modifi.forEach(function (mi) {
-                                        text += ',Mod' + i + 'ID,Mod' + i + 'Cost';
-                                        values += ',' + mi.id + ',' + (mi.P == null ? 0 : mi.P);
-                                        temp += '    ' + (mi.N || '') + '\n';
-                                        i++;
-                                    });
-                                }
-                                if (item.notas && item.notas.length > 0) {
-                                    item.notas.forEach(function (mi) {
-                                        text += ',Mod' + i + 'ID,Mod' + i + 'Cost';
-                                        values += ',' + mi.id + ',' + (mi.P == null ? 0 : mi.P);
-                                        temp += '    ' + (mi.N || '') + '\n';
-                                        i++;
-                                    });
-                                }
-
-                                if (item.MINI != null && prodcutoslist[item.MINI] !== undefined) {
-                                    prodcutoslist[item.MINI] += temp;
-                                }
-                                if (item.SDS != null) {
-                                    var ds = item.SDS.split(';');
-                                    if (ds[2]) {
-                                        var ds3 = ds[2];
-                                        var id2 = ds3.substring(1, 2);
-                                        var id = (id2 <= 3) ? (parseInt(id2) + 1) : (id2 === 'B' ? 5 : parseInt(id2) + 2);
-                                        if (prodcutoslist[id] !== undefined) {
-                                            prodcutoslist[id] += temp;
-                                        }
-                                    }
-                                }
-
-                                var ep = (item.EP != null ? item.EP : item.P) * item.cant;
-                                SQL2 += text + ')VALUES(\'' + comment.replace(/'/g, "''") + '\',1,-1,' + orderid + ',' + item.id + ',' + item.P + ',' + item.cant + ',' + ep + ',1,2,' + rowid() + values + ')';
-                                insertitem(time, SQL2, res);
-                                time += 50;
-                            });
-
-                            // Impresión de comandas (sin bloquear la respuesta)
-                            try {
-                                if (templateg) {
-                                    var tpl = templateg;
-                                    tpl = tpl.replace(/mesero/g, pedido.h.nombre || '');
-                                    tpl = tpl.replace(/ids/g, curStationID);
-                                    tpl = tpl.replace(/day/g, dtoday);
-                                    tpl = tpl.replace(/time/g, dtime);
-                                    tpl = tpl.replace(/oid/g, orderid);
-                                    tpl = tpl.replace(/tid/g, pedido.h.DineInTableText || '');
-                                    tpl = tpl.replace(/nper/g, pedido.h.GuestNumber || 1);
-                                    var SQLticket = "SELECT OrderID, OrderDateTime as t from OrderHeaders WHERE OrderDateTime>=" + initime + " ORDER BY OrderID ";
-                                    connection.query(SQLticket).on('done', function (dataor) {
-                                        if (dataor.records && dataor.records.length > 0) {
-                                            var ticket = orderid - dataor.records[0].OrderID + 1;
-                                            tpl = tpl.replace(/tkid/g, ticket);
-                                            prodcutoslist.forEach(function (pItem, i) {
-                                                if (pItem != '' && stdata && stdata.printertitle && stdata.printername) {
-                                                    var pTitle = stdata.printertitle[i] || 'Cocina';
-                                                    var pName = stdata.printername[i] || 'Ninguno';
-                                                    var readyTpl = tpl.replace(/Cocina/g, pTitle).replace(/productos/g, pItem);
-                                                    // printZebra(readyTpl, pName);
-                                                }
-                                            });
-                                        }
-                                    });
-                                }
-                            } catch (printErr) {
-                                console.error('Print error ignored:', printErr);
-                            }
-
-                        } else {
-                            res.json({ code: 1, response: "errortoken" });
-                        }
-                    }).on('fail', function (headerErr) {
-                        console.error('Error creating OrderHeader:', headerErr);
-                        res.status(500).json({ code: 1, error: headerErr.message || 'Error inserting order' });
-                    });
-
-                    function insertitem(time, sql, res, retryCount) {
-                        retryCount = retryCount || 0;
-                        connection
-                            .executeScalar(sql, 'SELECT @@Identity AS id')
-                            .on('done', function (data) {
-                                insert++;
-                                if (insert >= leng) {
-                                    pedidomesa();
-                                    res.json({ code: 0, pedid: orderid, response: 0 });
-                                }
-                            }).on('fail', function (err) {
-                                console.error('Error in OrderTransactions insert:', err);
-                                if (retryCount < 2) {
-                                    setTimeout(function () {
-                                        insertitem(time, sql, res, retryCount + 1);
-                                    }, 100);
-                                } else {
-                                    insert++;
-                                    if (insert >= leng) {
-                                        pedidomesa();
-                                        res.json({ code: 0, pedid: orderid, response: 0 });
-                                    }
-                                }
-                            });
-                    }
-
-                } else {
-                    res.json({ code: 1, response: 0 });
-                }
-            }).on('fail', function (authErr) {
-                console.error('Error verifying token SQL:', authErr);
-                res.status(401).json({ code: 1, response: 0 });
-            });
-
-        } else {
-            res.json({ code: 1, response: 0 });
-        }
-    } catch (outerErr) {
-        console.error('Error in /home/pedido:', outerErr);
-        res.status(500).json({ code: 1, error: outerErr.message });
-    }
-});
-
-// Standalone Monitor de Turnos (TV Screen Status Board)
-app.get(['/turns', '/monitor'], (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'modern', 'turns.html'));
-});
-
-app.use(express.static(__dirname + '/public'));
-server.listen(80, function () {
-    // console.log('Example app listening on port 81!');
-    dummy();
-    getid();
-    pedidomesa();
-    setInterval(function () {
-
-        pedidomesa();
-
-    }, 5000);
-
-    setInterval(function () {
-        try {
-            var SQL = "SELECT MenuModifierID,MenuModifierText,AdditionalCost FROM MenuModifiers";
-            connection.query(SQL).on('done', function (data) {
-                data.records.forEach(function (modifi) {
-                    datamodifiers[modifi.MenuModifierID] = modifi;
-                });
-            });
-        } catch (err) {
-            // console.log('status: ' + err);
-        }
-
-
-
-    }, 67000);
-
-
-
-});
+// ============================================================================
+// 4. FUNCIONES AUXILIARES & CICLO DE VIDA DEL SERVIDOR
+// ============================================================================
 
 function jwt_decode(token, key) {
-    var decoded = [];
-    //console.log(token);
+    if (!token) return 'error';
     try {
-        var d = jwt.verify(token, key);
-        if (d) {
-            decoded.SQL = "SELECT EmployeeID,AccessCode FROM EmployeeFiles WHERE (AccessCode='" + d.data.AccessCode + "')";
-        } else {
-
-            decoded = 'error';
+        const d = jwt.verify(token, key);
+        if (d && d.data && d.data.AccessCode) {
+            return {
+                SQL: `SELECT EmployeeID, AccessCode FROM EmployeeFiles WHERE (AccessCode='${d.data.AccessCode.replace(/'/g, "''")}')`
+            };
         }
-    } catch (err) {
-        decoded = 'error';
-    }
-
-
-
-
-
-
-    return decoded;
-
+    } catch (_) { }
+    return 'error';
 }
-
-
-function pedidomesa() {
-
-
-    try {
-        var dtoday = Date.now();
-        var datehoy = dtoday / (86400000) + 25569 - 1 / 6;
-        var dres = (datehoy - parseInt(datehoy)) * 100000 - 1;
-        var idres = parseInt(dres) / 100000;
-        var initime = datehoy - idres - 1;
-        var SQL = "(SELECT OrderTransactions.ExtendedPrice, OrderTransactions.TransactionStatus, OrderTransactions.OrderTransactionID,OrderTransactions.Mod1ID,OrderHeaders.EditTimestamp AS Lt, MenuItems.KitchenSortNumber AS Ctime, OrderTransactions.MenuItemUnitPrice, OrderTransactions.MenuItemID, OrderHeaders.GuestNumber, OrderHeaders.OrderDateTime AS t, OrderHeaders.AmountDue, OrderHeaders.OrderStatus AS st, OrderHeaders.DineInTableID AS tid, EmployeeFiles.FirstName AS M, OrderHeaders.OrderID, DineInTables.DineInTableText, MenuItems.MenuItemText, OrderTransactions.Quantity FROM (((OrderHeaders INNER JOIN EmployeeFiles ON OrderHeaders.EmployeeID = EmployeeFiles.EmployeeID) INNER JOIN (MenuItems INNER JOIN OrderTransactions ON MenuItems.MenuItemID = OrderTransactions.MenuItemID) ON OrderHeaders.OrderID = OrderTransactions.OrderID) LEFT JOIN DineInTables ON OrderHeaders.DineInTableID = DineInTables.DineInTableID) WHERE ((OrderHeaders.OrderDateTime)>=" + initime + ")) UNION (SELECT OrderTransactions.ExtendedPrice, OrderTransactions.TransactionStatus,OrderTransactions.OrderTransactionID,OrderTransactions.Mod1ID,OrderHeaders.EditTimestamp AS Lt, MenuItems.KitchenSortNumber AS Ctime, OrderTransactions.MenuItemUnitPrice, OrderTransactions.MenuItemID, OrderHeaders.GuestNumber, OrderHeaders.OrderDateTime AS t, OrderHeaders.AmountDue, OrderHeaders.OrderStatus AS st, OrderHeaders.DineInTableID AS tid, EmployeeFiles.FirstName AS M, OrderHeaders.OrderID, DineInTables.DineInTableText, MenuItems.MenuItemText, OrderTransactions.Quantity FROM (((OrderHeaders INNER JOIN EmployeeFiles ON OrderHeaders.EmployeeID = EmployeeFiles.EmployeeID) INNER JOIN (MenuItems INNER JOIN OrderTransactions ON MenuItems.MenuItemID = OrderTransactions.MenuItemID) ON OrderHeaders.OrderID = OrderTransactions.OrderID) LEFT JOIN DineInTables ON OrderHeaders.DineInTableID = DineInTables.DineInTableID) WHERE (OrderHeaders.OrderStatus='1' ))";
-        connection.query(SQL).on('done', function (data) {
-            var temdata = data.records, dataordenestemp = {}, verificar = {};
-            // console.log('entro ' + JSON.stringify(temdata));
-            if (temdata.length > 0) {
-                temdata.forEach(function (orden) {
-                    var options = {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit"
-                    };
-                    var date = new Date(orden.t);
-                    var dtime = date.toLocaleTimeString("en-us", options);
-                    var dateout, dtimeout;
-                    dtimeout = orden.Lt;
-                    if (orden.Lt != null) {
-                        dateout = new Date(orden.Lt);
-                        dtimeout = dateout.toLocaleTimeString("en-us", options);
-
-                    }
-                    var item = {
-                        'MIT': orden.MenuItemText,
-                        'Q': orden.Quantity,
-                        'modifi': [],
-                        'Ct': orden.Ctime,
-                        'Esta': orden.TransactionStatus,
-                        'EP': orden.ExtendedPrice,
-                    };
-                    if (orden.TransactionStatus >= 2) {
-
-                        verificar[orden.OrderID] = orden.OrderID;
-
-                    }
-
-                    var auxorden = {
-                        'oid': orden.OrderID,
-                        'Lt': dtimeout,
-                        'St': orden.st,
-                        'left': '100%',
-                        'top': 0,
-                        'time': '',
-                        'flash': false,
-                        't': dtime,
-                        'Ot': orden.t,
-                        'Mo': orden.M || 'Kiosk', //mesero name
-                        'Ma': orden.DineInTableText || ('Turno #' + (orden.OrderID % 100 === 0 ? 100 : orden.OrderID % 100)),
-                        'GN': orden.GuestNumber || 1,
-                        'tid': orden.tid || 0,
-                        'T': orden.AmountDue,
-                        'items': []
-
-                    };
-
-                    if (dataordenestemp[orden.OrderID] == undefined) {
-                        dataordenestemp[orden.OrderID] = auxorden;
-                        dataordenestemp[orden.OrderID].items.push(item);
-                    } else {
-                        dataordenestemp[orden.OrderID].items.push(item);
-                    }
-
-                });
-
-
-
-                if (Object.keys(dataordenestemp).length > 0) {
-                    for (id in dataordenes) {
-                        orden = dataordenes[id];
-                        if (dataordenestemp[orden.oid].items.length != orden.items.length)
-                            ordenesreplace[orden.oid] = dataordenestemp[orden.oid];
-
-                    }
-
-
-                }
-
-
-                if (Object.keys(verificar).length > 0) {
-                    for (id in verificar) {
-                        ordenesreplace[id] = dataordenestemp[id];
-
-                    }
-
-
-                }
-
-
-
-
-                dataordenes = dataordenestemp;
-
-            }
-
-        });
-
-    } catch (err) {
-        console.log('status: ' + err);
-    }
-
-
-}
-
-
-
-
-
-
-
-
-
 
 function jwt_encode(secure, data) {
-
-    var token = [];
-    token.o = jwt.sign({
-        exp: Math.floor(Date.now() / 1000) + (360 * 60),
-        data: data
-    }, secure);
-    token.r = jwt.sign({
-        exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60),
-        data: data
-    }, secure + '_');
-
-
-    return token;
-
-
-
-}
-
-function getid() {
-    var hostname = os.hostname();
-    var SQL = "SELECT * FROM StationSettings WHERE (ComputerName='" + hostname + "')";
-
-    connection.query(SQL).on('done', function (data) {
-        if (!data || !data.records || data.records.length === 0) {
-            connection.query("SELECT TOP 1 * FROM StationSettings").on('done', function (d2) {
-                if (d2 && d2.records && d2.records.length > 0) {
-                    initStationData(d2.records[0]);
-                }
-            });
-            return;
-        }
-        initStationData(data.records[0]);
-    });
-}
-
-function initStationData(record) {
-    stdata = record || {};
-    stdata.printername = [];
-    stdata.printertitle = [];
-    stdata.printername[1] = 'Ninguno';
-    stdata.printername[2] = record.KitchenPrinter1Name;
-    stdata.printername[3] = record.KitchenPrinter2Name;
-    stdata.printername[4] = record.KitchenPrinter3Name;
-    stdata.printername[6] = record.KitchenPrinter4Name;
-    stdata.printername[7] = record.KitchenPrinter5Name;
-    stdata.printername[8] = record.KitchenPrinter6Name;
-    stdata.printername[5] = record.BarPrinterName;
-    stdata.printertitle[1] = 'Ninguno';
-    stdata.printertitle[2] = record.KitchenPrinter1Title;
-    stdata.printertitle[3] = record.KitchenPrinter2Title;
-    stdata.printertitle[4] = record.KitchenPrinter3Title;
-    stdata.printertitle[6] = record.KitchenPrinter4Title;
-    stdata.printertitle[7] = record.KitchenPrinter5Title;
-    stdata.printertitle[8] = record.KitchenPrinter6Title;
-    stdata.printertitle[5] = record.RowVer;
-}
-
-function dummy() {
-    var SQL = "SELECT SalesTaxRate,GSTRate FROM GeneralSettings";
-
-    connection.query(SQL).on('done', function (data) {
-
-        SalesTaxRate = data.records[0].SalesTaxRate;
-        GSTRate = data.records[0].GSTRate;
-        console.log(SalesTaxRate + GSTRate);
-
-
-    });
-
-
-    return 0;
-}
-
-function show_404(req, res) {
-    res.sendHeader(404, {
-        "Content-Type": "text/plain"
-    });
-    res.sendBody("You r doing it rong!");
-    res.finish();
+    return {
+        o: jwt.sign({ exp: Math.floor(Date.now() / 1000) + (360 * 60), data }, secure),
+        r: jwt.sign({ exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60), data }, secure + '_')
+    };
 }
 
 function rowid() {
-
-
-    var letras = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
-    var index, code = '{';
-    for (var i = 1; i <= 32; i++) {
-        index = parseInt(Math.random() * 16);
-        if (i == 9 || i == 13 || i == 17 || i == 21)
-            code += '-';
+    const letras = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
+    let code = '{';
+    for (let i = 1; i <= 32; i++) {
+        const index = Math.floor(Math.random() * 16);
+        if (i === 9 || i === 13 || i === 17 || i === 21) code += '-';
         code += letras[index];
     }
     code += '}';
     return code;
-
 }
 
-function printZebra(text, printer_name) {
-    if (!printer_name || printer_name === 'Ninguno') return;
+function pedidomesa() {
     try {
-        var req = http.get({
-            host: 'localhost',
-            port: '1000',
-            path: '/print?pedido=' + encodeURIComponent(text) + '&impresora=' + encodeURIComponent(printer_name),
-            timeout: 1000
-        }, function (res) {
-            // Imprimiendo correctamente
-        });
+        const dtoday = Date.now();
+        const datehoy = dtoday / 86400000 + 25569 - 1 / 6;
+        const dres = (datehoy - parseInt(datehoy, 10)) * 100000 - 1;
+        const idres = parseInt(dres, 10) / 100000;
+        const initime = datehoy - idres - 1;
 
-        req.on('error', function (err) {
-            // Silenciar si serverprint.js no está corriendo en el puerto 1000
-        });
+        const baseSelect = "SELECT OrderTransactions.ExtendedPrice, OrderTransactions.TransactionStatus, OrderTransactions.OrderTransactionID, OrderTransactions.Mod1ID, OrderHeaders.EditTimestamp AS Lt, MenuItems.KitchenSortNumber AS Ctime, OrderTransactions.MenuItemUnitPrice, OrderTransactions.MenuItemID, OrderHeaders.GuestNumber, OrderHeaders.OrderDateTime AS t, OrderHeaders.AmountDue, OrderHeaders.OrderStatus AS st, OrderHeaders.DineInTableID AS tid, EmployeeFiles.FirstName AS M, OrderHeaders.OrderID, DineInTables.DineInTableText, MenuItems.MenuItemText, OrderTransactions.Quantity FROM (((OrderHeaders INNER JOIN EmployeeFiles ON OrderHeaders.EmployeeID = EmployeeFiles.EmployeeID) INNER JOIN (MenuItems INNER JOIN OrderTransactions ON MenuItems.MenuItemID = OrderTransactions.MenuItemID) ON OrderHeaders.OrderID = OrderTransactions.OrderID) LEFT JOIN DineInTables ON OrderHeaders.DineInTableID = DineInTables.DineInTableID)";
+        const SQL = `(${baseSelect} WHERE (OrderHeaders.OrderDateTime >= ${initime})) UNION (${baseSelect} WHERE (OrderHeaders.OrderStatus = '1'))`;
 
-        req.on('timeout', function () {
-            req.abort();
+        connection.query(SQL).on('done', (data) => {
+            const temdata = data.records || [];
+            const dataordenestemp = {};
+            const verificar = {};
+
+            if (temdata.length > 0) {
+                const timeOpts = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+                temdata.forEach((orden) => {
+                    const date = new Date(orden.t);
+                    const dtime = date.toLocaleTimeString('en-us', timeOpts);
+                    let dtimeout = orden.Lt;
+                    if (orden.Lt != null) {
+                        dtimeout = new Date(orden.Lt).toLocaleTimeString('en-us', timeOpts);
+                    }
+
+                    const item = {
+                        MIT: orden.MenuItemText,
+                        Q: orden.Quantity,
+                        modifi: [],
+                        Ct: orden.Ctime,
+                        Esta: orden.TransactionStatus,
+                        EP: orden.ExtendedPrice
+                    };
+
+                    if (orden.TransactionStatus >= 2) {
+                        verificar[orden.OrderID] = orden.OrderID;
+                    }
+
+                    const auxorden = {
+                        oid: orden.OrderID,
+                        Lt: dtimeout,
+                        St: orden.st,
+                        left: '100%',
+                        top: 0,
+                        time: '',
+                        flash: false,
+                        t: dtime,
+                        Ot: orden.t,
+                        Mo: orden.M || 'Kiosk',
+                        Ma: orden.DineInTableText || ('Turno #' + (orden.OrderID % 100 === 0 ? 100 : orden.OrderID % 100)),
+                        GN: orden.GuestNumber || 1,
+                        tid: orden.tid || 0,
+                        T: orden.AmountDue,
+                        items: []
+                    };
+
+                    if (!dataordenestemp[orden.OrderID]) {
+                        dataordenestemp[orden.OrderID] = auxorden;
+                    }
+                    dataordenestemp[orden.OrderID].items.push(item);
+                });
+
+                for (const id in dataordenes) {
+                    const oldOrden = dataordenes[id];
+                    if (oldOrden && dataordenestemp[oldOrden.oid] && dataordenestemp[oldOrden.oid].items.length !== oldOrden.items.length) {
+                        ordenesreplace[oldOrden.oid] = dataordenestemp[oldOrden.oid];
+                    }
+                }
+
+                for (const id in verificar) {
+                    if (dataordenestemp[id]) {
+                        ordenesreplace[id] = dataordenestemp[id];
+                    }
+                }
+
+                dataordenes = dataordenestemp;
+            }
+        }).on('fail', (err) => {
+            console.error('pedidomesa query err:', err && err.message);
         });
     } catch (err) {
-        console.log('[Print] Error:', err.message);
+        console.error('pedidomesa status:', err);
     }
 }
+
+function initSettings() {
+    // Cargar impuestos
+    connection.query("SELECT SalesTaxRate, GSTRate FROM GeneralSettings").on('done', (data) => {
+        if (data.records && data.records.length > 0) {
+            SalesTaxRate = data.records[0].SalesTaxRate || 0;
+            GSTRate = data.records[0].GSTRate || 0;
+            console.log(`[Settings] SalesTaxRate: ${SalesTaxRate}, GSTRate: ${GSTRate}`);
+        }
+    }).on('fail', () => { });
+
+    // Cargar estación
+    const hostname = os.hostname();
+    connection.query(`SELECT StationID FROM StationSettings WHERE (ComputerName='${hostname}')`).on('done', (data) => {
+        if (data.records && data.records.length > 0) {
+            stdata = { StationID: data.records[0].StationID || 1 };
+        } else {
+            connection.query("SELECT TOP 1 StationID FROM StationSettings").on('done', (d2) => {
+                if (d2.records && d2.records.length > 0) {
+                    stdata = { StationID: d2.records[0].StationID || 1 };
+                }
+            }).on('fail', () => { });
+        }
+    }).on('fail', () => { });
+}
+
+// Iniciar servidor
+const PORT = process.env.PORT || 80;
+server.listen(PORT, () => {
+    console.log(`====================================================`);
+    console.log(`🚀 Serviplus POS Server running on port ${PORT}`);
+    console.log(`📡 Mirroring KDS & Socket.io activo`);
+    console.log(`💳 Wompi Pagos & Recibos Digitales activos`);
+    console.log(`====================================================`);
+
+    initSettings();
+    pedidomesa();
+
+    // Actualizar periódicamente el visor clásico
+    setInterval(pedidomesa, 5000);
+});
