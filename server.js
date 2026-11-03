@@ -6,7 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const moment = require('moment');
-const ADODB = require('node-adodb');
+const ADODB = require('./node_modules/node-adodb/lib/client');
 
 // Cargar configuración dinámica
 let appConfig = {};
