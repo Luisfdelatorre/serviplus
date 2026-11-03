@@ -347,7 +347,7 @@ const aldeloService = {
 
   // 4. Crear una nueva orden (desde Kiosk o Front Desk)
   // Nota: Las órdenes de Kiosk se crean con isPaid = true porque el pago se recibe previamente.
-  async createOrder({ employeeId = 1, orderType = 1, items = [], tableId = null, guestNumber = 1, notes = '', paymentMethod = 'CASH', isPaid = true }) {
+  async createOrder({ employeeId = 1, orderType = 1, items = [], tableId = null, guestNumber = 1, notes = '', paymentMethod = 'CASH', isPaid = true, transactionRef = '' }) {
     if (!items || items.length === 0) {
       throw new Error('La orden debe contener al menos un producto.');
     }
@@ -483,16 +483,25 @@ const aldeloService = {
       try {
         const payMethodCode = (paymentMethod === 'CASH') ? '1' : '3';
         const paymentGuid = generateGUID();
+        const safeRef = String(transactionRef || '').replace(/'/g, "''");
         const sqlPayment = `
           INSERT INTO OrderPayments (
             PaymentDateTime, CashierID, OrderID, PaymentMethod, 
-            AmountTendered, AmountPaid, EmployeeComp, RowGUID
+            AmountTendered, AmountPaid, EmployeeComp, RowGUID, EDCTransID
           ) VALUES (
             ${accessDate}, ${employeeId || 1}, ${orderId}, '${payMethodCode}', 
-            ${totalAmount}, ${totalAmount}, 0, '${paymentGuid}'
+            ${totalAmount}, ${totalAmount}, 0, '${paymentGuid}', '${safeRef}'
           )
         `;
         await connection.execute(sqlPayment);
+
+        // Asociar el número de orden al pago en paymentStore si existe
+        try {
+          const paymentStore = require('./paymentStore');
+          if (transactionRef) {
+            paymentStore.updateStatus(transactionRef, 'APPROVED', { orderId });
+          }
+        } catch (_) {}
       } catch (payErr) {
         console.error('[OrderPayments Error]:', payErr.message);
       }

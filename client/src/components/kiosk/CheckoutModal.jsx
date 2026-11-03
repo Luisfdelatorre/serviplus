@@ -130,7 +130,8 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
       sfx.playReadyChime();
       handleConfirmOrder({
         paymentMethod: 'WOMPI_QR',
-        isPaid: true
+        isPaid: true,
+        transactionRef: wompiQrData?.reference || txData?.reference || txData?.id || ''
       });
     };
 
@@ -231,6 +232,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
         tableId: orderType === 'EAT_IN' ? tableId : null,
         paymentMethod: activeMethod,
         isPaid: isPaidImmediately,
+        transactionRef: overrideParams?.transactionRef || wompiQrData?.reference || wompiQrData?.transactionId || '',
         items: cart.map((i) => ({
           id: i.id,
           name: i.name,

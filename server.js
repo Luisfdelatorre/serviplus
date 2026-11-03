@@ -27,6 +27,7 @@ const aldeloService = require('./server/aldeloService');
 const receiptService = require('./server/receiptService');
 const WompiService = require('./server/wompiService');
 const SmsService = require('./server/smsService');
+const paymentStore = require('./server/paymentStore');
 
 const wompiService = new WompiService(() => appConfig);
 const smsService = new SmsService(() => appConfig);
@@ -123,7 +124,7 @@ app.get('/api/orders/active', async (req, res) => {
 // Crear orden (Kiosk o Caja)
 app.post('/api/orders', async (req, res) => {
     try {
-        const { employeeId, items, paymentMethod, notes, tableId, guestNumber, orderType, isPaid } = req.body;
+        const { employeeId, items, paymentMethod, notes, tableId, guestNumber, orderType, isPaid, transactionRef } = req.body;
 
         const newOrder = await aldeloService.createOrder({
             employeeId: employeeId || 1,
@@ -133,7 +134,8 @@ app.post('/api/orders', async (req, res) => {
             notes: notes || '',
             tableId: tableId || null,
             guestNumber: guestNumber || 1,
-            isPaid: (isPaid !== undefined) ? !!isPaid : true
+            isPaid: (isPaid !== undefined) ? !!isPaid : true,
+            transactionRef: transactionRef || ''
         });
 
         let fullOrder = {};
@@ -323,6 +325,24 @@ app.post('/api/payments/wompi/qr', async (req, res) => {
             amount: parseFloat(amount) || 0,
             customerEmail: customerEmail || 'kiosco@serviplus.pos'
         });
+
+        // Respaldo local inmediato del pago generado
+        if (result && result.reference) {
+            paymentStore.savePayment({
+                reference: result.reference,
+                transactionId: result.transactionId,
+                orderId: orderId || null,
+                amount: parseFloat(amount) || 0,
+                amountInCOP: result.amountInCOP,
+                amountInCents: result.amountInCents,
+                status: result.status || 'PENDING',
+                paymentMethod: 'WOMPI_QR',
+                checkoutUrl: result.checkoutUrl,
+                qrId: result.qrId,
+                customerEmail: customerEmail || 'kiosco@serviplus.pos'
+            });
+        }
+
         res.json({ success: true, data: result });
     } catch (err) {
         console.error('Error generating Wompi QR:', err.message);
@@ -346,6 +366,16 @@ app.post('/api/payments/wompi/intent', (req, res) => {
         if (signature) {
             checkoutUrl += `&signature:integrity=${signature}`;
         }
+
+        paymentStore.savePayment({
+            reference,
+            amount: aldeloAmount,
+            amountInCOP,
+            amountInCents,
+            status: 'PENDING',
+            paymentMethod: 'WOMPI_CHECKOUT',
+            checkoutUrl
+        });
 
         res.json({
             success: true,
@@ -374,6 +404,14 @@ app.get('/api/payments/wompi/status/:id', async (req, res) => {
         if (!tx) {
             return res.status(404).json({ success: false, error: 'Transacción no encontrada' });
         }
+
+        // Actualizar respaldo local en cada chequeo
+        paymentStore.updateStatus(id, tx.status, {
+            amountInCOP: tx.amountInCOP,
+            amountInCents: tx.amountInCents,
+            finalizedAt: tx.finalizedAt
+        });
+
         res.json({ success: true, data: tx });
     } catch (err) {
         console.error('Error fetching Wompi transaction status:', err);
@@ -396,6 +434,15 @@ app.post('/api/payments/wompi/webhook', (req, res) => {
 
         if (event && event.data && event.data.transaction && io) {
             const tx = event.data.transaction;
+
+            // Actualizar respaldo local del pago
+            paymentStore.updateStatus(tx.reference, tx.status, {
+                transactionId: tx.id,
+                amountInCOP: tx.amount_in_cents / 100,
+                amountInCents: tx.amount_in_cents,
+                finalizedAt: tx.finalized_at
+            });
+
             io.emit(`payment:${tx.reference}`, {
                 status: tx.status,
                 amountInCOP: tx.amount_in_cents / 100,
@@ -408,6 +455,17 @@ app.post('/api/payments/wompi/webhook', (req, res) => {
         res.json({ received: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+// Historial de pagos respaldados (para auditoría y panel admin)
+app.get('/api/admin/payments', (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit, 10) || 50;
+        const payments = paymentStore.getAllPayments(limit);
+        res.json({ success: true, data: payments });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 

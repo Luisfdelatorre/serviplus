@@ -19,6 +19,7 @@ yarn-error.log*
 *.ldb
 kds_state.dat
 kds_receipts.json
+payments_state.dat
 
 # Legacy NW.js runtime binaries (2016)
 *.exe
