@@ -366,6 +366,21 @@ app.post('/api/payments/wompi/intent', (req, res) => {
     }
 });
 
+// Consultar estado de transacción Wompi (Sondeo / Polling desde Kiosco)
+app.get('/api/payments/wompi/status/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const tx = await wompiService.getTransactionStatus(id);
+        if (!tx) {
+            return res.status(404).json({ success: false, error: 'Transacción no encontrada' });
+        }
+        res.json({ success: true, data: tx });
+    } catch (err) {
+        console.error('Error fetching Wompi transaction status:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // Webhook Wompi: Recepción de confirmaciones de pago
 app.post('/api/payments/wompi/webhook', (req, res) => {
     try {

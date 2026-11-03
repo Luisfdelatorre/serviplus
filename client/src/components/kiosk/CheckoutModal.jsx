@@ -118,28 +118,56 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
     }
   }, [step, paymentMethod, total]);
 
-  // Escuchar por Socket.io la aprobación automática del pago
+  // Verificación Dual: WebSocket (Socket.io) + Polling de respaldo cada 2.5s
   useEffect(() => {
-    if (!wompiQrData?.reference) return;
+    if (!wompiQrData?.reference || step !== 4 || paymentMethod !== 'WOMPI_QR') return;
 
+    let isHandled = false;
+    const onApproved = (txData) => {
+      if (isHandled) return;
+      isHandled = true;
+      console.log('[Kiosk Payment] ¡Pago aprobado detectado!', txData);
+      sfx.playReadyChime();
+      handleConfirmOrder({
+        paymentMethod: 'WOMPI_QR',
+        isPaid: true
+      });
+    };
+
+    // 1. Canal WebSocket (Push instantáneo vía Webhook)
     const eventName = `payment:${wompiQrData.reference}`;
-    const handlePaymentApproved = (eventData) => {
-      console.log('[Kiosk Socket] ¡Pago aprobado detectado!', eventData);
+    const handleSocketEvent = (eventData) => {
       const statusUpper = String(eventData?.status || '').toUpperCase();
       if (statusUpper === 'APPROVED') {
-        sfx.playReadyChime();
-        handleConfirmOrder({
-          paymentMethod: 'WOMPI_QR',
-          isPaid: true
-        });
+        onApproved(eventData);
       }
     };
+    socket.on(eventName, handleSocketEvent);
 
-    socket.on(eventName, handlePaymentApproved);
+    // 2. Canal Polling (Sondeo cada 2.5s - ideal para redes locales / sin IP pública)
+    let pollTimer = null;
+    if (wompiQrData.transactionId) {
+      pollTimer = setInterval(async () => {
+        if (isHandled) return;
+        try {
+          const res = await fetch(`/api/payments/wompi/status/${wompiQrData.transactionId}`);
+          if (res.ok) {
+            const json = await res.json();
+            if (json?.data?.status === 'APPROVED') {
+              onApproved(json.data);
+            }
+          }
+        } catch (e) {
+          // Silencioso en caso de micro-corte de red
+        }
+      }, 2500);
+    }
+
     return () => {
-      socket.off(eventName, handlePaymentApproved);
+      socket.off(eventName, handleSocketEvent);
+      if (pollTimer) clearInterval(pollTimer);
     };
-  }, [wompiQrData]);
+  }, [wompiQrData, step, paymentMethod]);
 
   if (!isOpen) return null;
 

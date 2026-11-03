@@ -211,6 +211,26 @@ class WompiService {
   }
 
   /**
+   * Consulta el estado en tiempo real de una transacción en Wompi (para Polling)
+   */
+  async getTransactionStatus(transactionId) {
+    if (!transactionId) throw new Error('Transaction ID requerido');
+    const res = await this.request('GET', `/transactions/${transactionId}`);
+    if (res.ok && res.data?.data) {
+      const tx = res.data.data;
+      return {
+        id: tx.id,
+        status: tx.status,
+        reference: tx.reference,
+        amountInCents: tx.amount_in_cents,
+        amountInCOP: (tx.amount_in_cents || 0) / 100,
+        finalizedAt: tx.finalized_at
+      };
+    }
+    return null;
+  }
+
+  /**
    * Valida firma criptográfica de Webhook proveniente de Wompi
    */
   validateWebhookSignature(webhookBody) {
