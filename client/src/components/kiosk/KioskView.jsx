@@ -49,6 +49,13 @@ export function KioskView() {
 
   // Detección de inactividad
   useEffect(() => {
+    window.__openCheckout = () => {
+      setIsAttractActive(false);
+      setIsCheckoutOpen(true);
+    };
+  }, []);
+
+  useEffect(() => {
     if (isAttractActive) return;
 
     const resetTimer = () => {

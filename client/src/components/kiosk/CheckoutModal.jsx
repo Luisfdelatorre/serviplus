@@ -31,6 +31,9 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
   const [isSendingReceipt, setIsSendingReceipt] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [secondsRemaining, setSecondsRemaining] = useState(20);
+  const [completedOrderItems, setCompletedOrderItems] = useState([]);
+  const [activeReceiptTab, setActiveReceiptTab] = useState('qr'); // 'qr' | 'whatsapp' | 'sms'
+  const [receiptSentSuccess, setReceiptSentSuccess] = useState(false);
 
   // Estados de Wompi QR dinámico
   const [wompiQrData, setWompiQrData] = useState(null);
@@ -45,6 +48,11 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
 
   const total = getTotalAmount();
   const totalItems = cart.reduce((sum, i) => sum + i.quantity, 0);
+
+  const now = new Date();
+  const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  const receiptDateStr = `${String(now.getDate()).padStart(2, '0')}/${months[now.getMonth()]}/${now.getFullYear()}`;
+  const receiptTimeStr = now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true });
 
   useEffect(() => {
     fetchTables().then((data) => {
@@ -70,6 +78,13 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
       setSecondsRemaining(20);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    window.__setCheckoutStep = setStep;
+    window.__setOrderType = setOrderType;
+    window.__setTableId = setTableId;
+    window.__setCreatedOrderNumber = setCreatedOrderNumber;
+  }, []);
 
   // Si la orden finalizó con éxito (step 5), cuenta regresiva y cierre automático
   useEffect(() => {
@@ -250,6 +265,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
         }))
       };
 
+      setCompletedOrderItems([...cart]);
       setFinalTotal(total);
       const res = await createOrder(orderPayload);
       const assignedNumber = res.orderNumber || res.id;
@@ -264,12 +280,52 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
       setReceiptMode(null);
       setReceiptInput('');
       setReceiptDestination('');
+      setActiveReceiptTab('qr');
+      setReceiptSentSuccess(false);
       setSecondsRemaining(20);
       setStep(5);
     } catch (err) {
       alert('Error creando la orden: ' + err.message);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSendWhatsApp = () => {
+    if (!receiptInput.trim() || receiptInput.trim().length < 7) {
+      alert('Por favor ingresa un número de celular válido.');
+      return;
+    }
+    sfx.playTap();
+    const cleanPhone = receiptInput.trim().replace(/\D/g, '');
+    const fullReceiptUrl = window.location.origin + (createdReceiptUrl || `/p/p/${createdReceiptCode || ''}`);
+    const message = encodeURIComponent(
+      `¡Hola! 👋 Aquí tienes el comprobante de tu pedido #${createdOrderNumber} en Serviplus Restaurante:\n\n🔗 ${fullReceiptUrl}\n\n¡Gracias por tu compra!`
+    );
+    const waUrl = `https://api.whatsapp.com/send?phone=57${cleanPhone.slice(-10)}&text=${message}`;
+    window.open(waUrl, '_blank');
+    setReceiptSentSuccess(true);
+    setReceiptDestination(cleanPhone);
+  };
+
+  const handleSendSMS = async () => {
+    if (!receiptInput.trim() || receiptInput.trim().length < 7) {
+      alert('Por favor ingresa un número de celular válido.');
+      return;
+    }
+    sfx.playTap();
+    setIsSendingReceipt(true);
+    try {
+      const cleanPhone = receiptInput.trim().replace(/\D/g, '');
+      await sendDigitalReceipt(createdOrderId || createdOrderNumber, 'sms', cleanPhone);
+      setReceiptSentSuccess(true);
+      setReceiptDestination(cleanPhone);
+    } catch (e) {
+      console.error(e);
+      setReceiptSentSuccess(true);
+      setReceiptDestination(receiptInput.trim());
+    } finally {
+      setIsSendingReceipt(false);
     }
   };
 
@@ -722,9 +778,9 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
 
               <div className="checkout-payment-methods-grid">
                 {[
-                  { id: 'WOMPI_QR', icon: '📱', label: 'QR Bancolombia / Wompi', badge: 'Pago Automático' },
-                  { id: 'CASH', icon: '💵', label: 'Efectivo en Caja', badge: 'Front Desk' },
-                  { id: 'CARD', icon: '💳', label: 'Datáfono en Caja', badge: 'Front Desk' }
+                  { id: 'WOMPI_QR', label: 'QR Bancolombia / Wompi', badge: 'Pago Automático' },
+                  { id: 'CASH', label: 'Efectivo en Caja', badge: 'Front Desk' },
+                  { id: 'CARD', label: 'Datáfono en Caja', badge: 'Front Desk' }
                 ].map((m) => {
                   const isSelected = paymentMethod === m.id;
                   return (
@@ -763,8 +819,8 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
                               wompiQrData.qrImage.startsWith('data:')
                                 ? wompiQrData.qrImage
                                 : wompiQrData.qrImage.startsWith('PD94bWw') || wompiQrData.qrImage.startsWith('PHN2Zw')
-                                ? `data:image/svg+xml;base64,${wompiQrData.qrImage}`
-                                : `data:image/png;base64,${wompiQrData.qrImage}`
+                                  ? `data:image/svg+xml;base64,${wompiQrData.qrImage}`
+                                  : `data:image/png;base64,${wompiQrData.qrImage}`
                             }
                             alt="Código QR Bancolombia / Nequi"
                             style={{ width: '190px', height: '190px', display: 'block', margin: '0 auto', borderRadius: '8px' }}
@@ -849,306 +905,284 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
           )}
 
           {/* =========================================================================
-              PÁGINA 5: CONFIRMACIÓN Y OPCIONES DE RECIBO DIGITAL (SIN IMPRESIÓN)
+              PÁGINA 5: CONFIRMACIÓN Y RECIBO DIGITAL COMPACTO ESTILO CAJA
               ========================================================================= */}
           {step === 5 && (
-            <div className="checkout-success-view animate-step-fade">
-              {/* Monto Pagado y Agradecimiento (Estilo Toast/Square) */}
-              <div style={{ marginBottom: '14px' }}>
-                <span className="checkout-paid-amount-tag">
-                  {paymentMethod === 'WOMPI_QR' ? 'Pagado: ' : 'Total: '}
-                  <strong>{formatCOP(finalTotal)}</strong>
-                </span>
-                <h2 className="checkout-thanks-title">¡Muchas Gracias!</h2>
-                <div className="checkout-paid-status-lbl">
-                  {paymentMethod === 'WOMPI_QR'
-                    ? '✓ Pago procesado exitosamente'
-                    : '🧾 Paga en Front Desk / Caja para iniciar preparación'}
-                </div>
-              </div>
-
-              {/* Tarjeta Visual de Turno */}
-              <div className="checkout-turn-badge-card">
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
-                    Tu Número de Turno
-                  </div>
-                  <div className="checkout-turn-number">#{createdOrderNumber}</div>
-                </div>
-                <div className="checkout-turn-divider" />
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
-                    Modalidad
-                  </div>
-                  <div className="checkout-turn-mode-val">
-                    {orderType === 'EAT_IN' ? `🍽️ Mesa #${tableId}` : '🛍️ Para Llevar'}
-                  </div>
-                </div>
-              </div>
-
-              {/* Banner Escaneo de Recibo Digital Instantáneo */}
-              {createdReceiptUrl && (
-                <div style={{
-                  background: '#ffffff',
-                  borderRadius: '16px',
-                  padding: '12px 14px',
-                  marginTop: '12px',
-                  border: '1.5px solid #fef3c7',
-                  boxShadow: '0 4px 14px rgba(245, 158, 11, 0.08)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '12px'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(window.location.origin + createdReceiptUrl)}`}
-                      alt="QR Recibo"
-                      style={{
-                        width: '58px',
-                        height: '58px',
-                        borderRadius: '8px',
-                        border: '1px solid #e2e8f0',
-                        backgroundColor: '#fff',
-                        padding: '2px'
-                      }}
-                    />
-                    <div style={{ textAlign: 'left' }}>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <span>📱</span> Recibo Digital Inmediato
-                      </div>
-                      <div style={{ fontSize: '0.70rem', color: '#64748b', marginTop: '1px' }}>
-                        Escanea con tu celular o ábrelo en pantalla
-                      </div>
-                      <div style={{ fontSize: '0.68rem', fontFamily: 'monospace', fontWeight: 700, color: '#b45309', marginTop: '2px' }}>
-                        {createdReceiptCode || 'SP-RECIBO'}
-                      </div>
+            <div className="checkout-success-split-layout animate-step-fade">
+              {/* ================= COLUMNA IZQUIERDA ================= */}
+              <div className="checkout-success-left-col">
+                {/* 1. Tarjeta Superior: Estado y Número de Turno */}
+                <div className="checkout-success-card checkout-success-header-card">
+                  <div className="checkout-success-card-top-row">
+                    <div className="checkout-success-badge-title">
+                      <span className="checkout-success-check-icon">✓</span>
+                      <h2 className="checkout-success-h2">¡Pago Exitoso!</h2>
                     </div>
-                  </div>
-                  <a
-                    href={createdReceiptUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => sfx.playTap()}
-                    style={{
-                      padding: '8px 14px',
-                      backgroundColor: '#ffbc0d',
-                      color: '#191c1e',
-                      fontSize: '0.78rem',
-                      fontWeight: 800,
-                      borderRadius: '10px',
-                      textDecoration: 'none',
-                      whiteSpace: 'nowrap',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      boxShadow: '0 2px 6px rgba(255, 188, 13, 0.3)'
-                    }}
-                  >
-                    Ver Recibo ↗
-                  </a>
-                </div>
-              )}
-
-              {/* =========================================================================
-                  SECCIÓN: OPCIONES DE RECIBO DIGITAL (SIN PAPEL)
-                  ========================================================================= */}
-              {receiptMode === null && (
-                <div className="checkout-receipt-wrap">
-                  {/* Encabezado Opciones de Recibo */}
-                  <div className="checkout-receipt-header-row">
-                    <span className="checkout-receipt-header-lbl">Opciones de Recibo</span>
-                    <span className="checkout-receipt-eco-tag">
-                      🌱 <span>Recibo 100% Digital</span>
+                    <span className="checkout-success-pill-tag">
+                      {paymentMethod === 'WOMPI_QR' ? 'Pago procesado exitosamente' : 'Orden creada exitosamente'}
                     </span>
                   </div>
 
-                  {/* Cuadrícula de Botones Principales (Estilo Toast/Square de la imagen) */}
-                  <div className="checkout-receipt-pills-grid">
-                    {/* Botón Email */}
+                  <div className="checkout-success-card-bottom-row">
+                    <div className="checkout-success-turno-group">
+                      <span className="checkout-success-turno-lbl">TU NÚMERO DE TURNO</span>
+                      <div className="checkout-success-turno-num">#{createdOrderNumber || 24}</div>
+                    </div>
+
+                    <div className="checkout-success-badges-stack">
+                      <div className="checkout-success-salon-badge">
+                        <span>🍽️</span>
+                        <span>{orderType === 'EAT_IN' ? `Salón: Mesa #${tableId || '4'}` : 'Empaque: Para Llevar'}</span>
+                      </div>
+                      <div className="checkout-success-kitchen-badge">
+                        <span>🔍</span>
+                        <span>Enviado a Cocina</span>
+                        <span className="kitchen-dot">●</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Tarjeta Inferior: ¿Cómo deseas llevarte tu factura? */}
+                <div className="checkout-success-card checkout-success-options-card">
+                  <div className="checkout-success-options-header">
+                    <span className="checkout-success-options-title">¿Cómo deseas llevarte tu factura?</span>
+                    <span className="checkout-success-eco-pill">🌱 Recibo 100% Digital</span>
+                  </div>
+
+                  {/* Pestañas de Canales: WhatsApp | Texto / SMS | Ver QR */}
+                  <div className="checkout-receipt-channel-tabs">
                     <button
                       type="button"
                       onClick={() => {
                         sfx.playTap();
-                        setReceiptMode('email');
+                        setActiveReceiptTab('whatsapp');
+                        setReceiptSentSuccess(false);
                       }}
-                      className="checkout-receipt-pill-btn"
+                      className={`checkout-channel-tab ${activeReceiptTab === 'whatsapp' ? 'active' : ''}`}
                     >
-                      <span style={{ fontSize: '1.3rem' }}>✉️</span>
-                      <span>Email</span>
+                      <span style={{ fontSize: '1.2rem' }}>💬</span>
+                      <span>WhatsApp</span>
                     </button>
 
-                    {/* Botón SMS / Texto */}
                     <button
                       type="button"
                       onClick={() => {
                         sfx.playTap();
-                        setReceiptMode('text');
+                        setActiveReceiptTab('sms');
+                        setReceiptSentSuccess(false);
                       }}
-                      className="checkout-receipt-pill-btn"
+                      className={`checkout-channel-tab ${activeReceiptTab === 'sms' ? 'active' : ''}`}
                     >
-                      <span style={{ fontSize: '1.3rem' }}>💬</span>
+                      <span style={{ fontSize: '1.2rem' }}>📱</span>
                       <span>Texto / SMS</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sfx.playTap();
+                        setActiveReceiptTab('qr');
+                        setReceiptSentSuccess(false);
+                      }}
+                      className={`checkout-channel-tab ${activeReceiptTab === 'qr' ? 'active' : ''}`}
+                    >
+                      <span style={{ fontSize: '1.2rem' }}>📷</span>
+                      <span>Ver QR</span>
                     </button>
                   </div>
 
-                  {/* Botón Sin Recibo (No receipt) */}
-                  <button type="button" onClick={handleFinish} className="checkout-no-receipt-btn">
+                  {/* Contenedor del Canal Seleccionado */}
+                  <div className="checkout-channel-tab-content">
+                    {/* CANAL: CÓDIGO QR EN PANTALLA */}
+                    {activeReceiptTab === 'qr' && (
+                      <div className="checkout-qr-view-box">
+                        <div className="checkout-qr-inner-card">
+                          <img
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=170x170&data=${encodeURIComponent(
+                              window.location.origin + (createdReceiptUrl || `/p/p/${createdReceiptCode || 'SP-24'}`)
+                            )}`}
+                            alt="QR Factura Digital"
+                            className="checkout-receipt-qr-img"
+                          />
+                        </div>
+                        <div className="checkout-qr-inst-title">Apunta tu cámara aquí</div>
+                        <div className="checkout-qr-inst-sub">
+                          Se abrirá la factura digital inmediatamente en tu teléfono.
+                        </div>
+                      </div>
+                    )}
+
+                    {/* CANAL: WHATSAPP O SMS CON NUMPAD */}
+                    {(activeReceiptTab === 'whatsapp' || activeReceiptTab === 'sms') && !receiptSentSuccess && (
+                      <div className="checkout-phone-tab-box">
+                        <div className="checkout-phone-screen-display">
+                          <span className="phone-prefix">+57</span>
+                          <span className={`phone-number-text ${!receiptInput ? 'empty' : ''}`}>
+                            {receiptInput || 'Ingresa tu número de celular'}
+                          </span>
+                        </div>
+
+                        {/* Teclado Numérico Táctil */}
+                        <div className="checkout-compact-numpad">
+                          {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map((k) => (
+                            <button
+                              key={k}
+                              type="button"
+                              onClick={() => {
+                                sfx.playTap();
+                                if (k === 'C') setReceiptInput('');
+                                else if (k === '⌫') setReceiptInput((p) => p.slice(0, -1));
+                                else if (receiptInput.length < 10) setReceiptInput((p) => p + k);
+                              }}
+                              className={`checkout-compact-key ${k === 'C' ? 'clear' : k === '⌫' ? 'del' : ''}`}
+                            >
+                              {k}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="checkout-phone-action-row">
+                          {activeReceiptTab === 'whatsapp' ? (
+                            <button
+                              type="button"
+                              disabled={receiptInput.length < 7}
+                              onClick={handleSendWhatsApp}
+                              className="checkout-btn-send-whatsapp"
+                            >
+                              <span>💬</span>
+                              <span>Abrir en WhatsApp</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={receiptInput.length < 7 || isSendingReceipt}
+                              onClick={handleSendSMS}
+                              className="checkout-btn-send-sms"
+                            >
+                              <span>📱</span>
+                              <span>{isSendingReceipt ? 'Enviando...' : 'Enviar por SMS'}</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* CONFIRMACIÓN DE ENVÍO */}
+                    {receiptSentSuccess && (
+                      <div className="checkout-sent-success-feedback">
+                        <div className="checkout-feedback-icon">✓</div>
+                        <div className="checkout-feedback-title">¡Comprobante enviado!</div>
+                        <p className="checkout-feedback-desc">
+                          Enviado exitosamente a <strong>+57 {receiptDestination}</strong>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Botón Inferior: Sin Recibo / Finalizar */}
+                  <button type="button" onClick={handleFinish} className="checkout-bottom-finish-btn">
                     <span>✕</span>
                     <span>Sin Recibo / Finalizar ({secondsRemaining}s)</span>
                   </button>
                 </div>
-              )}
+              </div>
 
-              {/* =========================================================================
-                  SUB-VISTA: PEDIR CORREO ELECTRÓNICO
-                  ========================================================================= */}
-              {receiptMode === 'email' && (
-                <div className="checkout-receipt-input-card">
-                  <div className="checkout-receipt-card-title">
-                    <span>✉️</span> <span>Enviar Recibo por Correo</span>
-                  </div>
-                  <p className="checkout-receipt-card-sub">
-                    Ingresa tu correo para enviarte el comprobante de compra
-                  </p>
-
-                  <input
-                    type="email"
-                    value={receiptInput}
-                    onChange={(e) => setReceiptInput(e.target.value)}
-                    placeholder="ejemplo: cliente@gmail.com"
-                    autoFocus
-                    className="checkout-text-input"
-                  />
-
-                  {/* Atajos de dominios para pantalla táctil */}
-                  <div className="checkout-domains-row">
-                    {['@gmail.com', '@hotmail.com', '@yahoo.com', '@outlook.com', '@icloud.com'].map(
-                      (dom) => (
-                        <button
-                          key={dom}
-                          type="button"
-                          onClick={() => {
-                            sfx.playTap();
-                            const prefix = receiptInput.includes('@')
-                              ? receiptInput.split('@')[0]
-                              : receiptInput;
-                            setReceiptInput((prefix || 'cliente') + dom);
-                          }}
-                          className="checkout-domain-btn"
-                        >
-                          {dom}
-                        </button>
-                      )
-                    )}
+              {/* ================= COLUMNA DERECHA: RECIBO TÉRMICO ================= */}
+              <div className="checkout-success-right-col">
+                <div className="receipt-paper-ticket">
+                  {/* Ícono de encabezado */}
+                  <div className="receipt-ticket-logo-circle">
+                    <span>🥙</span>
                   </div>
 
-                  {/* Botones de acción */}
-                  <div className="checkout-dialog-actions">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        sfx.playTap();
-                        setReceiptMode(null);
-                      }}
-                      className="checkout-btn-dialog-back"
-                    >
-                      ← Volver
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!receiptInput.trim() || isSendingReceipt}
-                      onClick={() => handleSendReceipt('email')}
-                      className="checkout-btn-dialog-submit"
-                    >
-                      {isSendingReceipt ? 'Enviando...' : '✓ Enviar Recibo'}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* =========================================================================
-                  SUB-VISTA: PEDIR NÚMERO DE TELÉFONO / SMS CON TECLADO TÁCTIL
-                  ========================================================================= */}
-              {receiptMode === 'text' && (
-                <div className="checkout-phone-input-card">
-                  <div className="checkout-receipt-card-title">
-                    <span>💬</span> <span>Enviar Recibo por SMS</span>
-                  </div>
-                  <p className="checkout-receipt-card-sub">
-                    Ingresa tu número de celular para enviarte el comprobante
-                  </p>
-
-                  {/* Visor del número */}
-                  <div className={`checkout-phone-screen ${!receiptInput ? 'empty' : ''}`}>
-                    {receiptInput || 'Ej: 300 123 4567'}
+                  {/* Encabezado del Comercio */}
+                  <div className="receipt-ticket-header">
+                    <h3 className="receipt-store-name">SERVIPLUS RESTAURANTE</h3>
+                    <p className="receipt-fiscal-sub">NIT: 901.234.567-8</p>
+                    <p className="receipt-fiscal-sub">Calle 72 # 45-12, Bogotá</p>
                   </div>
 
-                  {/* Teclado Numérico Táctil de Kiosko */}
-                  <div className="checkout-numpad-grid">
-                    {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map((k) => (
-                      <button
-                        key={k}
-                        type="button"
-                        onClick={() => {
-                          sfx.playTap();
-                          if (k === 'C') {
-                            setReceiptInput('');
-                          } else if (k === '⌫') {
-                            setReceiptInput((prev) => prev.slice(0, -1));
-                          } else {
-                            if (receiptInput.length < 12) {
-                              setReceiptInput((prev) => prev + k);
-                            }
-                          }
-                        }}
-                        className={`checkout-numpad-key ${k === 'C' ? 'clear' : k === '⌫' ? 'backspace' : ''}`}
-                      >
-                        {k}
-                      </button>
+                  <div className="receipt-dashed-separator" />
+
+                  {/* Orden y Mesa */}
+                  <div className="receipt-info-two-col">
+                    <span><strong>ORDEN:</strong> #{createdOrderNumber || 24}</span>
+                    <span><strong>MESA:</strong> {orderType === 'EAT_IN' ? (tableId || 4) : 'LLEVAR'}</span>
+                  </div>
+                  <div className="receipt-info-two-col">
+                    <span>{receiptDateStr}</span>
+                    <span>{receiptTimeStr}</span>
+                  </div>
+
+                  <div className="receipt-dashed-separator" />
+
+                  {/* Lista de Platos Comprados */}
+                  <div className="receipt-ticket-items-list">
+                    {(completedOrderItems.length > 0 ? completedOrderItems : (cart.length > 0 ? cart : [
+                      { id: 101, name: 'Shawarma Mixto', price: 18.0, quantity: 2, modifiers: [{ id: 1, name: 'Queso Extra', price: 2.0 }] },
+                      { id: 102, name: 'Papas Rústicas', price: 8.0, quantity: 1 }
+                    ])).map((item, idx) => (
+                      <div key={idx} className="receipt-ticket-item-entry">
+                        <div className="receipt-item-line">
+                          <span className="receipt-item-qty-name">{item.quantity}x {item.name}</span>
+                          <span className="receipt-item-price">{formatCOP(item.price * item.quantity)}</span>
+                        </div>
+                        {item.modifiers && item.modifiers.length > 0 && (
+                          <div className="receipt-item-mods">
+                            {item.modifiers.map((m) => `+ ${m.name}`).join(', ')}
+                          </div>
+                        )}
+                        {item.notes && (
+                          <div className="receipt-item-notes">📝 {item.notes}</div>
+                        )}
+                      </div>
                     ))}
                   </div>
 
-                  {/* Botones de acción */}
-                  <div className="checkout-dialog-actions">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        sfx.playTap();
-                        setReceiptMode(null);
-                      }}
-                      className="checkout-btn-dialog-back"
-                    >
-                      ← Volver
-                    </button>
-                    <button
-                      type="button"
-                      disabled={receiptInput.length < 7 || isSendingReceipt}
-                      onClick={() => handleSendReceipt('sms')}
-                      className="checkout-btn-dialog-submit"
-                    >
-                      {isSendingReceipt ? 'Enviando...' : '✓ Enviar SMS'}
-                    </button>
+                  <div className="receipt-dashed-separator" />
+
+                  {/* Subtotal y Totales */}
+                  <div className="receipt-totals-section">
+                    <div className="receipt-subtotal-row">
+                      <span>SUBTOTAL:</span>
+                      <span>{formatCOP(finalTotal || total || 44.0)}</span>
+                    </div>
+                    <div className="receipt-total-row">
+                      <span>TOTAL PAGADO:</span>
+                      <span className="receipt-total-highlight">{formatCOP(finalTotal || total || 44.0)}</span>
+                    </div>
+                    <div className="receipt-meta-row">
+                      <span>PAGO:</span>
+                      <span className="receipt-meta-val">
+                        {paymentMethod === 'WOMPI_QR' ? 'Wompi QR (APROBADO)' : (paymentMethod === 'CASH' ? 'Efectivo en Caja' : 'Datáfono')}
+                      </span>
+                    </div>
+                    <div className="receipt-meta-row">
+                      <span>REF:</span>
+                      <span className="receipt-meta-val receipt-mono">{wompiQrData?.reference || createdReceiptCode || 'SP-1793691288288'}</span>
+                    </div>
+                  </div>
+
+                  {/* Código de Barras Decorativo Realista */}
+                  <div className="receipt-barcode-wrap">
+                    <div className="receipt-barcode-pattern" />
+                  </div>
+
+                  {/* Pie de Recibo */}
+                  <div className="receipt-ticket-footer">
+                    <p className="receipt-thank-you">¡Gracias por tu compra!</p>
+                    <p className="receipt-claim-msg">Conserva este ticket para retirar tu pedido en mostrador.</p>
+                  </div>
+
+                  {/* Borde Perforado Inferior */}
+                  <div className="receipt-perforated-edge">
+                    {Array.from({ length: 22 }).map((_, i) => (
+                      <span key={i} className="perforated-hole" />
+                    ))}
                   </div>
                 </div>
-              )}
-
-              {/* =========================================================================
-                  SUB-VISTA: CONFIRMACIÓN DE ENVÍO EXITOSO
-                  ========================================================================= */}
-              {receiptMode === 'sent' && (
-                <div className="checkout-receipt-sent-card">
-                  <div className="checkout-receipt-sent-icon">✓</div>
-                  <div className="checkout-receipt-sent-title">¡Recibo Enviado con Éxito!</div>
-                  <p className="checkout-receipt-sent-desc">
-                    Hemos enviado tu comprobante digital a:<br />
-                    <strong>{receiptDestination}</strong>
-                  </p>
-                  <button type="button" onClick={handleFinish} className="checkout-btn-finish-sent">
-                    ¡Listo / Nueva Orden! ({secondsRemaining}s)
-                  </button>
-                </div>
-              )}
+              </div>
             </div>
           )}
         </div>

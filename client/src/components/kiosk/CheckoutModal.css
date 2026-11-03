@@ -743,16 +743,642 @@
   opacity: 0.8;
 }
 
-/* --- STEP 5: PÁGINA FINAL Y RECIBOS DIGITALES --- */
-.checkout-success-view {
+/* =========================================================================
+   NUEVO SPLIT LAYOUT PARA PASO 5 (MOCKUP OFICIAL)
+   ========================================================================= */
+.checkout-success-split-layout {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 20px;
+  width: 100%;
+  height: 100%;
+  padding: 16px 20px;
+  box-sizing: border-box;
+  align-items: start;
+  overflow-y: auto;
+}
+
+.checkout-success-left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.checkout-success-card {
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  box-sizing: border-box;
+}
+
+/* 1. Tarjeta Superior: Estado y Turno */
+.checkout-success-header-card {
+  border: 1.5px solid #e2e8f0;
+  padding: 16px 20px;
+}
+
+.checkout-success-card-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.checkout-success-badge-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkout-success-check-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: #15803d;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 0.95rem;
+}
+
+.checkout-success-h2 {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.checkout-success-pill-tag {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #059669;
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 3px 12px;
+  border-radius: 9999px;
+}
+
+.checkout-success-card-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.checkout-success-turno-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.checkout-success-turno-lbl {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.checkout-success-turno-num {
+  font-size: 3.2rem;
+  font-weight: 900;
+  color: #0f172a;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.checkout-success-badges-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.checkout-success-salon-badge {
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  color: #6d28d9;
+  font-size: 0.84rem;
+  font-weight: 800;
+  padding: 5px 12px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.checkout-success-kitchen-badge {
+  background: #fefce8;
+  border: 1px solid #fef08a;
+  color: #854d0e;
+  font-size: 0.84rem;
+  font-weight: 800;
+  padding: 5px 12px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kitchen-dot {
+  color: #eab308;
+  font-size: 0.9rem;
+}
+
+/* 2. Tarjeta Inferior: Opciones de Factura (Borde Púrpura como en el Mockup) */
+.checkout-success-options-card {
+  border: 2px solid #818cf8;
+  padding: 18px 20px 16px 20px;
+}
+
+.checkout-success-options-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.checkout-success-options-title {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.checkout-success-eco-pill {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #059669;
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 9999px;
+}
+
+.checkout-receipt-channel-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.checkout-channel-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  color: #334155;
+  font-size: 0.92rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.checkout-channel-tab:hover {
+  background: #f1f5f9;
+}
+
+.checkout-channel-tab.active {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18);
+}
+
+.checkout-channel-tab-content {
+  background: #f8fafc;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  padding: 14px;
+  margin-bottom: 12px;
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Vista QR */
+.checkout-qr-view-box {
+  text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-height: 100%;
-  padding: 24px 20px;
-  text-align: center;
+}
+
+.checkout-qr-inner-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 10px;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+.checkout-receipt-qr-img {
+  width: 140px;
+  height: 140px;
+  display: block;
+}
+
+.checkout-qr-inst-title {
+  font-size: 0.98rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.checkout-qr-inst-sub {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* Vista Teléfono Numpad */
+.checkout-phone-tab-box {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.checkout-phone-screen-display {
+  width: 100%;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
   box-sizing: border-box;
+}
+
+.phone-prefix {
+  font-weight: 900;
+  color: #64748b;
+  font-size: 1rem;
+}
+
+.phone-number-text {
+  font-weight: 800;
+  color: #0f172a;
+  font-size: 1.15rem;
+  letter-spacing: 0.5px;
+}
+
+.phone-number-text.empty {
+  color: #94a3b8;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.checkout-compact-numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.checkout-compact-key {
+  height: 40px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.checkout-compact-key.clear {
+  color: #dc2626;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.checkout-compact-key.del {
+  color: #475569;
+  background: #f1f5f9;
+}
+
+.checkout-phone-action-row {
+  width: 100%;
+}
+
+.checkout-btn-send-whatsapp {
+  width: 100%;
+  height: 44px;
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.25);
+}
+
+.checkout-btn-send-whatsapp:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.checkout-btn-send-sms {
+  width: 100%;
+  height: 44px;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+}
+
+.checkout-btn-send-sms:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.checkout-sent-success-feedback {
+  text-align: center;
+  padding: 16px;
+}
+
+.checkout-feedback-icon {
+  width: 48px;
+  height: 48px;
+  background: #dcfce7;
+  color: #16a34a;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 900;
+  margin: 0 auto 10px auto;
+}
+
+.checkout-feedback-title {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.checkout-feedback-desc {
+  font-size: 0.85rem;
+  color: #475569;
+  margin: 4px 0 0 0;
+}
+
+.checkout-bottom-finish-btn {
+  width: 100%;
+  height: 44px;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  color: #475569;
+  font-size: 0.92rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.checkout-bottom-finish-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* =========================================================================
+   COLUMNA DERECHA: RECIBO TÉRMICO (TICKET DE CAJA REALISTA)
+   ========================================================================= */
+.checkout-success-right-col {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.receipt-paper-ticket {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px 18px 0 0;
+  padding: 16px 20px 10px 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  max-width: 360px;
+  font-family: 'Courier New', Courier, monospace;
+  color: #1e293b;
+  box-sizing: border-box;
+}
+
+.receipt-ticket-logo-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 6px auto;
+  font-size: 1.35rem;
+  border: 1px solid #e2e8f0;
+}
+
+.receipt-ticket-header {
+  text-align: center;
+}
+
+.receipt-store-name {
+  font-size: 0.96rem;
+  font-weight: 900;
+  margin: 0 0 2px 0;
+  letter-spacing: 0.5px;
+  color: #0f172a;
+}
+
+.receipt-fiscal-sub {
+  font-size: 0.72rem;
+  color: #64748b;
+  margin: 1px 0;
+  font-weight: 600;
+}
+
+.receipt-dashed-separator {
+  border-bottom: 1.5px dashed #cbd5e1;
+  margin: 8px 0;
+}
+
+.receipt-info-two-col {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #334155;
+  margin: 2px 0;
+}
+
+.receipt-ticket-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 160px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.receipt-ticket-item-entry {
+  display: flex;
+  flex-direction: column;
+}
+
+.receipt-item-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.receipt-item-mods {
+  font-size: 0.70rem;
+  color: #64748b;
+  margin-left: 12px;
+}
+
+.receipt-item-notes {
+  font-size: 0.70rem;
+  color: #f59e0b;
+  margin-left: 12px;
+}
+
+.receipt-totals-section {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.receipt-subtotal-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.receipt-total-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.98rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 2px 0;
+}
+
+.receipt-total-highlight {
+  color: #059669;
+  font-size: 1.05rem;
+}
+
+.receipt-meta-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: #475569;
+}
+
+.receipt-meta-val {
+  font-weight: 700;
+}
+
+.receipt-mono {
+  font-size: 0.68rem;
+  letter-spacing: -0.2px;
+}
+
+.receipt-barcode-wrap {
+  margin: 10px 0 6px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.receipt-barcode-pattern {
+  width: 70%;
+  height: 24px;
+  background: repeating-linear-gradient(
+    90deg,
+    #0f172a,
+    #0f172a 2px,
+    transparent 2px,
+    transparent 4px,
+    #0f172a 4px,
+    #0f172a 7px,
+    transparent 7px,
+    transparent 9px,
+    #0f172a 9px,
+    #0f172a 12px,
+    transparent 12px,
+    transparent 13px,
+    #0f172a 13px,
+    #0f172a 14px,
+    transparent 14px,
+    transparent 17px
+  );
+  opacity: 0.85;
+}
+
+.receipt-ticket-footer {
+  text-align: center;
+  margin-top: 4px;
+}
+
+.receipt-thank-you {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.receipt-claim-msg {
+  font-size: 0.66rem;
+  color: #64748b;
+  margin: 2px 0 0 0;
+}
+
+.receipt-perforated-edge {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding: 0 4px;
+}
+
+.perforated-hole {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
 }
 
 .checkout-paid-amount-tag {

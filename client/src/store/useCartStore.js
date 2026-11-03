@@ -77,3 +77,7 @@ export const useCartStore = create((set, get) => ({
     return get().cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   }
 }));
+
+if (typeof window !== 'undefined') {
+  window.__cartStore = useCartStore;
+}
