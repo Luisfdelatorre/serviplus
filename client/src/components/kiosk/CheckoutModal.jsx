@@ -1092,9 +1092,18 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
               {/* ================= COLUMNA DERECHA: RECIBO TÉRMICO ================= */}
               <div className="checkout-success-right-col">
                 <div className="receipt-paper-ticket">
-                  {/* Ícono de encabezado */}
+                  {/* Logo de encabezado del restaurante Kebab */}
                   <div className="receipt-ticket-logo-circle">
-                    <span>{KIOSK_CONFIG.restaurant.logoEmoji}</span>
+                    <img
+                      src={KIOSK_CONFIG.restaurant.logoUrl || '/images/kebab_logo.png'}
+                      alt="Logo Kebab"
+                      className="receipt-ticket-logo-img"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        if (e.currentTarget.nextElementSibling) e.currentTarget.nextElementSibling.style.display = 'inline-block';
+                      }}
+                    />
+                    <span style={{ display: 'none' }}>{KIOSK_CONFIG.restaurant.logoEmoji}</span>
                   </div>
 
                   {/* Encabezado del Comercio */}

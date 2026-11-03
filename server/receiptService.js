@@ -350,14 +350,14 @@ function renderReceiptHtml(data) {
 
         <!-- Encabezado de Marca -->
         <div class="bg-gradient-to-b from-[#191c1e] via-[#242b30] to-[#1c2227] text-white pt-6 pb-6 px-5 flex flex-col items-center text-center relative overflow-hidden">
-          <div class="w-full max-w-[320px] rounded-lg overflow-hidden mb-3 border border-amber-500/30 shadow-md bg-black/40 p-1 flex justify-center">
-            <span class="text-amber-400 font-extrabold text-lg tracking-wider uppercase py-1">🥙 ${restaurantName}</span>
+          <div class="w-24 h-24 rounded-full overflow-hidden mb-3 border-2 border-amber-400/90 shadow-xl bg-black/60 p-1 flex items-center justify-center">
+            <img src="/images/kebab_logo.png" alt="Logo Kebab" class="w-full h-full object-cover rounded-full" onerror="this.onerror=null; this.src='/images/kebab_clean.png';" />
           </div>
           <div class="flex items-center gap-1.5 mb-1">
             <span class="material-symbols-outlined text-[#ffbc0d] text-[18px]">verified</span>
-            <h2 class="text-[18px] font-extrabold text-white tracking-tight">${restaurantName}</h2>
+            <h2 class="text-[19px] font-extrabold text-white tracking-tight">${restaurantName}</h2>
           </div>
-          <p class="text-[11px] font-medium text-amber-200/90 tracking-wide uppercase">${storeSubtitle}</p>
+          <p class="text-[11px] font-semibold text-amber-300/90 tracking-wide uppercase">${storeSubtitle}</p>
           
           <div class="flex flex-col items-center text-[12px] font-medium text-gray-300 leading-tight gap-1 pt-2">
             <span class="flex items-center gap-1 text-gray-300">
