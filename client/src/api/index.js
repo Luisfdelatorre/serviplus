@@ -89,11 +89,11 @@ export async function sendDigitalReceipt(orderId, type, destination) {
 }
 
 // 8. Crear QR Oficial de Bancolombia / Nequi (Wompi)
-export async function createWompiQr(orderId, amount, customerEmail = 'kiosco@serviplus.pos') {
+export async function createWompiQr(orderId, amount, customerEmail = 'kiosco@serviplus.pos', extra = {}) {
   const res = await fetch('/api/payments/wompi/qr', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ orderId, amount, customerEmail })
+    body: JSON.stringify({ orderId, amount, customerEmail, ...extra })
   });
   const json = await res.json();
   if (!json.success) throw new Error(json.error || 'Error al generar código QR de Bancolombia');

@@ -36,29 +36,16 @@ export function Header() {
         <span style={{ fontSize: '1.35rem', fontWeight: 900, color: '#da291c', letterSpacing: '-0.5px' }}>
           Serviplus
         </span>
-        <span
-          style={{
-            background: '#ffbc0d',
-            color: '#000000',
-            padding: '2px 8px',
-            borderRadius: '9999px',
-            fontSize: '0.72rem',
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px'
-          }}
-        >
-          KIOSK & KDS
-        </span>
+
       </div>
 
       {/* Navigation Tabs */}
       <nav style={{ display: 'flex', gap: '6px' }}>
         {[
-          { id: 'kiosk', label: '🍔 Kiosk Autoservicio' },
-          { id: 'cashier', label: '💻 Front Desk Caja' },
-          { id: 'kds', label: '👨‍🍳 KDS Cocina' },
-          { id: 'turns', label: '📢 Monitor de Turnos' }
+          { id: 'kiosk', label: 'Kiosk' },
+          { id: 'cashier', label: 'Caja' },
+          { id: 'kds', label: 'KDS' },
+          // { id: 'turns', label: '📢 Monitor de Turnos' }
         ].map((t) => {
           const isActive = activeTab === t.id;
           return (

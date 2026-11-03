@@ -124,7 +124,7 @@ app.get('/api/orders/active', async (req, res) => {
 // Crear orden (Kiosk o Caja)
 app.post('/api/orders', async (req, res) => {
     try {
-        const { employeeId, items, paymentMethod, notes, tableId, guestNumber, orderType, isPaid, transactionRef } = req.body;
+        const { employeeId, items, paymentMethod, notes, tableId, guestNumber, orderType, isPaid, transactionRef, wompiTransactionId } = req.body;
 
         const newOrder = await aldeloService.createOrder({
             employeeId: employeeId || 1,
@@ -135,7 +135,8 @@ app.post('/api/orders', async (req, res) => {
             tableId: tableId || null,
             guestNumber: guestNumber || 1,
             isPaid: (isPaid !== undefined) ? !!isPaid : true,
-            transactionRef: transactionRef || ''
+            transactionRef: transactionRef || '',
+            wompiTransactionId: wompiTransactionId || ''
         });
 
         let fullOrder = {};
@@ -319,15 +320,26 @@ app.put('/api/orders/:id/kds-status', async (req, res) => {
 // Crear QR oficial de Bancolombia para mostrar en la pantalla del Kiosco
 app.post('/api/payments/wompi/qr', async (req, res) => {
     try {
-        const { orderId, amount, customerEmail } = req.body;
+        const { orderId, amount, customerEmail, cart, tableId, orderType } = req.body;
         const result = await wompiService.createBancolombiaQrTransaction({
             orderId: orderId || Date.now(),
             amount: parseFloat(amount) || 0,
             customerEmail: customerEmail || 'kiosco@serviplus.pos'
         });
 
-        // Respaldo local inmediato del pago generado
+        // Respaldo de Fase 1 (ANTES del pago): Guardar intención en tabla KioskPayments de Access
         if (result && result.reference) {
+            aldeloService.saveKioskPaymentIntent({
+                reference: result.reference,
+                transactionId: result.transactionId || '',
+                amount: parseFloat(amount) || 0,
+                amountCOP: result.amountInCOP,
+                customerEmail: customerEmail || 'kiosco@serviplus.pos',
+                cart: cart || [],
+                tableId: tableId || 0,
+                orderType: orderType || 1
+            }).catch(e => console.error('[KioskPayments Access Error]:', e.message));
+
             paymentStore.savePayment({
                 reference: result.reference,
                 transactionId: result.transactionId,
@@ -405,7 +417,8 @@ app.get('/api/payments/wompi/status/:id', async (req, res) => {
             return res.status(404).json({ success: false, error: 'Transacción no encontrada' });
         }
 
-        // Actualizar respaldo local en cada chequeo
+        // Actualizar respaldo en tabla KioskPayments de Access y local
+        aldeloService.updateKioskPaymentStatus(id, tx.status, { transactionId: id }).catch(() => {});
         paymentStore.updateStatus(id, tx.status, {
             amountInCOP: tx.amountInCOP,
             amountInCents: tx.amountInCents,
@@ -435,7 +448,8 @@ app.post('/api/payments/wompi/webhook', (req, res) => {
         if (event && event.data && event.data.transaction && io) {
             const tx = event.data.transaction;
 
-            // Actualizar respaldo local del pago
+            // Actualizar respaldo en Access y local
+            aldeloService.updateKioskPaymentStatus(tx.reference, tx.status, { transactionId: tx.id }).catch(() => {});
             paymentStore.updateStatus(tx.reference, tx.status, {
                 transactionId: tx.id,
                 amountInCOP: tx.amount_in_cents / 100,
@@ -458,11 +472,14 @@ app.post('/api/payments/wompi/webhook', (req, res) => {
     }
 });
 
-// Historial de pagos respaldados (para auditoría y panel admin)
-app.get('/api/admin/payments', (req, res) => {
+// Historial de pagos respaldados (consultado de KioskPayments en Access)
+app.get('/api/admin/payments', async (req, res) => {
     try {
         const limit = parseInt(req.query.limit, 10) || 50;
-        const payments = paymentStore.getAllPayments(limit);
+        let payments = await aldeloService.getKioskPayments(limit);
+        if (!payments || payments.length === 0) {
+            payments = paymentStore.getAllPayments(limit);
+        }
         res.json({ success: true, data: payments });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });

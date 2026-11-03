@@ -347,7 +347,7 @@ const aldeloService = {
 
   // 4. Crear una nueva orden (desde Kiosk o Front Desk)
   // Nota: Las órdenes de Kiosk se crean con isPaid = true porque el pago se recibe previamente.
-  async createOrder({ employeeId = 1, orderType = 1, items = [], tableId = null, guestNumber = 1, notes = '', paymentMethod = 'CASH', isPaid = true, transactionRef = '' }) {
+  async createOrder({ employeeId = 1, orderType = 1, items = [], tableId = null, guestNumber = 1, notes = '', paymentMethod = 'CASH', isPaid = true, transactionRef = '', wompiTransactionId = '' }) {
     if (!items || items.length === 0) {
       throw new Error('La orden debe contener al menos un producto.');
     }
@@ -478,22 +478,30 @@ const aldeloService = {
       await connection.execute(sqlItem);
     }
 
-    // Si la orden ya está pagada (Kiosk o cobro inmediato), registrar en OrderPayments
+    // Si la orden ya está pagada (Kiosk o cobro inmediato), registrar en OrderPayments nativo
     if (isPaid) {
       try {
         const payMethodCode = (paymentMethod === 'CASH') ? '1' : '3';
         const paymentGuid = generateGUID();
         const safeRef = String(transactionRef || '').replace(/'/g, "''");
+        const safeTxId = String(wompiTransactionId || transactionRef || '').replace(/'/g, "''");
+
+        // En Access: GlobalID y LastRowHash son de tipo Short Text (perfectos para referencias bancarias y transacciones)
         const sqlPayment = `
           INSERT INTO OrderPayments (
             PaymentDateTime, CashierID, OrderID, PaymentMethod, 
-            AmountTendered, AmountPaid, EmployeeComp, RowGUID, EDCTransID
+            AmountTendered, AmountPaid, EmployeeComp, RowGUID, GlobalID, LastRowHash
           ) VALUES (
             ${accessDate}, ${employeeId || 1}, ${orderId}, '${payMethodCode}', 
-            ${totalAmount}, ${totalAmount}, 0, '${paymentGuid}', '${safeRef}'
+            ${totalAmount}, ${totalAmount}, 0, '${paymentGuid}', '${safeRef}', '${safeTxId}'
           )
         `;
         await connection.execute(sqlPayment);
+
+        // Actualizar registro en la tabla nativa KioskPayments de Access
+        if (transactionRef) {
+          await this.updateKioskPaymentStatus(transactionRef, 'APPROVED', { orderId, transactionId: wompiTransactionId });
+        }
 
         // Asociar el número de orden al pago en paymentStore si existe
         try {
@@ -709,6 +717,90 @@ const aldeloService = {
       paymentMethod,
       approvalRef
     };
+  },
+
+  /**
+   * Registra una intención de pago en la tabla KioskPayments de Access (Fase 1: ANTES de pagar)
+   */
+  async saveKioskPaymentIntent({
+    reference,
+    transactionId = '',
+    amount = 0,
+    amountCOP = 0,
+    cart = [],
+    tableId = 0,
+    orderType = 1,
+    customerEmail = ''
+  }) {
+    if (!reference) return null;
+    const safeRef = String(reference).replace(/'/g, "''");
+    const safeTxId = String(transactionId || '').replace(/'/g, "''");
+    const safeCart = String(JSON.stringify(cart || [])).replace(/'/g, "''");
+    const safeEmail = String(customerEmail || '').replace(/'/g, "''");
+    const safeTable = parseInt(tableId, 10) || 0;
+    const safeOrderType = parseInt(orderType, 10) || 1;
+    const aldeloAmount = parseFloat(amount) || 0;
+    const copAmount = parseFloat(amountCOP) || Math.round(aldeloAmount * 1000);
+
+    const sql = `
+      INSERT INTO KioskPayments (
+        [Reference], [TransactionID], [OrderID], [AmountCOP], [AmountAldelo], 
+        [PaymentStatus], [PaymentMethod], [CartData], [TableID], [OrderType], 
+        [CustomerEmail], [CreatedAt]
+      ) VALUES (
+        '${safeRef}', '${safeTxId}', 0, ${copAmount}, ${aldeloAmount}, 
+        'PENDING', 'BANCOLOMBIA_QR', '${safeCart}', ${safeTable}, ${safeOrderType}, 
+        '${safeEmail}', Now()
+      )
+    `;
+    try {
+      await connection.execute(sql);
+      return { reference, status: 'PENDING' };
+    } catch (e) {
+      console.error('[KioskPayments] Error saving intent to Access:', e.message);
+      return null;
+    }
+  },
+
+  /**
+   * Actualiza el estado de un pago en KioskPayments en Access (Fase 2: DESPUÉS de pagar)
+   */
+  async updateKioskPaymentStatus(identifier, status = 'APPROVED', { orderId = 0, transactionId = '' } = {}) {
+    if (!identifier) return null;
+    const safeId = String(identifier).replace(/'/g, "''");
+    const safeStatus = String(status).replace(/'/g, "''");
+    const numOrder = parseInt(orderId, 10) || 0;
+    const safeTx = transactionId ? String(transactionId).replace(/'/g, "''") : '';
+
+    let sql = `UPDATE KioskPayments SET [PaymentStatus] = '${safeStatus}', [ApprovedAt] = Now()`;
+    if (numOrder > 0) {
+      sql += `, [OrderID] = ${numOrder}`;
+    }
+    if (safeTx) {
+      sql += `, [TransactionID] = '${safeTx}'`;
+    }
+    sql += ` WHERE [Reference] = '${safeId}' OR [TransactionID] = '${safeId}'`;
+
+    try {
+      await connection.execute(sql);
+      return true;
+    } catch (e) {
+      console.error('[KioskPayments] Error updating status in Access:', e.message);
+      return false;
+    }
+  },
+
+  /**
+   * Retorna las transacciones registradas en KioskPayments desde Access
+   */
+  async getKioskPayments(limit = 50) {
+    try {
+      const sql = `SELECT TOP ${limit} * FROM KioskPayments ORDER BY [PaymentID] DESC`;
+      return await connection.query(sql);
+    } catch (e) {
+      console.error('[KioskPayments] Error querying Access:', e.message);
+      return [];
+    }
   }
 };
 

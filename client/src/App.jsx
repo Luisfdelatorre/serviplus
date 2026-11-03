@@ -124,7 +124,7 @@ export function App() {
         {activeTab === 'kds' && <KdsGrid />}
         {activeTab === 'kiosk' && <KioskView />}
         {activeTab === 'cashier' && <CashierView />}
-        {activeTab === 'turns' && <TurnsBoard />}
+        {/* {activeTab === 'turns' && <TurnsBoard />}*/}
       </main>
 
       {/* Modales de Administración Aldelo */}

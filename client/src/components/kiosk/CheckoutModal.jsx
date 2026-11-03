@@ -100,7 +100,11 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
           setQrLoading(true);
           setQrError('');
           const randomOrderTemp = Math.floor(100 + Math.random() * 900);
-          const data = await createWompiQr(randomOrderTemp, total);
+          const data = await createWompiQr(randomOrderTemp, total, 'kiosco@serviplus.pos', {
+            cart: cart.map((i) => ({ id: i.id, name: i.name, quantity: i.quantity, price: i.price, modifiers: i.modifiers })),
+            tableId: orderType === 'EAT_IN' ? tableId : 0,
+            orderType: orderType === 'EAT_IN' ? 1 : 2
+          });
           if (!isCancelled) {
             setWompiQrData(data);
           }
@@ -131,7 +135,8 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
       handleConfirmOrder({
         paymentMethod: 'WOMPI_QR',
         isPaid: true,
-        transactionRef: wompiQrData?.reference || txData?.reference || txData?.id || ''
+        transactionRef: wompiQrData?.reference || txData?.reference || '',
+        wompiTransactionId: wompiQrData?.transactionId || txData?.id || txData?.transactionId || ''
       });
     };
 
@@ -232,7 +237,8 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
         tableId: orderType === 'EAT_IN' ? tableId : null,
         paymentMethod: activeMethod,
         isPaid: isPaidImmediately,
-        transactionRef: overrideParams?.transactionRef || wompiQrData?.reference || wompiQrData?.transactionId || '',
+        transactionRef: overrideParams?.transactionRef || wompiQrData?.reference || '',
+        wompiTransactionId: overrideParams?.wompiTransactionId || wompiQrData?.transactionId || '',
         items: cart.map((i) => ({
           id: i.id,
           name: i.name,
