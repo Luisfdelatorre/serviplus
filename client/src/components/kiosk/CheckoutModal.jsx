@@ -43,6 +43,9 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
   const clearCart = useCartStore((state) => state.clearCart);
   const getTotalAmount = useCartStore((state) => state.getTotalAmount);
 
+  const total = getTotalAmount();
+  const totalItems = cart.reduce((sum, i) => sum + i.quantity, 0);
+
   useEffect(() => {
     fetchTables().then((data) => {
       if (data && data.length > 0) {
@@ -139,9 +142,6 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
   }, [wompiQrData]);
 
   if (!isOpen) return null;
-
-  const total = getTotalAmount();
-  const totalItems = cart.reduce((sum, i) => sum + i.quantity, 0);
 
   const distinctGroups = Array.from(new Set(tables.map((t) => t.groupName || 'Main Dining Room'))).filter(Boolean);
   const activeGroup = tableGroup || distinctGroups[0] || 'Main Dining Room';
