@@ -87,3 +87,47 @@ export async function sendDigitalReceipt(orderId, type, destination) {
     return { success: true, simulated: true };
   }
 }
+
+// 8. Crear QR Oficial de Bancolombia / Nequi (Wompi)
+export async function createWompiQr(orderId, amount, customerEmail = 'kiosco@serviplus.pos') {
+  const res = await fetch('/api/payments/wompi/qr', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orderId, amount, customerEmail })
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Error al generar código QR de Bancolombia');
+  return json.data;
+}
+
+// 9. Autenticación de Administrador Aldelo (SecurityLevel <= 2)
+export async function adminLogin(pin) {
+  const res = await fetch('/api/admin/auth', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pin })
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Código de administrador inválido');
+  return json.data;
+}
+
+// 10. Consultar configuración del sistema
+export async function getAdminConfig() {
+  const res = await fetch('/api/admin/config');
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Error al obtener configuración');
+  return json.data;
+}
+
+// 11. Guardar configuración del sistema en caliente
+export async function saveAdminConfig(configPayload) {
+  const res = await fetch('/api/admin/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(configPayload)
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Error al guardar configuración');
+  return json.data;
+}

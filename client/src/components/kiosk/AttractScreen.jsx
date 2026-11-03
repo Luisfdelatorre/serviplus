@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { sfx } from '../../utils/audio';
+import { useMenuStore } from '../../store/useMenuStore';
+import { Shield } from 'lucide-react';
 import './AttractScreen.css';
 
 export function AttractScreen({ onStart }) {
   const [touchPos, setTouchPos] = useState(null);
+  const openAdminLogin = useMenuStore((state) => state.openAdminLogin);
 
   const handleStart = (e) => {
     if (e && e.clientX && e.clientY) {
@@ -17,6 +20,37 @@ export function AttractScreen({ onStart }) {
 
   return (
     <div className="attract-screen" onClick={handleStart}>
+      {/* Botón discreto de Acceso Gerencial Aldelo */}
+      <button
+        type="button"
+        className="attract-admin-btn"
+        title="Administración Aldelo"
+        onClick={(e) => {
+          e.stopPropagation();
+          sfx.playTap();
+          openAdminLogin();
+        }}
+        style={{
+          position: 'absolute',
+          top: '20px',
+          left: '20px',
+          zIndex: 50,
+          background: 'rgba(255, 255, 255, 0.12)',
+          border: '1px solid rgba(255, 255, 255, 0.25)',
+          borderRadius: '50%',
+          width: '42px',
+          height: '42px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'rgba(255, 255, 255, 0.7)',
+          cursor: 'pointer',
+          backdropFilter: 'blur(4px)'
+        }}
+      >
+        <Shield size={18} />
+      </button>
+
       {/* Patrones de fondo orgánicos y sutiles tipo Panera */}
       <svg
         className="attract-bg-svg"

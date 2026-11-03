@@ -182,6 +182,39 @@ const aldeloService = {
     return await connection.query(sql);
   },
 
+  // 2b. Verificar acceso de administrador / gerente (SecurityLevel <= 2)
+  async verifyAdminAccess(accessCode) {
+    if (!accessCode) return { success: false, error: 'Código de acceso requerido' };
+    const cleanPin = String(accessCode).trim().replace(/'/g, "''");
+    const sql = `
+      SELECT EmployeeID as id, FirstName as firstName, LastName as lastName, SecurityLevel as securityLevel
+      FROM EmployeeFiles
+      WHERE (AccessCode = '${cleanPin}')
+      AND (EmployeeInActive = False OR EmployeeInActive IS NULL)
+    `;
+    const records = await connection.query(sql);
+    if (!records || records.length === 0) {
+      return { success: false, error: 'Código de empleado no encontrado o inactivo' };
+    }
+    const emp = records[0];
+    const secLevel = parseInt(emp.securityLevel, 10);
+    // SecurityLevel 1 (Admin) o 2 (Manager)
+    if (isNaN(secLevel) || secLevel > 2) {
+      return {
+        success: false,
+        error: `Acceso denegado: El empleado ${emp.firstName} no tiene nivel administrativo (Nivel actual: ${emp.securityLevel || 'desconocido'})`
+      };
+    }
+    return {
+      success: true,
+      employee: {
+        id: emp.id,
+        name: `${emp.firstName} ${emp.lastName || ''}`.trim(),
+        securityLevel: secLevel
+      }
+    };
+  },
+
   // 3. Obtener órdenes activas (para KDS y pantalla de turnos)
   async getActiveOrders() {
     // Traer empleados para mapeo en memoria rápido

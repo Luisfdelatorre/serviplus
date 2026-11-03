@@ -3,18 +3,33 @@ const http = require('http');
 const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
 const path = require('path');
+const fs = require('fs');
 const os = require('os');
 const moment = require('moment');
 const ADODB = require('node-adodb');
 
-// Cargar configuración
+// Cargar configuración dinámica
 let appConfig = {};
-try { appConfig = require('./config.json'); } catch (e) { }
+function loadAppConfig() {
+    try {
+        appConfig = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
+    } catch (e) {
+        console.error('Error loading config.json:', e.message);
+    }
+    return appConfig;
+}
+loadAppConfig();
+
 const dbConnString = (appConfig.db && appConfig.db.connectionString) || 'Provider=Microsoft.Jet.OLEDB.4.0;Data Source=C:\\SP\\B\\kebab.mdb;';
 const connection = ADODB.open(dbConnString);
 
 const aldeloService = require('./server/aldeloService');
 const receiptService = require('./server/receiptService');
+const WompiService = require('./server/wompiService');
+const SmsService = require('./server/smsService');
+
+const wompiService = new WompiService(() => appConfig);
+const smsService = new SmsService(() => appConfig);
 
 const app = express();
 const server = http.createServer(app);
@@ -163,13 +178,21 @@ app.post('/api/orders', async (req, res) => {
     }
 });
 
-// Solicitar Recibo Digital (Email / SMS)
+// Solicitar Recibo Digital (Email / SMS con Hablame Colombia)
 app.post('/api/orders/:id/receipt', async (req, res) => {
     try {
         const orderId = parseInt(req.params.id, 10);
         const { type, destination } = req.body;
         const receiptInfo = receiptService.generateReceiptCode(orderId);
-        console.log(`[Receipt] Recibo digital solicitado para Orden #${orderId}: tipo=${type}, destino=${destination}, url=${receiptInfo.path}`);
+        
+        let smsResult = null;
+        if (type === 'sms' && destination) {
+            smsResult = await smsService.sendReceiptSms(destination, receiptInfo.fullUrl, {
+                restaurantName: appConfig.restaurant?.name || 'Serviplus'
+            });
+        }
+
+        console.log(`[Receipt] Recibo digital #${orderId} (${type} -> ${destination}): ${receiptInfo.path}`);
         res.json({
             success: true,
             data: {
@@ -177,9 +200,10 @@ app.post('/api/orders/:id/receipt', async (req, res) => {
                 receiptCode: receiptInfo.urlCode,
                 receiptUrl: receiptInfo.path,
                 transactionRef: receiptInfo.transactionRef,
-                receiptFullUrl: receiptInfo.fullUrl
+                receiptFullUrl: receiptInfo.fullUrl,
+                smsResult
             },
-            message: `Recibo digital enviado con éxito a ${destination}`
+            message: `Recibo digital ${type === 'sms' ? 'enviado por SMS' : 'registrado'} con éxito a ${destination}`
         });
     } catch (err) {
         console.error('Error in POST /api/orders/:id/receipt:', err);
@@ -286,7 +310,27 @@ app.put('/api/orders/:id/kds-status', async (req, res) => {
     }
 });
 
-// Integración de Pagos Wompi (Colombia COP)
+// ============================================================================
+// 1b. PAGOS DIGITALES WOMPI (BANCOLOMBIA QR / CHECKOUT)
+// ============================================================================
+
+// Crear QR oficial de Bancolombia para mostrar en la pantalla del Kiosco
+app.post('/api/payments/wompi/qr', async (req, res) => {
+    try {
+        const { orderId, amount, customerEmail } = req.body;
+        const result = await wompiService.createBancolombiaQrTransaction({
+            orderId: orderId || Date.now(),
+            amount: parseFloat(amount) || 0,
+            customerEmail: customerEmail || 'kiosco@serviplus.pos'
+        });
+        res.json({ success: true, data: result });
+    } catch (err) {
+        console.error('Error generating Wompi QR:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Enlace alternativo de Checkout Wompi con firma SHA-256
 app.post('/api/payments/wompi/intent', (req, res) => {
     try {
         const { amount, reference: customRef } = req.body;
@@ -295,26 +339,26 @@ app.post('/api/payments/wompi/intent', (req, res) => {
         const amountInCents = amountInCOP * 100;
         const reference = customRef || `SP-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-        const wompiConfig = appConfig.wompi || {};
-        const publicKey = wompiConfig.publicKey || 'pub_prod_F4z65GfEwT9z3P';
-        const integritySecret = wompiConfig.integritySecret || '';
-        const currency = wompiConfig.currency || 'COP';
+        const creds = wompiService.getActiveCredentials();
+        const signature = wompiService.generateIntegritySignature(reference, amountInCents, creds.currency);
 
-        let signature = '';
-        if (integritySecret) {
-            const crypto = require('crypto');
-            const rawSignature = `${reference}${amountInCents}${currency}${integritySecret}`;
-            signature = crypto.createHash('sha256').update(rawSignature).digest('hex');
-        }
-
-        let checkoutUrl = `https://checkout.wompi.co/p/?public-key=${publicKey}&currency=${currency}&amount-in-cents=${amountInCents}&reference=${reference}`;
+        let checkoutUrl = `https://checkout.wompi.co/p/?public-key=${creds.publicKey}&currency=${creds.currency}&amount-in-cents=${amountInCents}&reference=${reference}`;
         if (signature) {
             checkoutUrl += `&signature:integrity=${signature}`;
         }
 
         res.json({
             success: true,
-            data: { reference, amountInCOP, amountInCents, currency, publicKey, signature, checkoutUrl }
+            data: {
+                reference,
+                amountInCOP,
+                amountInCents,
+                currency: creds.currency,
+                publicKey: creds.publicKey,
+                signature,
+                checkoutUrl,
+                mode: creds.mode
+            }
         });
     } catch (err) {
         console.error('Error generating Wompi intent:', err);
@@ -322,23 +366,94 @@ app.post('/api/payments/wompi/intent', (req, res) => {
     }
 });
 
-// Webhook Wompi QR
+// Webhook Wompi: Recepción de confirmaciones de pago
 app.post('/api/payments/wompi/webhook', (req, res) => {
     try {
         const event = req.body;
         console.log('[Wompi Webhook received]:', JSON.stringify(event));
+
+        // Validar firma criptográfica con timingSafeEqual
+        const sigCheck = wompiService.validateWebhookSignature(event);
+        if (!sigCheck.ok) {
+            console.warn('[Wompi Webhook] Firma rechazada:', sigCheck.reason);
+            return res.status(403).json({ error: 'Firma de webhook inválida' });
+        }
+
         if (event && event.data && event.data.transaction && io) {
             const tx = event.data.transaction;
             io.emit(`payment:${tx.reference}`, {
                 status: tx.status,
                 amountInCOP: tx.amount_in_cents / 100,
                 aldeloAmount: (tx.amount_in_cents / 100) / 1000,
-                reference: tx.reference
+                reference: tx.reference,
+                transactionId: tx.id
             });
+            console.log(`[Wompi Webhook] Notificación emitida a frontend: payment:${tx.reference} (${tx.status})`);
         }
         res.json({ received: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+// ============================================================================
+// 1c. ADMINISTRACIÓN Y CONFIGURACIÓN DEL SISTEMA (ALDELO ADMIN AUTH)
+// ============================================================================
+
+// Autenticación de Administrador / Gerente con código de acceso de Aldelo
+app.post('/api/admin/auth', async (req, res) => {
+    try {
+        const { pin } = req.body;
+        const result = await aldeloService.verifyAdminAccess(pin);
+        if (!result.success) {
+            return res.status(401).json({ success: false, error: result.error });
+        }
+
+        const adminToken = jwt.sign({
+            employeeId: result.employee.id,
+            name: result.employee.name,
+            role: 'admin',
+            securityLevel: result.employee.securityLevel
+        }, JWT_KEY, { expiresIn: '8h' });
+
+        res.json({
+            success: true,
+            data: {
+                token: adminToken,
+                employee: result.employee
+            }
+        });
+    } catch (err) {
+        console.error('Error in /api/admin/auth:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Consultar configuración actual
+app.get('/api/admin/config', (req, res) => {
+    try {
+        const current = loadAppConfig();
+        res.json({ success: true, data: current });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Guardar configuración en caliente
+app.post('/api/admin/config', (req, res) => {
+    try {
+        const newConfig = req.body;
+        if (!newConfig || typeof newConfig !== 'object') {
+            return res.status(400).json({ success: false, error: 'Configuración inválida' });
+        }
+        const merged = Object.assign({}, appConfig, newConfig);
+        fs.writeFileSync(path.join(__dirname, 'config.json'), JSON.stringify(merged, null, 2), 'utf8');
+        appConfig = merged;
+        console.log('[Admin] Configuración guardada exitosamente en config.json');
+        res.json({ success: true, data: appConfig, message: 'Configuración actualizada con éxito' });
+    } catch (err) {
+        console.error('Error saving config.json:', err);
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 

@@ -73,6 +73,19 @@ export const useMenuStore = create((set) => ({
   isFullscreen: getInitialFullscreen(),
   isKioskFullscreen: getInitialFullscreen(),
 
+  // Estado de Administrador y Configuración
+  isAdminLoginOpen: false,
+  isAdminSettingsOpen: false,
+  currentAdmin: null,
+  openAdminLogin: () => set({ isAdminLoginOpen: true }),
+  closeAdminLogin: () => set({ isAdminLoginOpen: false }),
+  openAdminSettings: (adminData) => set({
+    isAdminLoginOpen: false,
+    isAdminSettingsOpen: true,
+    currentAdmin: adminData || null
+  }),
+  closeAdminSettings: () => set({ isAdminSettingsOpen: false }),
+
   setCategories: (cats) => set((state) => ({
     categories: cats,
     selectedCategory: state.selectedCategory || null

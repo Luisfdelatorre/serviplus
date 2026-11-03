@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useCartStore } from '../../store/useCartStore';
-import { createOrder, fetchTables, sendDigitalReceipt } from '../../api';
+import { createOrder, fetchTables, sendDigitalReceipt, createWompiQr } from '../../api';
 import { formatCOP } from '../../utils/format';
 import { getProductImageUrl } from '../../utils/productImages';
 import { sfx } from '../../utils/audio';
+import { socket } from '../../socket';
 import './CheckoutModal.css';
 
 export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
@@ -30,6 +31,11 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
   const [isSendingReceipt, setIsSendingReceipt] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [secondsRemaining, setSecondsRemaining] = useState(20);
+
+  // Estados de Wompi QR dinámico
+  const [wompiQrData, setWompiQrData] = useState(null);
+  const [qrLoading, setQrLoading] = useState(false);
+  const [qrError, setQrError] = useState('');
 
   const cart = useCartStore((state) => state.cart);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
@@ -82,6 +88,56 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
     return () => clearInterval(interval);
   }, [step, receiptMode]);
 
+  // Generar QR oficial de Bancolombia / Nequi al llegar al paso 4
+  useEffect(() => {
+    if (step === 4 && paymentMethod === 'WOMPI_QR' && total > 0) {
+      let isCancelled = false;
+      const generateQr = async () => {
+        try {
+          setQrLoading(true);
+          setQrError('');
+          const randomOrderTemp = Math.floor(100 + Math.random() * 900);
+          const data = await createWompiQr(randomOrderTemp, total);
+          if (!isCancelled) {
+            setWompiQrData(data);
+          }
+        } catch (err) {
+          if (!isCancelled) {
+            console.error('[Kiosk Wompi QR Error]:', err);
+            setQrError(err.message || 'No se pudo generar el código QR.');
+          }
+        } finally {
+          if (!isCancelled) setQrLoading(false);
+        }
+      };
+      generateQr();
+      return () => { isCancelled = true; };
+    }
+  }, [step, paymentMethod, total]);
+
+  // Escuchar por Socket.io la aprobación automática del pago
+  useEffect(() => {
+    if (!wompiQrData?.reference) return;
+
+    const eventName = `payment:${wompiQrData.reference}`;
+    const handlePaymentApproved = (eventData) => {
+      console.log('[Kiosk Socket] ¡Pago aprobado detectado!', eventData);
+      const statusUpper = String(eventData?.status || '').toUpperCase();
+      if (statusUpper === 'APPROVED') {
+        sfx.playReadyChime();
+        handleConfirmOrder({
+          paymentMethod: 'WOMPI_QR',
+          isPaid: true
+        });
+      }
+    };
+
+    socket.on(eventName, handlePaymentApproved);
+    return () => {
+      socket.off(eventName, handlePaymentApproved);
+    };
+  }, [wompiQrData]);
+
   if (!isOpen) return null;
 
   const total = getTotalAmount();
@@ -129,7 +185,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
     }, 180);
   };
 
-  const handleConfirmOrder = async () => {
+  const handleConfirmOrder = async (overrideParams = null) => {
     if (orderType === 'EAT_IN' && !tableId) {
       alert('Por favor selecciona una mesa para continuar.');
       setStep(3);
@@ -139,12 +195,13 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
     setIsSubmitting(true);
     sfx.playTap();
     try {
-      const isPaidImmediately = paymentMethod === 'WOMPI_QR';
+      const activeMethod = overrideParams?.paymentMethod || paymentMethod;
+      const isPaidImmediately = overrideParams?.isPaid !== undefined ? overrideParams.isPaid : (activeMethod === 'WOMPI_QR');
       const orderPayload = {
         employeeId: 1,
         orderType: orderType === 'EAT_IN' ? 1 : 2,
         tableId: orderType === 'EAT_IN' ? tableId : null,
-        paymentMethod,
+        paymentMethod: activeMethod,
         isPaid: isPaidImmediately,
         items: cart.map((i) => ({
           id: i.id,
@@ -656,17 +713,51 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
               <div className="checkout-payment-detail-center">
                 {paymentMethod === 'WOMPI_QR' && (
                   <div className="checkout-qr-box">
-                    <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https://checkout.wompi.co/p/serviplus-kiosk`}
-                      alt="Wompi QR"
-                      style={{ width: '150px', height: '150px', margin: '0 auto', display: 'block', borderRadius: '12px' }}
-                    />
-                    <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#0f172a', marginTop: '12px' }}>
-                      Escanea con tu App Bancolombia, Nequi o Cámara
-                    </div>
-                    <p style={{ fontSize: '0.84rem', color: '#64748b', margin: '4px 0 0 0' }}>
-                      Tu pago se confirma de inmediato y tu orden pasa directamente a la pantalla de cocina.
-                    </p>
+                    {qrLoading ? (
+                      <div style={{ padding: '30px 20px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '2.4rem', animation: 'spin 1s linear infinite', display: 'inline-block', marginBottom: '8px' }}>🔄</div>
+                        <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0f172a' }}>Generando QR Bancolombia / Nequi...</div>
+                        <p style={{ fontSize: '0.84rem', color: '#64748b', margin: '4px 0 0 0' }}>Conectando con la pasarela de pagos Wompi</p>
+                      </div>
+                    ) : wompiQrData?.qrImage ? (
+                      <div>
+                        <div style={{ background: '#ffffff', padding: '12px', borderRadius: '18px', display: 'inline-block', boxShadow: '0 8px 25px rgba(0, 0, 0, 0.08)', border: '1px solid #e2e8f0' }}>
+                          <img
+                            src={wompiQrData.qrImage.startsWith('data:') ? wompiQrData.qrImage : `data:image/png;base64,${wompiQrData.qrImage}`}
+                            alt="Código QR Bancolombia / Nequi"
+                            style={{ width: '190px', height: '190px', display: 'block', margin: '0 auto', borderRadius: '8px' }}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '12px' }}>
+                          <span style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0f172a' }}>
+                            Escanea con tu App Bancolombia o Nequi
+                          </span>
+                          <span style={{ background: '#ecfdf5', color: '#047857', fontSize: '0.75rem', fontWeight: 900, padding: '3px 9px', borderRadius: '9999px', border: '1px solid #a7f3d0' }}>
+                            ● Listo
+                          </span>
+                        </div>
+                        <p style={{ fontSize: '0.86rem', color: '#64748b', margin: '4px 0 0 0' }}>
+                          Total: <strong style={{ color: '#047857' }}>{formatCOP(total)}</strong> • Ref: <strong>{wompiQrData.reference}</strong>
+                        </p>
+                        <div style={{ marginTop: '8px', fontSize: '0.8rem', color: '#059669', fontWeight: 700, background: '#f0fdf4', padding: '6px 12px', borderRadius: '10px', border: '1px solid #bbf7d0', display: 'inline-block' }}>
+                          ⚡ Al completar el pago en tu celular, el Kiosco lo detecta y envía la orden a cocina al instante.
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <img
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(wompiQrData?.checkoutUrl || 'https://checkout.wompi.co')}`}
+                          alt="Wompi QR"
+                          style={{ width: '160px', height: '160px', margin: '0 auto', display: 'block', borderRadius: '12px', background: '#fff', padding: '6px' }}
+                        />
+                        <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#0f172a', marginTop: '12px' }}>
+                          Escanea con tu App Bancolombia, Nequi o Cámara
+                        </div>
+                        <p style={{ fontSize: '0.84rem', color: '#64748b', margin: '4px 0 0 0' }}>
+                          Tu pago se confirma de inmediato y tu orden pasa directamente a la pantalla de cocina.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 

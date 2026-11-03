@@ -8,6 +8,9 @@ import { KdsGrid } from './components/kds/KdsGrid';
 import { KioskView } from './components/kiosk/KioskView';
 import { CashierView } from './components/cashier/CashierView';
 import { TurnsBoard } from './components/turns/TurnsBoard';
+import { AdminLoginModal } from './components/admin/AdminLoginModal';
+import { AdminSettingsModal } from './components/admin/AdminSettingsModal';
+import './components/admin/AdminModals.css';
 
 export function App() {
   // Conexión y sincronización Socket.IO
@@ -18,8 +21,15 @@ export function App() {
   const setFullscreen = useMenuStore((state) => state.setFullscreen);
   const setCategories = useMenuStore((state) => state.setCategories);
   const setActiveOrders = useKdsStore((state) => state.setActiveOrders);
-
   const setActiveTab = useMenuStore((state) => state.setActiveTab);
+
+  // Estados del modal Admin
+  const isAdminLoginOpen = useMenuStore((state) => state.isAdminLoginOpen);
+  const isAdminSettingsOpen = useMenuStore((state) => state.isAdminSettingsOpen);
+  const currentAdmin = useMenuStore((state) => state.currentAdmin);
+  const closeAdminLogin = useMenuStore((state) => state.closeAdminLogin);
+  const openAdminSettings = useMenuStore((state) => state.openAdminSettings);
+  const closeAdminSettings = useMenuStore((state) => state.closeAdminSettings);
 
   // Sincronizar salida de pantalla completa nativa (Esc, etc.)
   useEffect(() => {
@@ -116,6 +126,19 @@ export function App() {
         {activeTab === 'cashier' && <CashierView />}
         {activeTab === 'turns' && <TurnsBoard />}
       </main>
+
+      {/* Modales de Administración Aldelo */}
+      <AdminLoginModal
+        isOpen={isAdminLoginOpen}
+        onClose={closeAdminLogin}
+        onSuccess={(employee) => openAdminSettings(employee)}
+      />
+
+      <AdminSettingsModal
+        isOpen={isAdminSettingsOpen}
+        onClose={closeAdminSettings}
+        currentAdmin={currentAdmin}
+      />
     </div>
   );
 }

@@ -4,8 +4,46 @@
     "productsConnectionString": "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=C:\\SP\\B\\kebab.mdb;"
   },
   "wompi": {
-    "publicKey": "pub_prod_F4z65GfEwT9z3P",
-    "integritySecret": "",
-    "currency": "COP"
+    "mode": "production",
+    "currency": "COP",
+    "publicKey": "pub_prod_afhk5iNPzbNXgRh3DrI8rFaQfT1xnpe2",
+    "privateKey": "prv_prod_LbjaEDeBegEqUXHEvKkHImhxatgraWBz",
+    "integritySecret": "prod_integrity_KDL6nq4DfUHaXwwVYqLC3SvWy5sTMksZ",
+    "eventsSecret": "prod_events_TpPLiX3mc0PxEzquqhT5t2WaSZeaDzer",
+    "sandbox": {
+      "publicKey": "pub_test_82Z9KlLHoXDCfQ8nDCKW3hALwt23Lh62",
+      "privateKey": "prv_test_1U9ImRNhUMsrHKsqQNe1GstIxGDbUPDy",
+      "integritySecret": "test_integrity_rXGbWc5E5guVUx68RASrPxWNRfrYaEq3",
+      "eventsSecret": "test_events_l5HJ6w0153hiCJeeBZgs77hlNgBNr2WI"
+    },
+    "methods": {
+      "bancolombiaQr": true,
+      "wompiLink": true,
+      "cash": true
+    }
+  },
+  "sms": {
+    "provider": "hablame",
+    "enabled": true,
+    "user": "luis.delatorre0277@gmail.com",
+    "accountId": "10016115",
+    "apiKey": "W7H4gqhGG1Euca6CokXO12lM2I8y2k",
+    "token": "63d7a2c2ff294943cabc51d87bb93ac4",
+    "apiUrl": "https://api103.hablame.co/api/sms/v3/send/priority",
+    "template": "Gracias por tu compra en {restaurant}. Tu recibo digital: {url}"
+  },
+  "restaurant": {
+    "name": "Kebab Especial",
+    "legalName": "Serviplus SAS",
+    "nit": "900.123.456-7",
+    "address": "Calle Principal # 10 - 20",
+    "phone": "+57 300 123 4567",
+    "dianResolution": "Resolución DIAN No. 18764000001 del 2024",
+    "receiptFooter": "¡Gracias por su visita! Vuelva pronto."
+  },
+  "kiosk": {
+    "autoReturnSeconds": 30,
+    "allowTips": false,
+    "defaultOrderType": 1
   }
 }

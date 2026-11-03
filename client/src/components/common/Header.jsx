@@ -3,11 +3,13 @@ import { useMenuStore } from '../../store/useMenuStore';
 import { useI18n } from '../../i18n';
 import { sfx } from '../../utils/audio';
 import { enterFullscreen } from '../../utils/fullscreen';
+import { Shield } from 'lucide-react';
 
 export function Header() {
   const activeTab = useMenuStore((state) => state.activeTab);
   const setActiveTab = useMenuStore((state) => state.setActiveTab);
   const setKioskFullscreen = useMenuStore((state) => state.setKioskFullscreen);
+  const openAdminLogin = useMenuStore((state) => state.openAdminLogin);
   const { lang, setLang } = useI18n();
 
   const handleTabChange = (tab) => {
@@ -160,6 +162,33 @@ export function Header() {
           <span>Pantalla Completa</span>
         </button>
 */}
+        {/* Botón Admin Aldelo */}
+        <button
+          type="button"
+          onClick={() => {
+            sfx.playTap();
+            openAdminLogin();
+          }}
+          title="Panel de Administración (Acceso Gerencial Aldelo)"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: '#f8fafc',
+            border: '1.5px solid #cbd5e1',
+            borderRadius: '9999px',
+            padding: '5px 12px',
+            fontSize: '0.8rem',
+            fontWeight: 800,
+            color: '#334155',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <Shield size={15} color="#da291c" />
+          <span>Admin</span>
+        </button>
+
         {/* Status Dot */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#475569' }}>
           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }}></span>

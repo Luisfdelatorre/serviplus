@@ -192,11 +192,15 @@ function formatReceiptDate(dateObj) {
  * Genera el documento HTML completo del Recibo Digital (según el diseño suministrado)
  */
 function renderReceiptHtml(data) {
+  let cfg = {};
+  try { cfg = JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json'), 'utf8')); } catch (_) {}
+  const restConfig = cfg.restaurant || {};
+
   const {
-    restaurantName = 'Kebab & Shawarma',
-    storeSubtitle = 'Serviplus Kiosk Express • Estación Centro',
-    address = 'Cra. 7 #45-12, Cartagena',
-    phone = '+57 (300) 123-4567',
+    restaurantName = restConfig.name || 'Kebab & Shawarma',
+    storeSubtitle = restConfig.legalName || 'Serviplus Kiosk Express • Estación Centro',
+    address = restConfig.address || 'Cra. 7 #45-12, Cartagena',
+    phone = restConfig.phone || '+57 (300) 123-4567',
     orderNumber = 142,
     orderDate = new Date(),
     transactionRef = 'SP-9ETZEMABAH',
@@ -204,7 +208,7 @@ function renderReceiptHtml(data) {
     totalAmount = 10000,
     paymentMethod = 'WOMPI_QR',
     approvalRef = 'M-9482014',
-    dianResolution = 'Factura Electrónica POS según Res. DIAN No. 187640'
+    dianResolution = restConfig.dianResolution || 'Factura Electrónica POS según Res. DIAN No. 187640'
   } = data;
 
   // Cálculo de Subtotal e IVA (19% en Colombia)
