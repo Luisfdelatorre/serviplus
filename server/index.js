@@ -285,7 +285,7 @@ app.get('/api/receipts/:code', async (req, res) => {
 });
 
 // 7c. Renderizar vista HTML pública del Recibo Digital (estilo móvil upaysolutions.app)
-app.get(['/p/p/:code', '/receipt/:code', '/r/:code'], async (req, res) => {
+app.get(['/p/:code', '/p/p/:code', '/receipt/:code', '/r/:code'], async (req, res) => {
   try {
     const { code } = req.params;
     const verified = receiptService.verifyReceiptCode(code);

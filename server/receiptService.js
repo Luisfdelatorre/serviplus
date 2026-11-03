@@ -116,8 +116,8 @@ function generateReceiptCode(orderId, date = new Date(), meta = {}) {
     checksum,
     transactionRef,
     urlCode,
-    path: `/p/p/${urlCode}`,
-    fullUrl: `https://upaysolutions.app/p/p/${urlCode}`
+    path: `/p/${urlCode}`,
+    fullUrl: `https://upaysolutions.app/p/${urlCode}`
   };
 }
 

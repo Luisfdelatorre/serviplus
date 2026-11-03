@@ -264,7 +264,7 @@ export function CheckoutView({ isOpen = true, onClose, onOrderCompleted }) {
       setCreatedOrderNumber(assignedNumber);
       setCreatedOrderId(res.id || res.orderId);
       const rCode = res.receiptCode || null;
-      const rUrl = res.receiptUrl || (rCode ? `/p/p/${rCode}` : null);
+      const rUrl = res.receiptUrl || (rCode ? `/p/${rCode}` : null);
       setCreatedReceiptCode(rCode);
       setCreatedReceiptUrl(rUrl);
       sfx.playReadyChime();
@@ -290,7 +290,7 @@ export function CheckoutView({ isOpen = true, onClose, onOrderCompleted }) {
     }
     sfx.playTap();
     const cleanPhone = receiptInput.trim().replace(/\D/g, '');
-    const fullReceiptUrl = window.location.origin + (createdReceiptUrl || `/p/p/${createdReceiptCode || ''}`);
+    const fullReceiptUrl = window.location.origin + (createdReceiptUrl || `/p/${createdReceiptCode || ''}`);
     const message = encodeURIComponent(
       KIOSK_CONFIG.messages.whatsappTemplate(createdOrderNumber, fullReceiptUrl, KIOSK_CONFIG.restaurant.name)
     );

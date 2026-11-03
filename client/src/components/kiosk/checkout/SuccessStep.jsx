@@ -27,7 +27,7 @@ export function SuccessStep({
   onFinish
 }) {
   const [localQrDataUrl, setLocalQrDataUrl] = useState('');
-  const qrFullUrl = `${window.location.origin}${createdReceiptUrl || `/p/p/${createdReceiptCode || 'SP-24'}`}`;
+  const qrFullUrl = `${window.location.origin}${createdReceiptUrl || `/p/${createdReceiptCode || 'SP-24'}`}`;
 
   useEffect(() => {
     QRCode.toDataURL(qrFullUrl, {
