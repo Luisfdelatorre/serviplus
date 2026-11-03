@@ -68,3 +68,4 @@ export function CheckoutFlowHeader({ step, orderType, onBack, onClose }) {
     </header>
   );
 }
+

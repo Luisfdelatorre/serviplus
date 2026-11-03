@@ -437,3 +437,4 @@ export function CheckoutView({ isOpen = true, onClose, onOrderCompleted }) {
 }
 
 export default CheckoutView;
+
