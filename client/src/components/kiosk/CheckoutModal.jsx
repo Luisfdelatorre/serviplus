@@ -723,7 +723,13 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }) {
                       <div>
                         <div style={{ background: '#ffffff', padding: '12px', borderRadius: '18px', display: 'inline-block', boxShadow: '0 8px 25px rgba(0, 0, 0, 0.08)', border: '1px solid #e2e8f0' }}>
                           <img
-                            src={wompiQrData.qrImage.startsWith('data:') ? wompiQrData.qrImage : `data:image/png;base64,${wompiQrData.qrImage}`}
+                            src={
+                              wompiQrData.qrImage.startsWith('data:')
+                                ? wompiQrData.qrImage
+                                : wompiQrData.qrImage.startsWith('PD94bWw') || wompiQrData.qrImage.startsWith('PHN2Zw')
+                                ? `data:image/svg+xml;base64,${wompiQrData.qrImage}`
+                                : `data:image/png;base64,${wompiQrData.qrImage}`
+                            }
                             alt="Código QR Bancolombia / Nequi"
                             style={{ width: '190px', height: '190px', display: 'block', margin: '0 auto', borderRadius: '8px' }}
                           />

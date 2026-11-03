@@ -6,10 +6,10 @@
   "wompi": {
     "mode": "production",
     "currency": "COP",
-    "publicKey": "pub_prod_afhk5iNPzbNXgRh3DrI8rFaQfT1xnpe2",
-    "privateKey": "prv_prod_LbjaEDeBegEqUXHEvKkHImhxatgraWBz",
-    "integritySecret": "prod_integrity_KDL6nq4DfUHaXwwVYqLC3SvWy5sTMksZ",
-    "eventsSecret": "prod_events_TpPLiX3mc0PxEzquqhT5t2WaSZeaDzer",
+    "publicKey": "pub_prod_MP2rh77NUHv1kyIAZ0YCUb6rDFPQeRLy",
+    "privateKey": "prv_prod_y6XWiFrPIyOJSwRxtSOqjvuvdpqnk2FY",
+    "integritySecret": "prod_integrity_hPr2Bn631ee2jFpthJDLsLyZeDe3SMlk",
+    "eventsSecret": "prod_events_J8NGcB6ZoY5yfvf5LsZF63GEgdf7ifYJ",
     "sandbox": {
       "publicKey": "pub_test_82Z9KlLHoXDCfQ8nDCKW3hALwt23Lh62",
       "privateKey": "prv_test_1U9ImRNhUMsrHKsqQNe1GstIxGDbUPDy",

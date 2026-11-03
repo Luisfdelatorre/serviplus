@@ -54,7 +54,9 @@ class WompiService {
   async request(method, path, body = null, usePrivateKey = false) {
     const creds = this.getActiveCredentials();
     const authKey = usePrivateKey ? creds.privateKey : creds.publicKey;
-    const url = new URL(path, creds.baseUrl);
+    const baseUrl = creds.baseUrl.endsWith('/') ? creds.baseUrl : creds.baseUrl + '/';
+    const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+    const url = new URL(cleanPath, baseUrl);
 
     const payload = body ? JSON.stringify(body) : null;
 
@@ -67,7 +69,8 @@ class WompiService {
         headers: {
           'Authorization': `Bearer ${authKey}`,
           'Accept': 'application/json',
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Serviplus/1.0'
         },
         timeout: 15000
       };
@@ -130,44 +133,79 @@ class WompiService {
     const reference = `SP-${orderId || Date.now()}-${Date.now().toString().slice(-4)}`;
 
     const signature = this.generateIntegritySignature(reference, amountInCents, creds.currency);
-    const acceptanceToken = await this.getAcceptanceToken();
-
-    const isSandbox = creds.mode === 'sandbox';
-
-    const body = {
-      acceptance_token: acceptanceToken,
-      amount_in_cents: amountInCents,
-      currency: creds.currency,
-      signature: signature,
-      customer_email: customerEmail,
-      reference: reference,
-      payment_method: {
-        type: 'BANCOLOMBIA_QR',
-        payment_description: `Pago Orden #${orderId || ''} en Kiosco`,
-        ...(isSandbox && { sandbox_status: 'APPROVED' })
-      }
-    };
-
-    const res = await this.request('POST', '/transactions', body, false);
-    if (!res.ok) {
-      const errorMsg = (res.data && res.data.error && res.data.error.reason) || 'Error creando transacción QR en Wompi';
-      console.error('[Wompi Service] Create QR Error:', res.data);
-      throw new Error(errorMsg);
+    let checkoutUrl = `https://checkout.wompi.co/p/?public-key=${creds.publicKey}&currency=${creds.currency}&amount-in-cents=${amountInCents}&reference=${reference}`;
+    if (signature) {
+      checkoutUrl += `&signature:integrity=${signature}`;
     }
 
-    const txData = res.data.data;
-    const extra = txData?.payment_method?.extra || {};
+    try {
+      const acceptanceToken = await this.getAcceptanceToken();
+      const isSandbox = creds.mode === 'sandbox';
 
+      const body = {
+        acceptance_token: acceptanceToken,
+        amount_in_cents: amountInCents,
+        currency: creds.currency,
+        signature: signature,
+        customer_email: customerEmail,
+        reference: reference,
+        payment_method: {
+          type: 'BANCOLOMBIA_QR',
+          payment_description: `Pago Orden #${orderId || ''} en Kiosco`,
+          ...(isSandbox && { sandbox_status: 'APPROVED' })
+        }
+      };
+
+      const res = await this.request('POST', '/transactions', body, false);
+      if (res.ok && res.data?.data) {
+        let txData = res.data.data;
+        let extra = txData?.payment_method?.extra || {};
+
+        // Wompi genera el qr_image de forma asíncrona (1-2 segundos)
+        if (!extra.qr_image && txData.id) {
+          for (let attempt = 0; attempt < 3; attempt++) {
+            await new Promise((r) => setTimeout(r, 1000));
+            try {
+              const checkRes = await this.request('GET', `/transactions/${txData.id}`);
+              if (checkRes.ok && checkRes.data?.data) {
+                txData = checkRes.data.data;
+                extra = txData?.payment_method?.extra || {};
+                if (extra.qr_image) break;
+              }
+            } catch (pollErr) {
+              break;
+            }
+          }
+        }
+
+        return {
+          success: true,
+          transactionId: txData.id,
+          reference: txData.reference,
+          status: txData.status,
+          amountInCOP,
+          amountInCents,
+          qrImage: extra.qr_image || null,
+          qrId: extra.qr_id || null,
+          checkoutUrl,
+          mode: creds.mode
+        };
+      } else {
+        console.warn('[Wompi Service] Direct QR API info:', (res.data && res.data.error && res.data.error.reason) || 'Fallback a QR de checkout firmado');
+      }
+    } catch (apiErr) {
+      console.warn('[Wompi Service] Direct QR exception, usando QR de checkout firmado:', apiErr.message);
+    }
+
+    // Fallback seguro: URL de checkout oficial Wompi firmada con integridad SHA-256
     return {
       success: true,
-      transactionId: txData.id,
-      reference: txData.reference,
-      status: txData.status,
+      reference,
+      status: 'PENDING',
       amountInCOP,
       amountInCents,
-      qrImage: extra.qr_image || null, // Base64 del código QR oficial de Bancolombia
-      qrId: extra.qr_id || null,
-      externalIdentifier: extra.external_identifier || null,
+      qrImage: null,
+      checkoutUrl,
       mode: creds.mode
     };
   }
@@ -222,3 +260,4 @@ class WompiService {
 }
 
 module.exports = WompiService;
+

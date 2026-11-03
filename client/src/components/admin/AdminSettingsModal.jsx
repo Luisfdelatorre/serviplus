@@ -634,3 +634,4 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
     </div>
   );
 }
+
