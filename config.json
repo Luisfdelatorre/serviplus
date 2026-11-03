@@ -43,9 +43,9 @@
     "receiptFooter": "¡Gracias por tu compra! Conserva este ticket para retirar tu pedido en mostrador."
   },
   "kiosk": {
-    "idleTimeoutSeconds": 90,
+    "idleTimeoutSeconds": 900,
     "idleWarningSeconds": 15,
-    "orderSuccessAutoCloseSeconds": 20,
+    "orderSuccessAutoCloseSeconds": 320,
     "receiptSentAutoCloseSeconds": 5,
     "wompiPollIntervalMs": 2500,
     "stepTransitionDelayMs": 180,
@@ -53,6 +53,6 @@
     "defaultOrderType": 1,
     "defaultPaymentMethod": "WOMPI_QR",
     "defaultCustomerEmail": "kiosco@serviplus.pos",
-    "autoReturnSeconds": 300
+    "autoReturnSeconds": 900
   }
 }

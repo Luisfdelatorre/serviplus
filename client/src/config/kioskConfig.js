@@ -140,3 +140,4 @@ export function updateKioskConfig(serverConfig) {
 }
 
 export default KIOSK_CONFIG;
+

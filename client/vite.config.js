@@ -20,6 +20,18 @@ export default defineConfig({
       '/images': {
         target: 'http://localhost',
         changeOrigin: true
+      },
+      '/p': {
+        target: 'http://localhost',
+        changeOrigin: true
+      },
+      '/receipt': {
+        target: 'http://localhost',
+        changeOrigin: true
+      },
+      '/r': {
+        target: 'http://localhost',
+        changeOrigin: true
       }
     }
   }

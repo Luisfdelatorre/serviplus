@@ -215,7 +215,7 @@ app.post('/api/orders/:id/receipt', async (req, res) => {
 });
 
 // Consultar datos JSON de un recibo por su código único de 13 caracteres
-app.get('/api/receipts/:code', async (req, res) => {
+app.get(['/api/receipts/:code', '/api/receipts/p/:code'], async (req, res) => {
     try {
         const { code } = req.params;
         const verified = receiptService.verifyReceiptCode(code);
@@ -241,7 +241,7 @@ app.get('/api/receipts/:code', async (req, res) => {
 });
 
 // Renderizar vista HTML pública del Recibo Digital (estilo móvil upaysolutions.app)
-app.get(['/p/:code', '/receipt/:code', '/r/:code'], async (req, res) => {
+app.get(['/p/:code', '/p/p/:code', '/receipt/:code', '/receipt/p/:code', '/r/:code', '/r/p/:code'], async (req, res) => {
     try {
         const { code } = req.params;
         const verified = receiptService.verifyReceiptCode(code);
