@@ -1,5 +1,8 @@
+const https = require('https');
+
 /**
  * Servicio de mensajería WhatsApp vía Meta Graph API Cloud (v25.0)
+ * Compatible con todas las versiones de Node.js (Node 16+)
  */
 class WhatsAppService {
   constructor(configGetter) {
@@ -8,7 +11,7 @@ class WhatsAppService {
 
   /**
    * Envía un mensaje de WhatsApp a través de Meta Graph API
-   * @param {string} to - Número de destino con código de país (ej. "573008915869")
+   * @param {string} to - Número de destino con código de país (ej. "573008915869" o "17874096730")
    * @param {string} bodyText - Contenido del mensaje de texto
    * @param {object} options - Parámetros opcionales (override de credenciales)
    */
@@ -43,43 +46,70 @@ class WhatsAppService {
       };
     }
 
-    const endpoint = `https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`;
-    const payload = {
+    const payload = JSON.stringify({
       messaging_product: 'whatsapp',
       to: cleanPhone,
       type: 'text',
       text: {
         body: String(bodyText || '')
       }
-    };
-
-    console.log(`[WhatsApp Service] Enviando mensaje a ${cleanPhone} vía ${endpoint}...`);
-
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
     });
 
-    const data = await response.json().catch(() => ({}));
+    const path = `/${apiVersion}/${phoneNumberId}/messages`;
+    console.log(`[WhatsApp Service] Enviando mensaje a ${cleanPhone} vía https://graph.facebook.com${path}...`);
 
-    if (!response.ok) {
-      const errorMsg = data?.error?.message || `Error en Meta Graph API (HTTP ${response.status})`;
-      console.error(`[WhatsApp Service] Error de Meta Graph API (${response.status}):`, data);
-      throw new Error(errorMsg);
-    }
+    return new Promise((resolve, reject) => {
+      const req = https.request({
+        hostname: 'graph.facebook.com',
+        port: 443,
+        path: path,
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payload)
+        },
+        timeout: 15000
+      }, (res) => {
+        let resData = '';
+        res.on('data', (chunk) => { resData += chunk; });
+        res.on('end', () => {
+          let parsed = {};
+          try {
+            parsed = JSON.parse(resData);
+          } catch (_) {
+            parsed = { raw: resData };
+          }
 
-    console.log(`[WhatsApp Service] Mensaje enviado exitosamente a ${cleanPhone}:`, data);
-    return {
-      success: true,
-      data,
-      to: cleanPhone
-    };
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            console.log(`[WhatsApp Service] Mensaje enviado exitosamente a ${cleanPhone} (HTTP ${res.statusCode}):`, parsed);
+            resolve({
+              success: true,
+              data: parsed,
+              to: cleanPhone
+            });
+          } else {
+            const errorMsg = parsed?.error?.message || `Error en Meta Graph API (HTTP ${res.statusCode})`;
+            console.error(`[WhatsApp Service] Error de Meta Graph API (${res.statusCode}):`, parsed);
+            reject(new Error(errorMsg));
+          }
+        });
+      });
+
+      req.on('error', (err) => {
+        console.error('[WhatsApp Service] Error de conexión con graph.facebook.com:', err.message);
+        reject(err);
+      });
+
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error('Timeout de conexión al conectar con Meta Graph API'));
+      });
+
+      req.write(payload);
+      req.end();
+    });
   }
 }
 
 module.exports = WhatsAppService;
-
