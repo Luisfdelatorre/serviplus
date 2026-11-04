@@ -91,7 +91,8 @@ const aldeloService = {
         m.DefaultUnitPrice as price, 
         m.ItemDelComp as commission,
         m.MenuItemDescription as description,
-        m.DisplayIndex as itemOrder
+        m.DisplayIndex as itemOrder,
+        m.MenuItemNotification as menuItemNotification
       FROM MenuItems m
       LEFT JOIN MenuGroups g ON m.MenuGroupID = g.MenuGroupID
       WHERE m.DefaultUnitPrice > 0
@@ -165,7 +166,9 @@ const aldeloService = {
         prepTime: prepTime,
         description: item.description || '',
         modifiers: itemMods,
-        hasModifiers: itemMods.length > 0
+        hasModifiers: itemMods.length > 0,
+        menuItemNotification: String(item.menuItemNotification || '1'),
+        isKitchenItem: String(item.menuItemNotification) === '2'
       });
     });
 
@@ -262,7 +265,8 @@ const aldeloService = {
         t.Mod4ID, t.Mod4Cost,
         t.Mod5ID, t.Mod5Cost,
         m.MenuItemText,
-        m.MenuItemDescription
+        m.MenuItemDescription,
+        m.MenuItemNotification
       FROM OrderTransactions t
       LEFT JOIN MenuItems m ON t.MenuItemID = m.MenuItemID
       WHERE t.OrderID IN (${orderIds})
@@ -299,6 +303,11 @@ const aldeloService = {
         }
       }
 
+      // En Aldelo POS: MenuItemNotification === '2' es "Cocina".
+      // Si el ítem no va a cocina (ej. MenuItemNotification === '1', bebidas o refrescos), se marca isKitchenItem = false.
+      const notifVal = String(item.MenuItemNotification || '1');
+      const isKitchenItem = notifVal === '2';
+
       itemsByOrder[item.OrderID].push({
         id: item.OrderTransactionID,
         menuItemId: item.MenuItemID,
@@ -308,7 +317,9 @@ const aldeloService = {
         extendedPrice: item.ExtendedPrice,
         notes: item.ShortNote || '',
         modifiers: itemMods,
-        prepTime: itemPrepTime
+        prepTime: itemPrepTime,
+        menuItemNotification: notifVal,
+        isKitchenItem: isKitchenItem
       });
     });
 

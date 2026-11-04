@@ -1,20 +1,29 @@
 // API REST client para Aldelo POS & Serviplus
 export async function fetchMenu() {
-  const res = await fetch('/api/menu');
+  const res = await fetch(`/api/menu?_t=${Date.now()}`, {
+    cache: 'no-store',
+    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+  });
   const json = await res.json();
   if (!json.success) throw new Error(json.error || 'Error al obtener menú');
   return json.data;
 }
 
 export async function fetchEmployees() {
-  const res = await fetch('/api/employees');
+  const res = await fetch(`/api/employees?_t=${Date.now()}`, {
+    cache: 'no-store',
+    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+  });
   const json = await res.json();
   if (!json.success) throw new Error(json.error || 'Error al obtener empleados');
   return json.data;
 }
 
 export async function fetchActiveOrders() {
-  const res = await fetch('/api/orders/active');
+  const res = await fetch(`/api/orders/active?_t=${Date.now()}`, {
+    cache: 'no-store',
+    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+  });
   const json = await res.json();
   if (!json.success) throw new Error(json.error || 'Error al obtener órdenes activas');
   return json.data;

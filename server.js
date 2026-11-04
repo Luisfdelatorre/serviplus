@@ -74,6 +74,17 @@ app.use((req, res, next) => {
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
+// Desactivar caché HTTP para toda la API REST para garantizar datos 100% en tiempo real al recargar
+app.use('/api', (req, res, next) => {
+    res.set({
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Surrogate-Control': 'no-store'
+    });
+    next();
+});
+
 // ============================================================================
 // 1. API MODERNA (KIOSK AUTOSERVICIO, KDS Y TURNOS)
 // ============================================================================

@@ -19,6 +19,17 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Desactivar caché HTTP para toda la API REST para garantizar datos 100% en tiempo real al recargar
+app.use('/api', (req, res, next) => {
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    'Surrogate-Control': 'no-store'
+  });
+  next();
+});
+
 // Ping legacy endpoint for connectivity discovery
 app.all('/ping', (req, res) => {
   const key = (req.body && req.body.key) || req.query.key || req.ip || '127.0.0.1';

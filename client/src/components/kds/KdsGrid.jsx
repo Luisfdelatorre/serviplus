@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useKdsStore, getOrderKdsStatus } from '../../store/useKdsStore';
+import { useMenuStore } from '../../store/useMenuStore';
+import { fetchActiveOrders, fetchMenu } from '../../api';
 import { KdsTopBar } from './KdsTopBar';
 import { KdsCard } from './KdsCard';
 import { getElapsedMinutes } from '../../utils/format';
@@ -10,6 +12,8 @@ import { ScreenResolutionBadge } from '../common/ScreenResolutionBadge';
 
 export function KdsGrid() {
   const activeOrders = useKdsStore((state) => state.activeOrders);
+  const setActiveOrders = useKdsStore((state) => state.setActiveOrders);
+  const setCategories = useMenuStore((state) => state.setCategories);
   const kdsFilter = useKdsStore((state) => state.kdsFilter);
   const kdsPage = useKdsStore((state) => state.kdsPage);
   const setKdsPage = useKdsStore((state) => state.setKdsPage);
@@ -18,6 +22,21 @@ export function KdsGrid() {
   const kdsTheme = useKdsStore((state) => state.kdsTheme);
   const { t } = useI18n();
   const { style: pixelShiftStyle } = usePixelShift();
+
+  // Garantizar que cada vez que se monte o recargue el KDS se obtenga la última versión fresca de productos y órdenes
+  useEffect(() => {
+    fetchActiveOrders()
+      .then((orders) => {
+        if (orders) setActiveOrders(orders);
+      })
+      .catch((err) => console.warn('[KdsGrid] Error loading fresh active orders:', err));
+
+    fetchMenu()
+      .then((menu) => {
+        if (menu) setCategories(menu);
+      })
+      .catch((err) => console.warn('[KdsGrid] Error loading fresh menu products:', err));
+  }, [setActiveOrders, setCategories]);
 
   useEffect(() => {
     try {
@@ -61,8 +80,15 @@ export function KdsGrid() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Filtrar órdenes válidas (excluir anuladas 3)
-  const validOrders = (activeOrders || []).filter((o) => o.status !== '3');
+  // Filtrar órdenes válidas para el KDS de cocina:
+  // 1. Excluir órdenes anuladas (status === '3')
+  // 2. Solo mostrar órdenes que contengan platos enviados a cocina (isKitchenItem !== false)
+  const validOrders = (activeOrders || [])
+    .filter((o) => o.status !== '3')
+    .filter((o) => {
+      const kitchenItems = (o.items || []).filter((it) => it.isKitchenItem !== false);
+      return kitchenItems.length > 0;
+    });
 
   // 1. En preparación: pendientes ordenados de más viejos a más nuevos (FIFO cocina)
   const prepOrders = validOrders

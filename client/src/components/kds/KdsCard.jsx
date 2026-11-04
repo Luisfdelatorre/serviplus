@@ -93,9 +93,11 @@ export function KdsCard({ order }) {
         </div>
       </div>
 
-      {/* Items List (Aprovecha el 100% del espacio vertical libre sin botonera inferior) */}
+      {/* Items List (Solo muestra los platos enviados a cocina: MenuItemNotification === '2') */}
       <div className="kds-card-items">
-        {(order.items || []).map((it, idx) => {
+        {(order.items || [])
+          .filter((it) => it.isKitchenItem !== false)
+          .map((it, idx) => {
           const checkKey = `${order.id}_${it.id || idx}`;
           const isChecked = !!(order.kdsItemChecks && order.kdsItemChecks[checkKey]) || !!kdsItemChecks[checkKey];
           return (
