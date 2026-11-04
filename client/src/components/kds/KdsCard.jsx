@@ -2,6 +2,7 @@ import React from 'react';
 import { useKdsStore, getOrderKdsStatus } from '../../store/useKdsStore';
 import { formatRegularTime, getElapsedMinutes } from '../../utils/format';
 import { useI18n } from '../../i18n';
+import { sfx } from '../../utils/audio';
 
 export function KdsCard({ order }) {
   const toggleItemCheck = useKdsStore((state) => state.toggleItemCheck);
@@ -36,20 +37,63 @@ export function KdsCard({ order }) {
     ? t('kds_order_title_takeout', { orderNumber: order.orderNumber })
     : t('kds_order_title_table', { orderNumber: order.orderNumber, table: order.tableId });
 
+  // Acción interactiva en todo el banner / cabecera de la comanda
+  const handleHeaderAction = () => {
+    try { sfx.playReadyChime(); } catch (_) {}
+    if (kdsStatus === 'READY') {
+      setOrderState(order.id, 'SERVED');
+    } else {
+      setOrderState(order.id, 'READY');
+    }
+  };
+
   return (
     <div className={`kds-card ${urgencyClass}`}>
-      {/* Header */}
-      <div className="kds-card-header">
+      {/* Header Interactivo: todo el banner cambia el estado y porta el checkmark a la derecha */}
+      <div
+        className="kds-card-header kds-header-clickable"
+        onClick={handleHeaderAction}
+        title={kdsStatus === 'READY' ? 'Comanda Lista • Clic para marcar como ENTREGADO' : 'En Preparación • Clic para marcar como LISTO'}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
           <span className="kds-header-title">{orderTitle}</span>
         </div>
-        <div className="kds-header-right">
+
+        <div className="kds-header-right" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span className="kds-elapsed-pill" id={`kds-elapsed-${order.id}`}>⏱️ {elapsedText}</span>
           {orderTimeStr && <span className="kds-entry-time">{orderTimeStr}</span>}
+
+          {/* Botón Revertir si está READY */}
+          {kdsStatus === 'READY' && (
+            <button
+              type="button"
+              className="kds-header-revert-btn"
+              title={t('kds_aria_revert')}
+              onClick={(e) => {
+                e.stopPropagation();
+                try { sfx.playTap(); } catch (_) {}
+                setOrderState(order.id, 'PREPARING');
+              }}
+            >
+              <svg style={{ width: '13px', height: '13px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M3 10h10a5 5 0 0 1 5 5v2m-15-7l4-4m-4 4l4 4" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
+              </svg>
+            </button>
+          )}
+
+          {/* Checkmark destacado en el top banner right */}
+          <div
+            className={`kds-header-checkmark-badge ${kdsStatus === 'READY' ? 'is-ready' : 'is-prep'}`}
+            title={kdsStatus === 'READY' ? 'Listo (Clic para Entregar)' : 'Marcar como Listo'}
+          >
+            <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" />
+            </svg>
+          </div>
         </div>
       </div>
 
-      {/* Items List */}
+      {/* Items List (Aprovecha el 100% del espacio vertical libre sin botonera inferior) */}
       <div className="kds-card-items">
         {(order.items || []).map((it, idx) => {
           const checkKey = `${order.id}_${it.id || idx}`;
@@ -65,8 +109,9 @@ export function KdsCard({ order }) {
                   <strong>{it.quantity} x</strong> {it.name}
                 </span>
 
-                {/*it.modifiers && it.modifiers.length > 0 && (
-                  <span className="kds-item-text"
+                {it.modifiers && it.modifiers.length > 0 && (
+                  <span
+                    className="kds-item-text"
                     style={{
                       fontSize: '0.78rem',
                       color: '#b45309',
@@ -77,10 +122,11 @@ export function KdsCard({ order }) {
                   >
                     + {it.modifiers.map((m) => (typeof m === 'object' ? m.name : m)).join(', ')}
                   </span>
-                )*/}
+                )}
 
                 {it.notes && (
-                  <span className="kds-item-text"
+                  <span
+                    className="kds-item-text"
                     style={{
                       fontSize: '0.74rem',
                       color: '#64748b',
@@ -96,51 +142,6 @@ export function KdsCard({ order }) {
             </div>
           );
         })}
-      </div>
-
-      {/* Action Buttons */}
-      <div className="kds-card-action">
-        {kdsStatus === 'READY' ? (
-          <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '8px' }}>
-            <button
-              type="button"
-              aria-label={t('kds_aria_revert')}
-              className="btn-kds-revert"
-              onClick={() => setOrderState(order.id, 'PREPARING')}
-            >
-              <svg style={{ width: '15px', height: '15px', color: '#64748b' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path d="M3 10h10a5 5 0 0 1 5 5v2m-15-7l4-4m-4 4l4 4" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              aria-label={t('kds_aria_served')}
-              className="btn-kds-served group"
-              onClick={() => setOrderState(order.id, 'SERVED')}
-            >
-              <span style={{ width: '20px', height: '20px', borderRadius: '6px', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg style={{ width: '14px', height: '14px', color: '#ffffff', strokeWidth: 3 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </span>
-              <span style={{ whiteSpace: 'nowrap', textShadow: '0 1px 2px rgba(0,0,0,0.15)' }}>{t('kds_mark_served')}</span>
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            aria-label={t('kds_aria_ready')}
-            className="btn-kds-ready group"
-            onClick={() => setOrderState(order.id, 'READY')}
-          >
-            <span style={{ width: '20px', height: '20px', borderRadius: '6px', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg style={{ width: '14px', height: '14px', color: '#ffffff', strokeWidth: 3 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </span>
-            <span style={{ whiteSpace: 'nowrap', textShadow: '0 1px 2px rgba(0,0,0,0.15)' }}>{t('kds_mark_ready')}</span>
-          </button>
-        )}
       </div>
     </div>
   );

@@ -1671,6 +1671,78 @@ body {
   gap: 8px;
 }
 
+/* Header Interactivo para Pantalla TV (Clic en toda la barra) */
+.kds-card-header.kds-header-clickable {
+  cursor: pointer;
+  user-select: none;
+  transition: filter 0.15s ease, transform 0.08s ease;
+}
+
+.kds-card-header.kds-header-clickable:hover {
+  filter: brightness(1.09);
+}
+
+.kds-card-header.kds-header-clickable:active {
+  filter: brightness(0.96);
+  transform: scale(0.995);
+}
+
+/* Checkmark Badge en Top Banner Right */
+.kds-header-checkmark-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.kds-header-checkmark-badge.is-prep {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.kds-card-header:hover .kds-header-checkmark-badge.is-prep {
+  background: rgba(255, 255, 255, 0.45);
+  transform: scale(1.12);
+}
+
+.kds-header-checkmark-badge.is-ready {
+  background: #ffffff;
+  color: #10b981;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.kds-card-header:hover .kds-header-checkmark-badge.is-ready {
+  transform: scale(1.12);
+}
+
+/* Botón Revertir en Header */
+.kds-header-revert-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.kds-header-revert-btn:hover {
+  background: rgba(255, 255, 255, 0.45);
+  transform: scale(1.12);
+}
+
 .kds-elapsed-pill {
   background: rgba(0, 0, 0, 0.22);
   color: #ffffff;
