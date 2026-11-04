@@ -356,6 +356,27 @@ const aldeloService = {
     });
   },
 
+  // Obtener o inicializar ID de cajero activo en RegisterCashiers (Aldelo POS)
+  async getActiveCashierId(employeeId = 1, stationId = 3) {
+    try {
+      const rc = await connection.query('SELECT TOP 1 CashierID FROM RegisterCashiers WHERE SignOutDateTime IS NULL ORDER BY CashierID DESC');
+      if (rc && rc.length > 0 && rc[0].CashierID) {
+        return rc[0].CashierID;
+      }
+      const guid = generateGUID();
+      const resRc = await connection.execute(
+        `INSERT INTO RegisterCashiers (EmployeeID, StationID, CashTrayID, SignInDateTime, RegisterStartAmount, RowGUID) VALUES (${employeeId || 1}, ${stationId || 3}, 1, Now(), 0, '${guid}')`,
+        'SELECT @@Identity AS id'
+      );
+      if (resRc && resRc.length > 0 && resRc[0].id) {
+        return resRc[0].id;
+      }
+    } catch (cErr) {
+      console.warn('[getActiveCashierId Error]:', cErr.message);
+    }
+    return 1;
+  },
+
   // 4. Crear una nueva orden (desde Kiosk o Front Desk)
   // Nota: Las órdenes de Kiosk se crean con isPaid = true porque el pago se recibe previamente.
   async createOrder({ employeeId = 1, orderType = 1, items = [], tableId = null, guestNumber = 1, notes = '', paymentMethod = 'CASH', isPaid = true, transactionRef = '', wompiTransactionId = '' }) {
@@ -402,6 +423,17 @@ const aldeloService = {
 
     const tableValue = (orderType === 1 && resolvedTableId) ? resolvedTableId : 'NULL';
 
+    // Resolver StationID válido desde StationSettings de Aldelo (Evita error de clave foránea)
+    let resolvedStationId = (config.db && config.db.stationId) || 3;
+    try {
+      const stRows = await connection.query('SELECT TOP 1 StationID FROM StationSettings ORDER BY StationID');
+      if (stRows && stRows.length > 0 && stRows[0].StationID) {
+        resolvedStationId = stRows[0].StationID;
+      }
+    } catch (stErr) {
+      console.warn('[Station Resolution Error]:', stErr.message);
+    }
+
     const sqlHeader = `
       INSERT INTO OrderHeaders (
         OrderDateTime, EmployeeID, StationID, OrderType, DineInTableID, 
@@ -413,7 +445,7 @@ const aldeloService = {
         Kitchen5AlreadyPrinted, Kitchen6AlreadyPrinted, LiquorTaxRate, LiquorTaxAmount, 
         RemoteSiteNumber, RemoteOrigRowID, StoreNumber, BarTabPreAuth, RowGUID
       ) VALUES (
-        ${accessDate}, ${employeeId}, 1, ${orderType}, ${tableValue}, 
+        ${accessDate}, ${employeeId}, ${resolvedStationId}, ${orderType}, ${tableValue}, 
         0, 0, 0, 0, '${initialOrderStatus}', 
         ${totalAmount}, 1, 1, 1, 
         1, 0, ${totalAmount}, 0, 
@@ -496,6 +528,7 @@ const aldeloService = {
         const paymentGuid = generateGUID();
         const safeRef = String(transactionRef || '').replace(/'/g, "''");
         const safeTxId = String(wompiTransactionId || transactionRef || '').replace(/'/g, "''");
+        const activeCashierId = await this.getActiveCashierId(employeeId, resolvedStationId);
 
         // En Access: GlobalID y LastRowHash son de tipo Short Text (perfectos para referencias bancarias y transacciones)
         const sqlPayment = `
@@ -503,7 +536,7 @@ const aldeloService = {
             PaymentDateTime, CashierID, OrderID, PaymentMethod, 
             AmountTendered, AmountPaid, EmployeeComp, RowGUID, GlobalID, LastRowHash
           ) VALUES (
-            ${accessDate}, ${employeeId || 1}, ${orderId}, '${payMethodCode}', 
+            ${accessDate}, ${activeCashierId}, ${orderId}, '${payMethodCode}', 
             ${totalAmount}, ${totalAmount}, 0, '${paymentGuid}', '${safeRef}', '${safeTxId}'
           )
         `;
@@ -574,18 +607,19 @@ const aldeloService = {
 
       // Registrar pago en OrderPayments si no existía
       try {
-        const orderRes = await connection.query(`SELECT AmountDue, EmployeeID FROM OrderHeaders WHERE OrderID = ${orderId}`);
+        const orderRes = await connection.query(`SELECT AmountDue, EmployeeID, StationID FROM OrderHeaders WHERE OrderID = ${orderId}`);
         if (orderRes && orderRes.length > 0) {
           const totalAmount = orderRes[0].AmountDue || 0;
           const payMethodCode = (paymentMethod === 'CASH') ? '1' : '3';
           const paymentGuid = generateGUID();
           const accessDate = getAccessDate(new Date());
+          const activeCashierId = await this.getActiveCashierId(orderRes[0].EmployeeID || 1, orderRes[0].StationID || 3);
           const sqlPayment = `
             INSERT INTO OrderPayments (
               PaymentDateTime, CashierID, OrderID, PaymentMethod, 
               AmountTendered, AmountPaid, EmployeeComp, RowGUID
             ) VALUES (
-              ${accessDate}, ${cashierId || 1}, ${orderId}, '${payMethodCode}', 
+              ${accessDate}, ${activeCashierId}, ${orderId}, '${payMethodCode}', 
               ${totalAmount}, ${totalAmount}, 0, '${paymentGuid}'
             )
           `;
