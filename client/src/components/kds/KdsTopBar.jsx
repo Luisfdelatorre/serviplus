@@ -11,15 +11,18 @@ import {
   Sun,
   Moon,
   Maximize,
-  Minimize
+  Minimize,
+  RotateCw
 } from 'lucide-react';
 import { useKdsStore } from '../../store/useKdsStore';
 import { useMenuStore } from '../../store/useMenuStore';
 import { formatRegularTime } from '../../utils/format';
 import { enterFullscreen, exitFullscreen } from '../../utils/fullscreen';
+import { sfx } from '../../utils/audio';
 
 export function KdsTopBar({ prepCount, readyCount, totalPages }) {
   const [clock, setClock] = useState(formatRegularTime(new Date()));
+  const [isReloading, setIsReloading] = useState(false);
   const kdsFilter = useKdsStore((state) => state.kdsFilter);
   const setKdsFilter = useKdsStore((state) => state.setKdsFilter);
   const kdsPage = useKdsStore((state) => state.kdsPage);
@@ -60,6 +63,21 @@ export function KdsTopBar({ prepCount, readyCount, totalPages }) {
       enterFullscreen();
       setFullscreen(true);
     }
+  };
+
+  const handleHardReload = () => {
+    try { sfx.playTap(); } catch (_) {}
+    setIsReloading(true);
+    if ('caches' in window) {
+      caches.keys().then((names) => {
+        names.forEach((name) => caches.delete(name));
+      }).catch(() => {});
+    }
+    setTimeout(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('_hreload', Date.now().toString());
+      window.location.replace(url.toString());
+    }, 120);
   };
 
   return (
@@ -209,6 +227,16 @@ export function KdsTopBar({ prepCount, readyCount, totalPages }) {
           title={isFullscreen ? 'Salir de Pantalla Completa' : 'Pantalla Completa Cocina'}
         >
           {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+        </button>
+
+        {/* Hard Reload Button (Recarga Forzada Limpiando Caché) */}
+        <button
+          type="button"
+          className={`kds-icon-btn ${isReloading ? 'active-amber' : ''}`}
+          onClick={handleHardReload}
+          title="Recarga Forzada (Hard Reload) • Actualizar base de datos y productos sin caché"
+        >
+          <RotateCw size={17} style={{ animation: isReloading ? 'spin 0.75s linear infinite' : 'none' }} />
         </button>
       </div>
     </div>

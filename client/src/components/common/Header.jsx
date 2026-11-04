@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useMenuStore } from '../../store/useMenuStore';
 import { useI18n } from '../../i18n';
 import { sfx } from '../../utils/audio';
 import { enterFullscreen } from '../../utils/fullscreen';
-import { Shield } from 'lucide-react';
+import { Shield, RotateCw } from 'lucide-react';
 
 export function Header() {
+  const [isReloading, setIsReloading] = useState(false);
   const activeTab = useMenuStore((state) => state.activeTab);
   const setActiveTab = useMenuStore((state) => state.setActiveTab);
   const setKioskFullscreen = useMenuStore((state) => state.setKioskFullscreen);
@@ -15,6 +16,21 @@ export function Header() {
   const handleTabChange = (tab) => {
     sfx.playTap();
     setActiveTab(tab);
+  };
+
+  const handleHardReload = () => {
+    try { sfx.playTap(); } catch (_) {}
+    setIsReloading(true);
+    if ('caches' in window) {
+      caches.keys().then((names) => {
+        names.forEach((name) => caches.delete(name));
+      }).catch(() => {});
+    }
+    setTimeout(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('_hreload', Date.now().toString());
+      window.location.replace(url.toString());
+    }, 120);
   };
 
   return (
@@ -149,6 +165,28 @@ export function Header() {
           <span>Pantalla Completa</span>
         </button>
 */}
+        {/* Botón Hard Reload */}
+        <button
+          type="button"
+          onClick={handleHardReload}
+          title="Recarga Forzada (Hard Reload) • Limpiar caché y recargar"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '32px',
+            height: '32px',
+            borderRadius: '9999px',
+            background: '#f8fafc',
+            border: '1.5px solid #cbd5e1',
+            color: '#475569',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <RotateCw size={14} style={{ animation: isReloading ? 'spin 0.75s linear infinite' : 'none' }} />
+        </button>
+
         {/* Botón Admin Aldelo */}
         <button
           type="button"
