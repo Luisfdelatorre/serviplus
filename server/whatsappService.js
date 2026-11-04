@@ -24,6 +24,8 @@ class WhatsAppService {
     let cleanPhone = String(to || '').replace(/\D/g, '');
     if (cleanPhone.length === 10 && cleanPhone.startsWith('3')) {
       cleanPhone = '57' + cleanPhone;
+    } else if (cleanPhone.length === 10 && (cleanPhone.startsWith('787') || cleanPhone.startsWith('939'))) {
+      cleanPhone = '1' + cleanPhone;
     }
 
     if (!cleanPhone) {
@@ -80,3 +82,4 @@ class WhatsAppService {
 }
 
 module.exports = WhatsAppService;
+

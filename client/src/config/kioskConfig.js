@@ -63,11 +63,11 @@ export const KIOSK_CONFIG = {
   // 3. VALIDACIÓN Y FORMATO DE ENTRADAS (Teléfonos, Documentos)
   // -------------------------------------------------------------
   validation: {
-    /** Longitud mínima de teléfono celular colombiano */
+    /** Longitud mínima de teléfono celular */
     phoneMinLength: 7,
 
-    /** Longitud estándar de celular */
-    phoneMaxLength: 10,
+    /** Longitud máxima de celular (estándar E.164 internacional) */
+    phoneMaxLength: 15,
 
     /** Código de país telefónico para WhatsApp y SMS */
     defaultCountryCode: '57',

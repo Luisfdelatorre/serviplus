@@ -294,7 +294,9 @@ export function CheckoutView({ isOpen = true, onClose, onOrderCompleted }) {
       let cleanPhone = receiptInput.trim().replace(/\D/g, '');
       if (cleanPhone.length === 10 && cleanPhone.startsWith('3')) {
         cleanPhone = `${KIOSK_CONFIG.validation.defaultCountryCode}${cleanPhone}`;
-      } else if (!cleanPhone.startsWith(KIOSK_CONFIG.validation.defaultCountryCode) && cleanPhone.length === 10) {
+      } else if (cleanPhone.length === 10 && (cleanPhone.startsWith('787') || cleanPhone.startsWith('939'))) {
+        cleanPhone = `1${cleanPhone}`;
+      } else if (cleanPhone.length === 10 && !cleanPhone.startsWith(KIOSK_CONFIG.validation.defaultCountryCode)) {
         cleanPhone = `${KIOSK_CONFIG.validation.defaultCountryCode}${cleanPhone}`;
       }
 
