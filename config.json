@@ -55,5 +55,11 @@
     "defaultPaymentMethod": "WOMPI_QR",
     "defaultCustomerEmail": "kiosco@serviplus.pos",
     "autoReturnSeconds": 900
+  },
+  "whatsapp": {
+    "enabled": true,
+    "phoneNumberId": "",
+    "accessToken": "",
+    "apiVersion": "v25.0"
   }
 }

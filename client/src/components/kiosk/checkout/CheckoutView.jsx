@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useCartStore } from '../../../store/useCartStore';
-import { createOrder, fetchTables, sendDigitalReceipt, createWompiQr } from '../../../api';
+import { createOrder, fetchTables, sendDigitalReceipt, createWompiQr, sendWhatsAppMessage } from '../../../api';
 import { sfx } from '../../../utils/audio';
 import { socket } from '../../../socket';
 import { KIOSK_CONFIG } from '../../../config/kioskConfig';
@@ -283,21 +283,43 @@ export function CheckoutView({ isOpen = true, onClose, onOrderCompleted }) {
     }
   };
 
-  const handleSendWhatsApp = () => {
+  const handleSendWhatsApp = async () => {
     if (!receiptInput.trim() || receiptInput.trim().length < KIOSK_CONFIG.validation.phoneMinLength) {
       alert('Por favor ingresa un número de celular válido.');
       return;
     }
     sfx.playTap();
-    const cleanPhone = receiptInput.trim().replace(/\D/g, '');
-    const fullReceiptUrl = window.location.origin + (createdReceiptUrl || `/p/${createdReceiptCode || ''}`);
-    const message = encodeURIComponent(
-      KIOSK_CONFIG.messages.whatsappTemplate(createdOrderNumber, fullReceiptUrl, KIOSK_CONFIG.restaurant.name)
-    );
-    const waUrl = `https://api.whatsapp.com/send?phone=${KIOSK_CONFIG.validation.defaultCountryCode}${cleanPhone.slice(-10)}&text=${message}`;
-    window.open(waUrl, '_blank');
-    setReceiptSentSuccess(true);
-    setReceiptDestination(cleanPhone);
+    setIsSendingReceipt(true);
+    try {
+      let cleanPhone = receiptInput.trim().replace(/\D/g, '');
+      if (cleanPhone.length === 10 && cleanPhone.startsWith('3')) {
+        cleanPhone = `${KIOSK_CONFIG.validation.defaultCountryCode}${cleanPhone}`;
+      } else if (!cleanPhone.startsWith(KIOSK_CONFIG.validation.defaultCountryCode) && cleanPhone.length === 10) {
+        cleanPhone = `${KIOSK_CONFIG.validation.defaultCountryCode}${cleanPhone}`;
+      }
+
+      const fullReceiptUrl = window.location.origin + (createdReceiptUrl || `/p/${createdReceiptCode || ''}`);
+      const messageBody = KIOSK_CONFIG.messages.whatsappTemplate(
+        createdOrderNumber,
+        fullReceiptUrl,
+        KIOSK_CONFIG.restaurant.name
+      );
+
+      // Enviar directamente vía Meta Cloud API v25.0
+      await sendWhatsAppMessage(cleanPhone, messageBody, {
+        orderNumber: createdOrderNumber,
+        receiptUrl: fullReceiptUrl
+      });
+
+      sfx.playReadyChime();
+      setReceiptSentSuccess(true);
+      setReceiptDestination(cleanPhone);
+    } catch (err) {
+      console.error('[WhatsApp Send Error]:', err);
+      alert('Error enviando WhatsApp: ' + err.message);
+    } finally {
+      setIsSendingReceipt(false);
+    }
   };
 
   const handleSendSMS = async () => {

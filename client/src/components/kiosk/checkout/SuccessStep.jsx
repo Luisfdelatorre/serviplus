@@ -177,12 +177,12 @@ export function SuccessStep({
                   {activeReceiptTab === 'whatsapp' ? (
                     <button
                       type="button"
-                      disabled={receiptInput.length < KIOSK_CONFIG.validation.phoneMinLength}
+                      disabled={receiptInput.length < KIOSK_CONFIG.validation.phoneMinLength || isSendingReceipt}
                       onClick={onSendWhatsApp}
                       className="checkout-btn-send-whatsapp"
                     >
                       <span>💬</span>
-                      <span>Abrir en WhatsApp</span>
+                      <span>{isSendingReceipt ? 'Enviando...' : 'Enviar por WhatsApp'}</span>
                     </button>
                   ) : (
                     <button

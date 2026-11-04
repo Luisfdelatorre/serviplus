@@ -97,6 +97,20 @@ export async function sendDigitalReceipt(orderId, type, destination) {
   }
 }
 
+// 7b. Enviar mensaje de WhatsApp (Meta Graph API Cloud v25.0)
+export async function sendWhatsAppMessage(to, body, extra = {}) {
+  const res = await fetch('/api/whatsapp/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ to, body, ...extra })
+  });
+  const json = await res.json();
+  if (!json.success && !json.simulated) {
+    throw new Error(json.error || 'Error al enviar mensaje de WhatsApp');
+  }
+  return json;
+}
+
 // 8. Crear QR Oficial de Bancolombia / Nequi (Wompi)
 export async function createWompiQr(orderId, amount, customerEmail = 'kiosco@serviplus.pos', extra = {}) {
   const res = await fetch('/api/payments/wompi/qr', {

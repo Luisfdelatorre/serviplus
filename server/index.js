@@ -5,6 +5,16 @@ const cors = require('cors');
 const path = require('path');
 const aldeloService = require('./aldeloService');
 const receiptService = require('./receiptService');
+const WhatsAppService = require('./whatsappService');
+
+const whatsappService = new WhatsAppService(() => {
+  try {
+    delete require.cache[require.resolve('../config.json')];
+    return require('../config.json');
+  } catch (_) {
+    return {};
+  }
+});
 
 const app = express();
 const server = http.createServer(app);
@@ -240,7 +250,7 @@ app.post('/api/payments/wompi/webhook', (req, res) => {
   }
 });
 
-// 7. Enviar o consultar Recibo Digital (Email / SMS / Web)
+// 7. Enviar o consultar Recibo Digital (Email / SMS / WhatsApp / Web)
 app.post('/api/orders/:id/receipt', async (req, res) => {
   try {
     const orderId = parseInt(req.params.id, 10);
@@ -250,6 +260,14 @@ app.post('/api/orders/:id/receipt', async (req, res) => {
     const receiptInfo = receiptService.generateReceiptCode(orderId);
     console.log(`[Receipt] Recibo digital solicitado para Orden #${orderId}: tipo=${type}, destino=${destination}, url=${receiptInfo.path}`);
     
+    let sendResult = null;
+    if (type === 'whatsapp' && destination) {
+      const config = whatsappService.getConfig();
+      const restaurantName = config.restaurant?.name || 'Serviplus';
+      const body = `¡Hola! 👋 Aquí tienes el comprobante de tu pedido #${orderId} en ${restaurantName}:\n\n🔗 ${receiptInfo.fullUrl}\n\n¡Gracias por tu compra!`;
+      sendResult = await whatsappService.sendMessage(destination, body);
+    }
+
     res.json({
       success: true,
       data: {
@@ -257,12 +275,32 @@ app.post('/api/orders/:id/receipt', async (req, res) => {
         receiptCode: receiptInfo.urlCode,
         receiptUrl: receiptInfo.path,
         transactionRef: receiptInfo.transactionRef,
-        receiptFullUrl: receiptInfo.fullUrl
+        receiptFullUrl: receiptInfo.fullUrl,
+        sendResult
       },
-      message: `Recibo digital enviado con éxito a ${destination}`
+      message: `Recibo digital procesado con éxito para ${destination}`
     });
   } catch (err) {
     console.error('Error in POST /api/orders/:id/receipt:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 7a. Enviar Mensaje de WhatsApp directo (Meta Graph API Cloud v25.0)
+app.post('/api/whatsapp/send', async (req, res) => {
+  try {
+    const { to, body, orderNumber, receiptUrl } = req.body;
+    let messageBody = body;
+    if (!messageBody && receiptUrl) {
+      const config = whatsappService.getConfig();
+      const restaurantName = config.restaurant?.name || 'Serviplus';
+      messageBody = `¡Hola! 👋 Aquí tienes el comprobante de tu pedido #${orderNumber || ''} en ${restaurantName}:\n\n🔗 ${receiptUrl}\n\n¡Gracias por tu compra!`;
+    }
+
+    const result = await whatsappService.sendMessage(to, messageBody);
+    res.json(result);
+  } catch (err) {
+    console.error('Error in POST /api/whatsapp/send:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
