@@ -1018,9 +1018,9 @@ async function generateQR() {
     const json = await res.json();
     if (json.success && json.data) {
       state.currentWompiIntent = json.data;
-      const checkoutUrl = json.data.checkoutUrl;
-      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(checkoutUrl)}`;
-      if (qrImg) qrImg.src = qrApiUrl;
+      if (json.data.qrImage && qrImg) {
+        qrImg.src = json.data.qrImage.startsWith('data:') ? json.data.qrImage : `data:image/png;base64,${json.data.qrImage}`;
+      }
 
       // Escuchar confirmación en tiempo real si el webhook emite el pago
       if (socket && json.data.reference) {
@@ -1043,8 +1043,8 @@ async function generateQR() {
   const amountInCents = amountCOP * 100;
   const ref = `SP-${Date.now()}`;
   const checkoutUrl = `https://checkout.wompi.co/p/?currency=COP&amount-in-cents=${amountInCents}&reference=${ref}`;
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(checkoutUrl)}`;
-  if (qrImg) qrImg.src = qrUrl;
+  // Sin generador externo; si no hay imagen de QR, se deja en blanco o se usa enlace
+  if (qrImg) qrImg.style.display = 'none';
 }
 
 function calcCashChange(customVal = null) {

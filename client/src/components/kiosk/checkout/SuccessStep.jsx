@@ -56,9 +56,7 @@ export function SuccessStep({
               <span className="success-check-icon">✓</span>
               <span className="success-check-text">¡Pago Exitoso!</span>
             </div>
-            <div className="checkout-status-badge">
-              Pago procesado exitosamente
-            </div>
+
           </div>
 
           <div className="checkout-turn-display-wrap">
@@ -70,13 +68,9 @@ export function SuccessStep({
 
           <div className="checkout-status-meta-row">
             <div className="checkout-meta-tag salon">
-              <span>🍽️</span>
               <span>{orderType === 'EAT_IN' ? `Salón: Mesa #${tableId || 4}` : 'Para Llevar (Empacado)'}</span>
             </div>
-            <div className="checkout-meta-tag kitchen">
-              <span>👨‍🍳</span>
-              <span>Enviado a Cocina ●</span>
-            </div>
+
           </div>
         </div>
 
@@ -84,7 +78,6 @@ export function SuccessStep({
         <div className="checkout-receipt-channel-card">
           <div className="checkout-channel-header">
             <h3 className="checkout-channel-title">¿Cómo deseas llevarte tu factura?</h3>
-            <span className="checkout-channel-badge">Recibo 100% Digital</span>
           </div>
 
           {/* Selector de Pestañas de Canales */}
@@ -97,7 +90,7 @@ export function SuccessStep({
               }}
               className={`checkout-channel-tab ${activeReceiptTab === 'whatsapp' ? 'active' : ''}`}
             >
-              <span className="tab-icon">💬</span>
+
               <span>WhatsApp</span>
             </button>
 
@@ -109,7 +102,7 @@ export function SuccessStep({
               }}
               className={`checkout-channel-tab ${activeReceiptTab === 'sms' ? 'active' : ''}`}
             >
-              <span className="tab-icon">📱</span>
+
               <span>Texto / SMS</span>
             </button>
 
@@ -121,7 +114,6 @@ export function SuccessStep({
               }}
               className={`checkout-channel-tab ${activeReceiptTab === 'qr' ? 'active' : ''}`}
             >
-              <span className="tab-icon">📷</span>
               <span>Ver QR</span>
             </button>
           </div>
@@ -132,11 +124,18 @@ export function SuccessStep({
             {activeReceiptTab === 'qr' && (
               <div className="checkout-qr-view-box">
                 <div className="checkout-qr-inner-card">
-                  <img
-                    src={localQrDataUrl || `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrFullUrl)}`}
-                    alt="Código QR Factura Digital"
-                    className="checkout-receipt-qr-img"
-                  />
+                  {localQrDataUrl ? (
+                    <img
+                      src={localQrDataUrl}
+                      alt="Código QR Factura Digital"
+                      className="checkout-receipt-qr-img"
+                    />
+                  ) : (
+                    <div style={{ width: '160px', height: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#64748b' }}>
+                      <span style={{ fontSize: '1.8rem', animation: 'spin 1s linear infinite', display: 'inline-block' }}>🔄</span>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 700 }}>Generando QR local...</span>
+                    </div>
+                  )}
                 </div>
                 <div className="checkout-qr-inst-title">Apunta tu cámara aquí</div>
                 <div className="checkout-qr-inst-sub">

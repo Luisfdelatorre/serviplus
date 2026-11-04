@@ -39,7 +39,7 @@ export function KdsCard({ order }) {
 
   // Acción interactiva en todo el banner / cabecera de la comanda
   const handleHeaderAction = () => {
-    try { sfx.playReadyChime(); } catch (_) {}
+    try { sfx.playReadyChime(); } catch (_) { }
     if (kdsStatus === 'READY') {
       setOrderState(order.id, 'SERVED');
     } else {
@@ -60,7 +60,7 @@ export function KdsCard({ order }) {
         </div>
 
         <div className="kds-header-right" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span className="kds-elapsed-pill" id={`kds-elapsed-${order.id}`}>⏱️ {elapsedText}</span>
+          <span className="kds-elapsed-pill" id={`kds-elapsed-${order.id}`}> {elapsedText}</span>
           {orderTimeStr && <span className="kds-entry-time">{orderTimeStr}</span>}
 
           {/* Botón Revertir si está READY */}
@@ -71,7 +71,7 @@ export function KdsCard({ order }) {
               title={t('kds_aria_revert')}
               onClick={(e) => {
                 e.stopPropagation();
-                try { sfx.playTap(); } catch (_) {}
+                try { sfx.playTap(); } catch (_) { }
                 setOrderState(order.id, 'PREPARING');
               }}
             >
@@ -98,52 +98,52 @@ export function KdsCard({ order }) {
         {(order.items || [])
           .filter((it) => it.isKitchenItem !== false)
           .map((it, idx) => {
-          const checkKey = `${order.id}_${it.id || idx}`;
-          const isChecked = !!(order.kdsItemChecks && order.kdsItemChecks[checkKey]) || !!kdsItemChecks[checkKey];
-          return (
-            <div
-              key={it.id || idx}
-              className={`kds-item-row ${isChecked ? 'checked' : ''}`}
-              onClick={() => toggleItemCheck(order.id, it.id || idx)}
-            >
-              <div className="kds-item-left" style={{ display: 'flex', flexDirection: 'column' }}>
-                <span className="kds-item-text">
-                  <strong>{it.quantity} x</strong> {it.name}
-                </span>
-
-                {it.modifiers && it.modifiers.length > 0 && (
-                  <span
-                    className="kds-item-text"
-                    style={{
-                      fontSize: '0.78rem',
-                      color: '#b45309',
-                      fontWeight: 700,
-                      marginTop: '2px',
-                      lineHeight: 1.2
-                    }}
-                  >
-                    + {it.modifiers.map((m) => (typeof m === 'object' ? m.name : m)).join(', ')}
+            const checkKey = `${order.id}_${it.id || idx}`;
+            const isChecked = !!(order.kdsItemChecks && order.kdsItemChecks[checkKey]) || !!kdsItemChecks[checkKey];
+            return (
+              <div
+                key={it.id || idx}
+                className={`kds-item-row ${isChecked ? 'checked' : ''}`}
+                onClick={() => toggleItemCheck(order.id, it.id || idx)}
+              >
+                <div className="kds-item-left" style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span className="kds-item-text">
+                    <strong>{it.quantity} x</strong> {it.name}
                   </span>
-                )}
 
-                {it.notes && (
-                  <span
-                    className="kds-item-text"
-                    style={{
-                      fontSize: '0.74rem',
-                      color: '#64748b',
-                      fontStyle: 'italic',
-                      marginTop: '2px'
-                    }}
-                  >
-                    📝 {it.notes}
-                  </span>
-                )}
+                  {it.modifiers && it.modifiers.length > 0 && (
+                    <span
+                      className="kds-item-text"
+                      style={{
+                        fontSize: '0.78rem',
+                        color: '#b45309',
+                        fontWeight: 700,
+                        marginTop: '2px',
+                        lineHeight: 1.2
+                      }}
+                    >
+                      + {it.modifiers.map((m) => (typeof m === 'object' ? m.name : m)).join(', ')}
+                    </span>
+                  )}
+
+                  {it.notes && (
+                    <span
+                      className="kds-item-text"
+                      style={{
+                        fontSize: '0.74rem',
+                        color: '#64748b',
+                        fontStyle: 'italic',
+                        marginTop: '2px'
+                      }}
+                    >
+                      📝 {it.notes}
+                    </span>
+                  )}
+                </div>
+                <div className="kds-check-circle">{isChecked ? '✓' : ''}</div>
               </div>
-              <div className="kds-check-circle">{isChecked ? '✓' : ''}</div>
-            </div>
-          );
-        })}
+            );
+          })}
       </div>
     </div>
   );

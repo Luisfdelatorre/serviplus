@@ -774,8 +774,8 @@
   flex: 1;
   display: grid;
   grid-template-columns: 1fr 390px;
-  gap: 28px;
-  padding: 28px 48px;
+  gap: 10px;
+  padding: 10px 10px;
   height: 100%;
   overflow-y: auto;
   box-sizing: border-box;
@@ -792,7 +792,7 @@
   background: #ffffff;
   border: 1.5px solid #e2e8f0;
   border-radius: 22px;
-  padding: 20px 24px;
+  padding: 10px 10px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
 }
 
@@ -901,7 +901,7 @@
   background: #ffffff;
   border: 2px solid #818cf8;
   border-radius: 22px;
-  padding: 20px 24px;
+  padding: 10px 10px;
   box-shadow: 0 4px 20px rgba(99, 102, 241, 0.08);
   display: flex;
   flex-direction: column;
@@ -1354,21 +1354,19 @@
 .receipt-barcode-pattern {
   width: 170px;
   height: 38px;
-  background-image: repeating-linear-gradient(
-    90deg,
-    #0f172a 0px,
-    #0f172a 2px,
-    transparent 2px,
-    transparent 4px,
-    #0f172a 4px,
-    #0f172a 7px,
-    transparent 7px,
-    transparent 9px,
-    #0f172a 9px,
-    #0f172a 10px,
-    transparent 10px,
-    transparent 14px
-  );
+  background-image: repeating-linear-gradient(90deg,
+      #0f172a 0px,
+      #0f172a 2px,
+      transparent 2px,
+      transparent 4px,
+      #0f172a 4px,
+      #0f172a 7px,
+      transparent 7px,
+      transparent 9px,
+      #0f172a 9px,
+      #0f172a 10px,
+      transparent 10px,
+      transparent 14px);
   border-radius: 2px;
 }
 
@@ -1411,8 +1409,13 @@
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .animate-step-fade {
@@ -1424,9 +1427,17 @@
 }
 
 @keyframes pulsePrimary {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.02); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.02);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .pulse-emerald-btn {
@@ -1434,7 +1445,15 @@
 }
 
 @keyframes pulseEmerald {
-  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-  70% { box-shadow: 0 0 0 12px rgba(16, 185, 129, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+  }
+
+  70% {
+    box-shadow: 0 0 0 12px rgba(16, 185, 129, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
 }

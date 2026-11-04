@@ -6,7 +6,7 @@ export const DICTIONARY = {
     kds_takeout: 'Llevar',
     kds_table: 'Mesa {table}',
     kds_order_title_takeout: '#{orderNumber} : Llevar',
-    kds_order_title_table: '#{orderNumber} : Mesa {table}',
+    kds_order_title_table: '#{orderNumber}',
     kds_revert: 'Revertir',
     kds_mark_served: 'Entregar',
     kds_mark_ready: 'Marcar como Lista',
@@ -83,7 +83,7 @@ export const useI18nStore = create((set, get) => ({
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('serviplus_lang', newLang);
-      } catch (e) {}
+      } catch (e) { }
     }
     set({ lang: newLang });
   },
