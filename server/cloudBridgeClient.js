@@ -224,14 +224,8 @@ class CloudBridgeClient {
 
 // Permitir ejecución directa con: node server/cloudBridgeClient.js
 if (require.main === module) {
-  let config = {};
-  try {
-    config = JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json'), 'utf8'));
-  } catch (e) {
-    console.error('Error leyendo config.json:', e.message);
-  }
-
-  const agent = new CloudBridgeClient(() => config);
+  const appConfig = require('./config');
+  const agent = new CloudBridgeClient(() => appConfig.getConfig());
   agent.start();
 
   process.on('SIGINT', () => {

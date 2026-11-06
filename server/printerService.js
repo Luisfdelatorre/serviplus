@@ -4,24 +4,17 @@ const os = require('os');
 const { execFile, execSync } = require('child_process');
 const { renderRtfFile } = require('./rtfTemplate');
 
-// Helper para leer config.json
+const appConfig = require('./config');
+
+// Helper para leer la configuración centralizada (config.json + .env)
 function getConfig() {
-  try {
-    const configPath = path.join(__dirname, '../config.json');
-    if (fs.existsSync(configPath)) {
-      return JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    }
-  } catch (e) {
-    console.warn('[PrinterService] Error reading config.json:', e.message);
-  }
-  return {};
+  return appConfig.getConfig();
 }
 
-// Helper para guardar config.json
-function saveConfig(updatedConfig) {
+// Helper para guardar únicamente la sección de impresora
+function savePrinterSection(printerSettings) {
   try {
-    const configPath = path.join(__dirname, '../config.json');
-    fs.writeFileSync(configPath, JSON.stringify(updatedConfig, null, 2), 'utf8');
+    appConfig.saveConfig({ printer: printerSettings });
     return true;
   } catch (e) {
     console.error('[PrinterService] Error saving config.json:', e.message);
@@ -259,12 +252,7 @@ class PrinterService {
 
   // Actualizar configuración en config.json
   updatePrinterConfig(newSettings) {
-    const cfg = getConfig();
-    cfg.printer = {
-      ...(cfg.printer || {}),
-      ...newSettings
-    };
-    const ok = saveConfig(cfg);
+    const ok = savePrinterSection({ ...(newSettings || {}) });
     return { success: ok, data: this.getPrinterConfig() };
   }
 

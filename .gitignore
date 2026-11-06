@@ -17,6 +17,9 @@ yarn-error.log*
 
 # Runtime dynamic states & Access lock files
 *.ldb
+*.mdb
+config.json
+cash_shifts.json
 kds_state.dat
 kds_receipts.json
 payments_state.dat

@@ -241,7 +241,7 @@ export function CashDrawerOpeningView() {
             <span>•</span>
             <span className={`cdo-kiosk-pill ${isSocketConnected ? 'online' : 'offline'}`}>
               <span className={`cdo-kiosk-dot ${isSocketConnected ? 'online' : 'offline'}`}></span>
-              {isSocketConnected ? 'Quioscos Wompi Listos' : 'Servidor Desconectado'}
+              {isSocketConnected ? 'Kiosk online' : 'Servidor Desconectado'}
             </span>
           </div>
         </div>
@@ -260,20 +260,6 @@ export function CashDrawerOpeningView() {
             </svg>
             <span>Regresar al Hub</span>
           </button>
-          <button
-            className="cdo-action-btn"
-            type="button"
-            onClick={() => {
-              try { sfx.playTap(); } catch (_) { }
-              openAdminLogin();
-            }}
-          >
-            <svg className="cdo-icon-sm" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" strokeLinecap="round" strokeLinejoin="round"></path>
-              <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" strokeLinecap="round" strokeLinejoin="round"></path>
-            </svg>
-            <span>Ajustes</span>
-          </button>
         </div>
       </header>
       {/* END: MainHeader */}
@@ -289,15 +275,14 @@ export function CashDrawerOpeningView() {
               </svg>
             </div>
             <div className="cdo-title-text">
-              <h1>Apertura de Caja • Arqueo Inicial de Efectivo</h1>
-              <p>Registre el desglose de efectivo base y verifique los montos para habilitar la facturación del turno.</p>
+              <h1>Entrada Cajero</h1>
             </div>
           </div>
 
           <div className="cdo-date-pill">
             <span className="cdo-date-label">Fecha de Arqueo:</span>
             <span className="cdo-mono cdo-date-val">
-              {dateTimeString || 'Mié, 4 Nov • 08:00:22 AM'}
+              {dateTimeString || ''}
             </span>
           </div>
         </div>
@@ -310,7 +295,6 @@ export function CashDrawerOpeningView() {
               <div className="cdo-card-header">
                 <div>
                   <h2>Billetes y Monedas ({currency})</h2>
-                  <p>Conteo físico de efectivo inicial</p>
                 </div>
                 <button
                   className="cdo-reset-btn"

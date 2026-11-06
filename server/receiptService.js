@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
+const appConfig = require('./config');
 
 // Crockford Base32 (32 caracteres legibles sin ambigüedad)
 const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
@@ -8,7 +9,7 @@ const SECRET_KEY = process.env.RECEIPT_SECRET || 'serviplus_digital_receipts_sec
 
 function getReceiptBaseUrl() {
   try {
-    const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json'), 'utf8'));
+    const cfg = appConfig.getConfig();
     return cfg.cloud?.baseUrl || cfg.restaurant?.publicUrl || 'https://serviplus.upaysolutions.app';
   } catch (_) {
     return 'https://serviplus.upaysolutions.app';
@@ -308,7 +309,7 @@ function resolvePaymentBadge(paymentMethod, approvalRef, totalNum) {
  */
 function renderReceiptHtml(data) {
   let cfg = {};
-  try { cfg = JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json'), 'utf8')); } catch (_) {}
+  try { cfg = appConfig.getConfig(); } catch (_) {}
   const restConfig = cfg.restaurant || {};
 
   const {

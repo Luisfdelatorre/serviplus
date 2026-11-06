@@ -1,5 +1,6 @@
 const ADODB = require('node-adodb');
-const config = require('../config.json');
+const config = require('./config').getConfig();
+const { sqlInt, sqlNum, sqlStr, sqlBool, sqlEnum } = require('./lib/sql');
 const kdsStore = require('./kdsStore');
 const receiptService = require('./receiptService');
 
@@ -213,10 +214,10 @@ const aldeloService = {
     return { success: true, id, isActive: Boolean(isActive) };
   },
 
-  // 2. Obtener lista de empleados
+  // 2. Obtener lista de empleados (NUNCA exponer AccessCode/PIN al cliente)
   async getEmployees() {
     const sql = `
-      SELECT EmployeeID as id, FirstName as firstName, LastName as lastName, AccessCode as pin
+      SELECT EmployeeID as id, FirstName as firstName, LastName as lastName
       FROM EmployeeFiles
       ORDER BY FirstName, LastName
     `;
@@ -226,11 +227,11 @@ const aldeloService = {
   // 2b. Verificar acceso de administrador / gerente (SecurityLevel <= 2)
   async verifyAdminAccess(accessCode) {
     if (!accessCode) return { success: false, error: 'Código de acceso requerido' };
-    const cleanPin = String(accessCode).trim().replace(/'/g, "''");
+    const cleanPin = sqlStr(String(accessCode).trim(), 20);
     const sql = `
       SELECT EmployeeID as id, FirstName as firstName, LastName as lastName, SecurityLevel as securityLevel
       FROM EmployeeFiles
-      WHERE (AccessCode = '${cleanPin}')
+      WHERE (AccessCode = ${cleanPin})
       AND (EmployeeInActive = False OR EmployeeInActive IS NULL)
     `;
     const records = await connection.query(sql);
@@ -259,12 +260,12 @@ const aldeloService = {
   // 2c. Verificar login de empleado / cajero / admin general
   async verifyEmployeeLogin(accessCode) {
     if (!accessCode) return { success: false, error: 'Código de acceso requerido' };
-    const cleanPin = String(accessCode).trim().replace(/'/g, "''");
+    const cleanPin = String(accessCode).trim();
     try {
       const sql = `
         SELECT EmployeeID as id, FirstName as firstName, LastName as lastName, SecurityLevel as securityLevel
         FROM EmployeeFiles
-        WHERE (AccessCode = '${cleanPin}')
+        WHERE (AccessCode = ${sqlStr(cleanPin, 20)})
         AND (EmployeeInActive = False OR EmployeeInActive IS NULL)
       `;
       const records = await connection.query(sql);
@@ -289,8 +290,9 @@ const aldeloService = {
       console.warn('[aldeloService.verifyEmployeeLogin] Error consultando empleado en Access:', err.message);
     }
 
-    // Código maestro de respaldo / demo (ej: 1234 o 9999)
-    if (cleanPin === '1234' || cleanPin === '9999') {
+    // Código maestro de respaldo / demo (ej: 1234 o 9999).
+    // Solo habilitado explícitamente con ALLOW_DEMO_PIN=true (nunca en producción).
+    if (process.env.ALLOW_DEMO_PIN === 'true' && (cleanPin === '1234' || cleanPin === '9999')) {
       return {
         success: true,
         employee: {
@@ -339,7 +341,12 @@ const aldeloService = {
     if (!orders || orders.length === 0) return [];
 
     // Traer ítems de las órdenes con identificadores de modificadores
-    const orderIds = orders.slice(0, 60).map((o) => o.OrderID).join(',');
+    const orderIds = orders
+      .slice(0, 60)
+      .map((o) => sqlInt(o.OrderID, { min: 1, fallback: 0 }))
+      .filter((id) => id > 0)
+      .join(',');
+    if (!orderIds) return [];
     const sqlItems = `
       SELECT 
         t.OrderTransactionID, 
@@ -455,7 +462,7 @@ const aldeloService = {
       }
       const guid = generateGUID();
       const resRc = await connection.execute(
-        `INSERT INTO RegisterCashiers (EmployeeID, StationID, CashTrayID, SignInDateTime, RegisterStartAmount, RowGUID) VALUES (${employeeId || 1}, ${stationId || 3}, 1, Now(), 0, '${guid}')`,
+        `INSERT INTO RegisterCashiers (EmployeeID, StationID, CashTrayID, SignInDateTime, RegisterStartAmount, RowGUID) VALUES (${sqlInt(employeeId, { min: 1, fallback: 1 })}, ${sqlInt(stationId, { min: 1, fallback: 3 })}, 1, Now(), 0, '${guid}')`,
         'SELECT @@Identity AS id'
       );
       if (resRc && resRc.length > 0 && resRc[0].id) {
@@ -471,8 +478,8 @@ const aldeloService = {
   async signInCashier({ employeeId = 1, stationId = 3, startAmount = 0 }) {
     try {
       const guid = generateGUID();
-      const numStart = Number(startAmount) || 0;
-      const sql = `INSERT INTO RegisterCashiers (EmployeeID, StationID, CashTrayID, SignInDateTime, RegisterStartAmount, RowGUID) VALUES (${employeeId || 1}, ${stationId || 3}, 1, Now(), ${numStart}, '${guid}')`;
+      const numStart = sqlNum(startAmount, { min: 0 });
+      const sql = `INSERT INTO RegisterCashiers (EmployeeID, StationID, CashTrayID, SignInDateTime, RegisterStartAmount, RowGUID) VALUES (${sqlInt(employeeId, { min: 1, fallback: 1 })}, ${sqlInt(stationId, { min: 1, fallback: 3 })}, 1, Now(), ${numStart}, '${guid}')`;
       await connection.execute(sql);
       return { success: true };
     } catch (e) {
@@ -484,15 +491,15 @@ const aldeloService = {
   // 3c. Salida de cajero en Aldelo POS (RegisterCashiers - Sign Out)
   async signOutCashier({ cashierId = null, employeeId = null, endAmount = 0, discrepancy = 0, notes = '' }) {
     try {
-      const numEnd = Number(endAmount) || 0;
-      const numDisc = Number(discrepancy) || 0;
-      const cleanNotes = String(notes || '').trim().replace(/'/g, "''");
-      const notesVal = cleanNotes ? `'${cleanNotes}'` : 'NULL';
+      const numEnd = sqlNum(endAmount);
+      const numDisc = sqlNum(discrepancy);
+      const cleanNotes = String(notes || '').trim();
+      const notesVal = cleanNotes ? sqlStr(cleanNotes, 255) : 'NULL';
       let whereClause = 'SignOutDateTime IS NULL';
       if (cashierId) {
-        whereClause += ` AND CashierID = ${cashierId}`;
+        whereClause += ` AND CashierID = ${sqlInt(cashierId, { min: 1 })}`;
       } else if (employeeId) {
-        whereClause += ` AND EmployeeID = ${employeeId}`;
+        whereClause += ` AND EmployeeID = ${sqlInt(employeeId, { min: 1 })}`;
       }
       const sql = `UPDATE RegisterCashiers SET SignOutDateTime = Now(), RegisterEndAmount = ${numEnd}, DiscrepancyAmount = ${numDisc}, DiscrepancyNotes = ${notesVal} WHERE ${whereClause}`;
       await connection.execute(sql);
@@ -506,38 +513,98 @@ const aldeloService = {
   // 4. Crear una nueva orden (desde Kiosk o Front Desk)
   // Nota: Las órdenes de Kiosk se crean con isPaid = true porque el pago se recibe previamente.
   async createOrder({ employeeId = 1, orderType = 1, items = [], tableId = null, guestNumber = 1, notes = '', paymentMethod = 'CASH', isPaid = true, transactionRef = '', wompiTransactionId = '' }) {
-    if (!items || items.length === 0) {
+    if (!items || !Array.isArray(items) || items.length === 0) {
       throw new Error('La orden debe contener al menos un producto.');
     }
 
-    // Calcular monto total sumando precios de ítems y sus modificadores
-    let calculatedTotal = 0;
-    for (const item of items) {
-      const qty = item.quantity || 1;
-      const basePrice = Number(item.basePrice !== undefined ? item.basePrice : item.price) || 0;
-      const itemModifiers = Array.isArray(item.modifiers) ? item.modifiers : (Array.isArray(item.modifi) ? item.modifi : []);
-      const modCostSum = itemModifiers.reduce((acc, m) => acc + (Number(m.price || m.P) || 0), 0);
-      calculatedTotal += (basePrice + modCostSum) * qty;
+    const safeEmployeeId = sqlInt(employeeId, { min: 1, fallback: 1 });
+    const safeOrderType = sqlInt(orderType, { min: 1, max: 10, fallback: 1 });
+    const safeGuestNumber = sqlInt(guestNumber, { min: 1, max: 999, fallback: 1 });
+
+    // Cargar catálogo de precios oficial desde la BD para evitar manipulación desde el cliente
+    const dbItemPrices = {};
+    const dbModPrices = {};
+    try {
+      const itemIds = items
+        .map((it) => sqlInt(it.id || it.menuItemId, { min: 1, fallback: 0 }))
+        .filter((id) => id > 0);
+      if (itemIds.length > 0) {
+        const dbItems = await productsConnection.query(
+          `SELECT MenuItemID as id, DefaultUnitPrice as price FROM MenuItems WHERE MenuItemID IN (${[...new Set(itemIds)].join(',')})`
+        );
+        (dbItems || []).forEach((r) => {
+          dbItemPrices[r.id] = Number(r.price) || 0;
+        });
+      }
+      const dbMods = await productsConnection.query(
+        'SELECT MenuModifierID as id, AdditionalCost as price FROM MenuModifiers'
+      );
+      (dbMods || []).forEach((m) => {
+        dbModPrices[m.id] = Number(m.price) || 0;
+      });
+    } catch (priceErr) {
+      console.warn('[createOrder] Warning loading official DB prices:', priceErr.message);
     }
-    const totalAmount = Number(calculatedTotal.toFixed(2));
+
+    // Calcular monto total sumando precios de ítems y sus modificadores (autoritativo del servidor si existe en BD)
+    let calculatedTotal = 0;
+    const normalizedItems = [];
+    for (const item of items) {
+      const menuItemId = sqlInt(item.id || item.menuItemId, { min: 1, fallback: 0 });
+      if (menuItemId <= 0) continue;
+
+      const qty = sqlInt(item.quantity, { min: 1, max: 999, fallback: 1 });
+      const clientBase = sqlNum(item.basePrice !== undefined ? item.basePrice : item.price, { min: 0, fallback: 0 });
+      const basePrice = dbItemPrices[menuItemId] !== undefined ? dbItemPrices[menuItemId] : clientBase;
+
+      const rawMods = Array.isArray(item.modifiers) ? item.modifiers : (Array.isArray(item.modifi) ? item.modifi : []);
+      const cleanMods = rawMods.map((m) => {
+        const modId = sqlInt(m.id || m.MenuModifierID, { min: 1, fallback: 0 });
+        const clientModPrice = sqlNum(m.price !== undefined ? m.price : m.P, { min: 0, fallback: 0 });
+        const modPrice = (modId > 0 && dbModPrices[modId] !== undefined) ? dbModPrices[modId] : clientModPrice;
+        return {
+          id: modId,
+          price: modPrice,
+          name: String(m.name || m.N || m.MenuModifierText || '').trim()
+        };
+      });
+
+      const modCostSum = cleanMods.reduce((acc, m) => acc + m.price, 0);
+      calculatedTotal += (basePrice + modCostSum) * qty;
+      normalizedItems.push({
+        menuItemId,
+        qty,
+        basePrice,
+        cleanMods,
+        modCostSum,
+        notes: item.notes || ''
+      });
+    }
+
+    if (normalizedItems.length === 0) {
+      throw new Error('La orden no contiene productos válidos.');
+    }
+
+    const totalAmount = sqlNum(calculatedTotal, { min: 0, decimals: 2 });
     const accessDate = getAccessDate(new Date());
     const rowGuid = generateGUID();
     const initialOrderStatus = isPaid ? '2' : '1'; // 2 = SettledOrder (Pagada), 1 = OpenOrder (Pendiente de pago)
     let resolvedTableId = null;
     // En Aldelo POS, las órdenes para llevar (OrderType = 2) no tienen mesa (DineInTableID = NULL)
-    if (orderType === 1 && tableId) {
-      const tableNum = parseInt(tableId);
-      if (!isNaN(tableNum) && tableNum > 0) {
+    if (safeOrderType === 1 && tableId) {
+      const tableNum = sqlInt(tableId, { min: 1, max: 9999, fallback: 0 });
+      const safeTableText = sqlStr(String(tableId).trim(), 20);
+      if (tableNum > 0) {
         try {
-          const match = await connection.query(`SELECT TOP 1 DineInTableID FROM DineInTables WHERE DineInTableID = ${tableNum} OR DineInTableText = '${tableId}'`);
+          const match = await connection.query(`SELECT TOP 1 DineInTableID FROM DineInTables WHERE DineInTableID = ${tableNum} OR DineInTableText = ${safeTableText}`);
           if (match && match.length > 0) {
-            resolvedTableId = match[0].DineInTableID;
+            resolvedTableId = sqlInt(match[0].DineInTableID, { min: 1, fallback: tableNum });
           } else {
             const g = generateGUID();
-            await connection.execute(`INSERT INTO DineInTables (DineInTableText, TableGroupID, DisplayIndex, RowGUID) VALUES ('${tableId}', 1, ${tableNum}, '${g}')`);
-            const created = await connection.query(`SELECT TOP 1 DineInTableID FROM DineInTables WHERE DineInTableText = '${tableId}'`);
+            await connection.execute(`INSERT INTO DineInTables (DineInTableText, TableGroupID, DisplayIndex, RowGUID) VALUES (${safeTableText}, 1, ${tableNum}, '${g}')`);
+            const created = await connection.query(`SELECT TOP 1 DineInTableID FROM DineInTables WHERE DineInTableText = ${safeTableText}`);
             if (created && created.length > 0) {
-              resolvedTableId = created[0].DineInTableID;
+              resolvedTableId = sqlInt(created[0].DineInTableID, { min: 1, fallback: tableNum });
             }
           }
         } catch (tErr) {
@@ -547,14 +614,14 @@ const aldeloService = {
       }
     }
 
-    const tableValue = (orderType === 1 && resolvedTableId) ? resolvedTableId : 'NULL';
+    const tableValue = (safeOrderType === 1 && resolvedTableId) ? sqlInt(resolvedTableId, { min: 1 }) : 'NULL';
 
     // Resolver StationID válido desde StationSettings de Aldelo (Evita error de clave foránea)
-    let resolvedStationId = (config.db && config.db.stationId) || 3;
+    let resolvedStationId = sqlInt((config.db && config.db.stationId) || 3, { min: 1, fallback: 3 });
     try {
       const stRows = await connection.query('SELECT TOP 1 StationID FROM StationSettings ORDER BY StationID');
       if (stRows && stRows.length > 0 && stRows[0].StationID) {
-        resolvedStationId = stRows[0].StationID;
+        resolvedStationId = sqlInt(stRows[0].StationID, { min: 1, fallback: resolvedStationId });
       }
     } catch (stErr) {
       console.warn('[Station Resolution Error]:', stErr.message);
@@ -571,12 +638,12 @@ const aldeloService = {
         Kitchen5AlreadyPrinted, Kitchen6AlreadyPrinted, LiquorTaxRate, LiquorTaxAmount, 
         RemoteSiteNumber, RemoteOrigRowID, StoreNumber, BarTabPreAuth, RowGUID
       ) VALUES (
-        ${accessDate}, ${employeeId}, ${resolvedStationId}, ${orderType}, ${tableValue}, 
+        ${accessDate}, ${safeEmployeeId}, ${resolvedStationId}, ${safeOrderType}, ${tableValue}, 
         0, 0, 0, 0, '${initialOrderStatus}', 
         ${totalAmount}, 1, 1, 1, 
         1, 0, ${totalAmount}, 0, 
         0, 0, 0, 0, 0, 
-        ${guestNumber || 1}, 0, 0, 1, 
+        ${safeGuestNumber}, 0, 0, 1, 
         1, 1, 0, 0, 
         1, 0, 0, 0, '${rowGuid}'
       )
@@ -584,53 +651,41 @@ const aldeloService = {
 
     // Insertar encabezado y recuperar el OrderID autoincremental
     const result = await connection.execute(sqlHeader, 'SELECT @@Identity AS id');
-    const orderId = result && result.length > 0 ? result[0].id : null;
+    const orderId = result && result.length > 0 ? sqlInt(result[0].id, { min: 1, fallback: 0 }) : 0;
 
     if (!orderId) {
       throw new Error('No se pudo obtener el identificador de la nueva orden.');
     }
 
     // Insertar cada ítem en OrderTransactions soportando modificadores de Aldelo (Mod1ID...Mod20ID)
-    for (const item of items) {
-      const menuItemId = parseInt(item.id || item.menuItemId, 10);
-      if (isNaN(menuItemId) || menuItemId <= 0) continue;
-
-      const qty = Math.max(1, parseInt(item.quantity, 10) || 1);
-      const basePrice = Number(item.basePrice !== undefined ? item.basePrice : item.price) || 0;
-      const itemModifiers = Array.isArray(item.modifiers) ? item.modifiers : (Array.isArray(item.modifi) ? item.modifi : []);
-      const modCostSum = itemModifiers.reduce((acc, m) => acc + (Number(m.price || m.P) || 0), 0);
+    for (const normItem of normalizedItems) {
+      const { menuItemId, qty, basePrice, cleanMods, modCostSum } = normItem;
       const unitPriceWithMods = basePrice + modCostSum;
-      const extendedPrice = unitPriceWithMods * qty;
+      const extendedPrice = sqlNum(unitPriceWithMods * qty, { min: 0, decimals: 2 });
 
       let modCols = '';
       let modVals = '';
-      let modNames = [];
+      const modNames = [];
       let modSlot = 1;
 
-      itemModifiers.forEach((mod) => {
-        const rawModId = mod.id || mod.MenuModifierID;
-        const numericModId = parseInt(rawModId, 10);
-        const modCost = Number(mod.price || mod.P || 0) || 0;
-        const modName = mod.name || mod.N || mod.MenuModifierText || '';
-
-        // Solo IDs numéricos reales pueden ir a los campos ModXID de Access
-        if (!isNaN(numericModId) && numericModId > 0 && modSlot <= 20) {
+      cleanMods.forEach((mod) => {
+        if (mod.id > 0 && modSlot <= 20) {
           modCols += `, Mod${modSlot}ID, Mod${modSlot}Cost`;
-          modVals += `, ${numericModId}, ${modCost}`;
+          modVals += `, ${mod.id}, ${sqlNum(mod.price, { min: 0, decimals: 2 })}`;
           modSlot++;
         }
-        if (modName) {
-          modNames.push(modName);
+        if (mod.name) {
+          modNames.push(mod.name);
         }
       });
 
-      let note = (item.notes || notes || '').trim();
+      let note = String(normItem.notes || notes || '').trim();
       if (modNames.length > 0) {
         const modText = modNames.join(', ');
         note = note ? `${note} (${modText})` : modText;
       }
       // Aldelo POS ShortNote tiene un límite estricto de 40 caracteres en Access
-      const safeNote = note.replace(/'/g, "''").slice(0, 40);
+      const safeNoteLiteral = sqlStr(note, 40);
       const itemGuid = generateGUID();
 
       const sqlItem = `
@@ -641,7 +696,7 @@ const aldeloService = {
         ) VALUES (
           ${orderId}, ${menuItemId}, ${basePrice}, ${qty}, 
           ${extendedPrice}, 1, 2, 
-          1, -1, '${safeNote}', '${itemGuid}'${modVals}
+          1, -1, ${safeNoteLiteral}, '${itemGuid}'${modVals}
         )
       `;
       await connection.execute(sqlItem);
@@ -652,9 +707,9 @@ const aldeloService = {
       try {
         const payMethodCode = (paymentMethod === 'CASH') ? '1' : '3';
         const paymentGuid = generateGUID();
-        const safeRef = String(transactionRef || '').replace(/'/g, "''");
-        const safeTxId = String(wompiTransactionId || transactionRef || '').replace(/'/g, "''");
-        const activeCashierId = await this.getActiveCashierId(employeeId, resolvedStationId);
+        const safeRefLiteral = sqlStr(transactionRef || '', 50);
+        const safeTxIdLiteral = sqlStr(wompiTransactionId || transactionRef || '', 50);
+        const activeCashierId = await this.getActiveCashierId(safeEmployeeId, resolvedStationId);
 
         // En Access: GlobalID y LastRowHash son de tipo Short Text (perfectos para referencias bancarias y transacciones)
         const sqlPayment = `
@@ -662,8 +717,8 @@ const aldeloService = {
             PaymentDateTime, CashierID, OrderID, PaymentMethod, 
             AmountTendered, AmountPaid, EmployeeComp, RowGUID, GlobalID, LastRowHash
           ) VALUES (
-            ${accessDate}, ${activeCashierId}, ${orderId}, '${payMethodCode}', 
-            ${totalAmount}, ${totalAmount}, 0, '${paymentGuid}', '${safeRef}', '${safeTxId}'
+            ${accessDate}, ${sqlInt(activeCashierId, { min: 1, fallback: 1 })}, ${orderId}, '${payMethodCode}', 
+            ${totalAmount}, ${totalAmount}, 0, '${paymentGuid}', ${safeRefLiteral}, ${safeTxIdLiteral}
           )
         `;
         await connection.execute(sqlPayment);
@@ -720,22 +775,24 @@ const aldeloService = {
   // 2 = SettledOrder (Orden pagada y cerrada / completada)
   // 3 = VoidedOrder (Orden anulada)
   async updateOrderStatus(orderId, status, tableReady = null, paymentMethod = 'CASH', cashierId = 1) {
-    let sql = `UPDATE OrderHeaders SET OrderStatus = '${status}'`;
-    if (tableReady !== null) {
-      sql += `, TableReady = ${tableReady ? 'True' : 'False'}`;
+    const safeOrderId = sqlInt(orderId, { min: 1 });
+    const safeStatus = sqlEnum(status, ['1', '2', '3']);
+    let sql = `UPDATE OrderHeaders SET OrderStatus = '${safeStatus}'`;
+    if (tableReady !== null && tableReady !== undefined) {
+      sql += `, TableReady = ${sqlBool(tableReady)}`;
     }
-    sql += ` WHERE OrderID = ${orderId}`;
+    sql += ` WHERE OrderID = ${safeOrderId}`;
     await connection.execute(sql);
 
     // Si la orden pasa a pagada ('2'), enviarla inmediatamente a cocina (PREPARING)
-    if (status === '2') {
-      kdsStore.setKdsState(orderId, { kdsStatus: kdsStore.KDS_STATUSES.PREPARING });
+    if (safeStatus === '2') {
+      kdsStore.setKdsState(safeOrderId, { kdsStatus: kdsStore.KDS_STATUSES.PREPARING });
 
       // Registrar pago en OrderPayments si no existía
       try {
-        const orderRes = await connection.query(`SELECT AmountDue, EmployeeID, StationID FROM OrderHeaders WHERE OrderID = ${orderId}`);
+        const orderRes = await connection.query(`SELECT AmountDue, EmployeeID, StationID FROM OrderHeaders WHERE OrderID = ${safeOrderId}`);
         if (orderRes && orderRes.length > 0) {
-          const totalAmount = orderRes[0].AmountDue || 0;
+          const totalAmount = sqlNum(orderRes[0].AmountDue, { min: 0, decimals: 2 });
           const payMethodCode = (paymentMethod === 'CASH') ? '1' : '3';
           const paymentGuid = generateGUID();
           const accessDate = getAccessDate(new Date());
@@ -745,7 +802,7 @@ const aldeloService = {
               PaymentDateTime, CashierID, OrderID, PaymentMethod, 
               AmountTendered, AmountPaid, EmployeeComp, RowGUID
             ) VALUES (
-              ${accessDate}, ${activeCashierId}, ${orderId}, '${payMethodCode}', 
+              ${accessDate}, ${sqlInt(activeCashierId, { min: 1, fallback: 1 })}, ${safeOrderId}, '${payMethodCode}', 
               ${totalAmount}, ${totalAmount}, 0, '${paymentGuid}'
             )
           `;
@@ -756,14 +813,15 @@ const aldeloService = {
       }
     }
 
-    return { orderId, status, tableReady, kdsStatus: status === '2' ? 'PREPARING' : 'WAITING_PAYMENT' };
+    return { orderId: safeOrderId, status: safeStatus, tableReady, kdsStatus: safeStatus === '2' ? 'PREPARING' : 'WAITING_PAYMENT' };
   },
 
   async setTableReady(orderId, isReady = true) {
-    const val = isReady ? 'True' : 'False';
-    const sql = `UPDATE OrderHeaders SET TableReady = ${val} WHERE OrderID = ${orderId}`;
+    const safeOrderId = sqlInt(orderId, { min: 1 });
+    const val = sqlBool(isReady);
+    const sql = `UPDATE OrderHeaders SET TableReady = ${val} WHERE OrderID = ${safeOrderId}`;
     await connection.execute(sql);
-    return { orderId, tableReady: isReady };
+    return { orderId: safeOrderId, tableReady: Boolean(isReady) };
   },
 
   // 6. Actualizar estado operativo exclusivo de COCINA (KDS):
@@ -771,22 +829,23 @@ const aldeloService = {
   // READY (Listo para retiro, TableReady = True, PackagerAlreadyPrinted = False)
   // SERVED (Entregada / Despachada, TableReady = False, PackagerAlreadyPrinted = True)
   async updateKdsStatus(orderId, kdsStatus, itemChecks = null) {
-    const kdsState = kdsStore.setKdsState(orderId, { kdsStatus, itemChecks });
+    const safeOrderId = sqlInt(orderId, { min: 1 });
+    const kdsState = kdsStore.setKdsState(safeOrderId, { kdsStatus, itemChecks });
 
     try {
       if (kdsStatus === kdsStore.KDS_STATUSES.READY) {
-        await connection.execute(`UPDATE OrderHeaders SET TableReady = True, PackagerAlreadyPrinted = False WHERE OrderID = ${orderId}`);
+        await connection.execute(`UPDATE OrderHeaders SET TableReady = True, PackagerAlreadyPrinted = False WHERE OrderID = ${safeOrderId}`);
       } else if (kdsStatus === kdsStore.KDS_STATUSES.SERVED) {
-        await connection.execute(`UPDATE OrderHeaders SET TableReady = False, PackagerAlreadyPrinted = True WHERE OrderID = ${orderId}`);
+        await connection.execute(`UPDATE OrderHeaders SET TableReady = False, PackagerAlreadyPrinted = True WHERE OrderID = ${safeOrderId}`);
       } else {
         // PREPARING
-        await connection.execute(`UPDATE OrderHeaders SET TableReady = False, PackagerAlreadyPrinted = False WHERE OrderID = ${orderId}`);
+        await connection.execute(`UPDATE OrderHeaders SET TableReady = False, PackagerAlreadyPrinted = False WHERE OrderID = ${safeOrderId}`);
       }
     } catch (dbErr) {
       console.error('[Aldelo DB] Error updating OrderHeaders for KDS:', dbErr.message);
     }
 
-    return { orderId, ...kdsState };
+    return { orderId: safeOrderId, ...kdsState };
   },
 
   async getTables() {
@@ -904,14 +963,14 @@ const aldeloService = {
     customerEmail = ''
   }) {
     if (!reference) return null;
-    const safeRef = String(reference).replace(/'/g, "''");
-    const safeTxId = String(transactionId || '').replace(/'/g, "''");
-    const safeCart = String(JSON.stringify(cart || [])).replace(/'/g, "''");
-    const safeEmail = String(customerEmail || '').replace(/'/g, "''");
-    const safeTable = parseInt(tableId, 10) || 0;
-    const safeOrderType = parseInt(orderType, 10) || 1;
-    const aldeloAmount = parseFloat(amount) || 0;
-    const copAmount = parseFloat(amountCOP) || Math.round(aldeloAmount * 1000);
+    const safeRef = sqlStr(reference, 80);
+    const safeTxId = sqlStr(transactionId || '', 80);
+    const safeCart = sqlStr(JSON.stringify(cart || []), 4000);
+    const safeEmail = sqlStr(customerEmail || '', 120);
+    const safeTable = sqlInt(tableId, { min: 0, max: 9999, fallback: 0 });
+    const safeOrderType = sqlInt(orderType, { min: 1, max: 10, fallback: 1 });
+    const aldeloAmount = sqlNum(amount, { min: 0, decimals: 2 });
+    const copAmount = sqlNum(amountCOP || Math.round(aldeloAmount * 1000), { min: 0, decimals: 0 });
 
     const sql = `
       INSERT INTO KioskPayments (
@@ -919,9 +978,9 @@ const aldeloService = {
         [PaymentStatus], [PaymentMethod], [CartData], [TableID], [OrderType], 
         [CustomerEmail], [CreatedAt]
       ) VALUES (
-        '${safeRef}', '${safeTxId}', 0, ${copAmount}, ${aldeloAmount}, 
-        'PENDING', 'BANCOLOMBIA_QR', '${safeCart}', ${safeTable}, ${safeOrderType}, 
-        '${safeEmail}', Now()
+        ${safeRef}, ${safeTxId}, 0, ${copAmount}, ${aldeloAmount}, 
+        'PENDING', 'BANCOLOMBIA_QR', ${safeCart}, ${safeTable}, ${safeOrderType}, 
+        ${safeEmail}, Now()
       )
     `;
     try {
@@ -938,19 +997,19 @@ const aldeloService = {
    */
   async updateKioskPaymentStatus(identifier, status = 'APPROVED', { orderId = 0, transactionId = '' } = {}) {
     if (!identifier) return null;
-    const safeId = String(identifier).replace(/'/g, "''");
-    const safeStatus = String(status).replace(/'/g, "''");
-    const numOrder = parseInt(orderId, 10) || 0;
-    const safeTx = transactionId ? String(transactionId).replace(/'/g, "''") : '';
+    const safeId = sqlStr(identifier, 80);
+    const safeStatus = sqlStr(status, 30);
+    const numOrder = sqlInt(orderId, { min: 0, fallback: 0 });
+    const safeTx = transactionId ? sqlStr(transactionId, 80) : '';
 
-    let sql = `UPDATE KioskPayments SET [PaymentStatus] = '${safeStatus}', [ApprovedAt] = Now()`;
+    let sql = `UPDATE KioskPayments SET [PaymentStatus] = ${safeStatus}, [ApprovedAt] = Now()`;
     if (numOrder > 0) {
       sql += `, [OrderID] = ${numOrder}`;
     }
     if (safeTx) {
-      sql += `, [TransactionID] = '${safeTx}'`;
+      sql += `, [TransactionID] = ${safeTx}`;
     }
-    sql += ` WHERE [Reference] = '${safeId}' OR [TransactionID] = '${safeId}'`;
+    sql += ` WHERE [Reference] = ${safeId} OR [TransactionID] = ${safeId}`;
 
     try {
       await connection.execute(sql);
@@ -966,7 +1025,8 @@ const aldeloService = {
    */
   async getKioskPayments(limit = 50) {
     try {
-      const sql = `SELECT TOP ${limit} * FROM KioskPayments ORDER BY [PaymentID] DESC`;
+      const safeLimit = sqlInt(limit, { min: 1, max: 500, fallback: 50 });
+      const sql = `SELECT TOP ${safeLimit} * FROM KioskPayments ORDER BY [PaymentID] DESC`;
       return await connection.query(sql);
     } catch (e) {
       console.error('[KioskPayments] Error querying Access:', e.message);

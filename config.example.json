@@ -6,29 +6,21 @@
   "wompi": {
     "mode": "sandbox",
     "currency": "COP",
-    "publicKey": "pub_prod_MP2rh77NUHv1kyIAZ0YCUb6rDFPQeRLy",
-    "privateKey": "prv_prod_y6XWiFrPIyOJSwRxtSOqjvuvdpqnk2FY",
-    "integritySecret": "prod_integrity_hPr2Bn631ee2jFpthJDLsLyZeDe3SMlk",
-    "eventsSecret": "prod_events_J8NGcB6ZoY5yfvf5LsZF63GEgdf7ifYJ",
+    "publicKey": "",
     "sandbox": {
-      "publicKey": "pub_test_82Z9KlLHoXDCfQ8nDCKW3hALwt23Lh62",
-      "privateKey": "prv_test_1U9ImRNhUMsrHKsqQNe1GstIxGDbUPDy",
-      "integritySecret": "test_integrity_rXGbWc5E5guVUx68RASrPxWNRfrYaEq3",
-      "eventsSecret": "test_events_l5HJ6w0153hiCJeeBZgs77hlNgBNr2WI"
+      "publicKey": ""
     },
     "methods": {
       "bancolombiaQr": true,
-      "wompiLink": true,
+      "wompiLink": false,
       "cash": true
     }
   },
   "sms": {
     "provider": "hablame",
     "enabled": true,
-    "user": "luis.delatorre0277@gmail.com",
-    "accountId": "10016115",
-    "apiKey": "W7H4gqhGG1Euca6CokXO12lM2I8y2k",
-    "token": "63d7a2c2ff294943cabc51d87bb93ac4",
+    "user": "",
+    "accountId": "",
     "apiUrl": "https://api103.hablame.co/api/sms/v3/send/priority",
     "template": "Gracias por tu compra en {restaurant}. Tu recibo digital: {url}"
   },
@@ -58,8 +50,29 @@
   },
   "whatsapp": {
     "enabled": true,
-    "phoneNumberId": "1454622917729693",
-    "accessToken": "EAAXpuXsyHwkBS7uxc8uJMTobz54WrNshL4iQRqMFWkZA2ybxuMhk2p7wTbJ0IvFAIU5IskGieCmkifnrSRSS73vZAk3UN0UM5GnOxchEs4cj05KTPgQHaR5KiWad9KBUwYxrtqefb74r2vSg6nRZBpPQhqAGoUcWEJFxQxqAmCcGcAeZBB5uUiUiq9LOwAZDZD",
+    "phoneNumberId": "",
     "apiVersion": "v25.0"
+  },
+  "cloud": {
+    "enabled": false,
+    "baseUrl": "https://serviplus.upaysolutions.app",
+    "storeId": "store_principal"
+  },
+  "printer": {
+    "enabled": true,
+    "printerName": "POS-58",
+    "paperWidth": 58,
+    "autoPrintOrder": true,
+    "autoPrintKitchen": false,
+    "autoPrintCashShift": true,
+    "printCustomerReceipt": true,
+    "printKitchenComanda": true,
+    "printDigitalReceiptQr": true,
+    "openCashDrawer": false,
+    "copies": 1,
+    "feedLines": 3,
+    "cutPaper": true,
+    "customHeader": "",
+    "customFooter": "¡Gracias por su compra!"
   }
 }
