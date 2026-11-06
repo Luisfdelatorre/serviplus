@@ -4,17 +4,13 @@ import { useMenuStore } from './store/useMenuStore';
 import { useKdsStore } from './store/useKdsStore';
 import { fetchMenu, fetchActiveOrders, fetchPublicConfig } from './api';
 import { updateKioskConfig } from './config/kioskConfig';
+import { resolveRouteFromWindow } from './shared/navigation/routeResolver';
 import { Header } from './components/common/Header';
-import { KdsGrid } from './components/kds/KdsGrid';
-import { KioskView } from './components/kiosk/KioskView';
-import { CashierView } from './components/cashier/CashierView';
-import { TurnsBoard } from './components/turns/TurnsBoard';
-import { HomeHubView } from './components/home/HomeHubView';
+import { AppRouter } from './app/AppRouter';
 import { UnifiedLoginModal } from './components/auth/UnifiedLoginModal';
 import { CashShiftModal } from './components/cashier/CashShiftModal';
-import { CashDrawerOpeningView } from './components/cashier/CashDrawerOpeningView';
 import { AdminSettingsModal } from './components/admin/AdminSettingsModal';
-import { AdminSettingsView } from './components/admin/AdminSettingsView';
+import './app/layouts/TerminalLayouts.css';
 import './components/admin/AdminModals.css';
 
 export function App() {
@@ -56,51 +52,12 @@ export function App() {
     };
   }, [isFullscreen, setFullscreen]);
 
-  // Sincronizar cambios de URL (hash o popstate)
+  // Sincronizar cambios de URL (hash o popstate) mediante routeResolver centralizado
   useEffect(() => {
     const handleUrlChange = () => {
-      const hash = window.location.hash.toLowerCase();
-      const params = new URLSearchParams(window.location.search);
-      const tabParam = params.get('tab');
-      const pathname = window.location.pathname.toLowerCase();
-
-      if (tabParam && ['home', 'kiosk', 'cashier', 'kds', 'turns', 'pos', 'cash-in', 'apertura', 'admin', 'settings', 'config'].includes(tabParam.toLowerCase())) {
-        if (tabParam.toLowerCase() === 'pos') setActiveTab('cashier');
-        else if (tabParam.toLowerCase() === 'apertura') setActiveTab('cash-in');
-        else if (tabParam.toLowerCase() === 'settings' || tabParam.toLowerCase() === 'config') setActiveTab('admin');
-        else setActiveTab(tabParam.toLowerCase());
-      } else if (hash.includes('cash-in') || hash.includes('apertura')) {
-        setActiveTab('cash-in');
-      } else if (hash.includes('admin') || hash.includes('settings') || hash.includes('config') || hash.includes('manage')) {
-        setActiveTab('admin');
-      } else if (hash.includes('home')) {
-        setActiveTab('home');
-      } else if (hash.includes('kds') || pathname.includes('kds')) {
-        setActiveTab('kds');
-      } else if (hash.includes('cashier') || hash.includes('caja') || hash.includes('pos')) {
-        setActiveTab('cashier');
-      } else if (hash.includes('turn') || hash.includes('pickup')) {
-        setActiveTab('turns');
-      } else if (hash.includes('kiosk') || hash.includes('autoservice') || hash.includes('customers')) {
-        setActiveTab('kiosk');
-      }
-
-      if (
-        pathname.includes('kds') ||
-        hash.includes('kds') ||
-        (tabParam && tabParam.toLowerCase() === 'kds') ||
-        params.get('fullscreen') === 'true' ||
-        params.get('fs') === '1' ||
-        hash.includes('fullscreen') ||
-        hash.includes('autoservice') ||
-        hash === '#/kiosk' ||
-        hash === '#kiosk' ||
-        pathname === '/kiosk' ||
-        pathname === '/kiosk/' ||
-        pathname.endsWith('/kiosk') ||
-        pathname.endsWith('/kiosk/') ||
-        pathname.includes('autoservice')
-      ) {
+      const resolved = resolveRouteFromWindow();
+      setActiveTab(resolved.tab);
+      if (resolved.fullscreen) {
         setFullscreen(true);
       }
     };
@@ -139,17 +96,13 @@ export function App() {
     loadInitialData();
   }, [setCategories, setActiveOrders]);
 
+  const showHeader = !isFullscreen && activeTab !== 'home' && activeTab !== 'cash-in' && activeTab !== 'admin';
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', overflow: 'hidden' }}>
-      {!isFullscreen && activeTab !== 'home' && activeTab !== 'cash-in' && activeTab !== 'admin' && <Header />}
-      <main style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-        {activeTab === 'home' && <HomeHubView />}
-        {activeTab === 'cash-in' && <CashDrawerOpeningView />}
-        {activeTab === 'kds' && <KdsGrid />}
-        {activeTab === 'kiosk' && <KioskView />}
-        {activeTab === 'cashier' && <CashierView />}
-        {activeTab === 'turns' && <TurnsBoard />}
-        {activeTab === 'admin' && <AdminSettingsView />}
+    <div className="app-shell-root">
+      {showHeader && <Header />}
+      <main className="app-shell-main">
+        <AppRouter activeTab={activeTab} />
       </main>
 
       {/* Modal Reutilizable de Identificación y Acceso de Terminal POS */}
@@ -170,7 +123,7 @@ export function App() {
         isOpen={isAdminLoginOpen}
         onClose={closeAdminLogin}
         mode="admin"
-        onSuccess={(employee) => openAdminSettings(employee)}
+        onSuccess={(employee, token) => openAdminSettings(employee, token)}
       />
 
       <AdminSettingsModal

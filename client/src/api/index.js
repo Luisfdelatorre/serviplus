@@ -1,76 +1,67 @@
-// API REST client para Aldelo POS & Serviplus
+// API REST client para Aldelo POS & Serviplus (centralizado sobre httpClient)
+import { requestJson, setAuthToken } from '../shared/api/httpClient';
+
 export async function fetchMenu() {
-  const res = await fetch(`/api/menu?_t=${Date.now()}`, {
-    cache: 'no-store',
-    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+  const json = await requestJson('/api/menu', {
+    noStore: true,
+    defaultError: 'Error al obtener menú'
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Error al obtener menú');
   return json.data;
 }
 
 export async function fetchEmployees() {
-  const res = await fetch(`/api/employees?_t=${Date.now()}`, {
-    cache: 'no-store',
-    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+  const json = await requestJson('/api/employees', {
+    noStore: true,
+    defaultError: 'Error al obtener empleados'
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Error al obtener empleados');
   return json.data;
 }
 
 export async function fetchActiveOrders() {
-  const res = await fetch(`/api/orders/active?_t=${Date.now()}`, {
-    cache: 'no-store',
-    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+  const json = await requestJson('/api/orders/active', {
+    noStore: true,
+    defaultError: 'Error al obtener órdenes activas'
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Error al obtener órdenes activas');
   return json.data;
 }
 
 export async function createOrder(payload) {
-  const res = await fetch('/api/orders', {
+  const json = await requestJson('/api/orders', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    body: payload,
+    defaultError: 'Error al crear orden'
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Error al crear orden');
   return json.data;
 }
 
 export async function updateOrderStatus(orderId, status, tableReady = null) {
   const payload = { status };
   if (tableReady !== null) payload.tableReady = tableReady;
-  const res = await fetch(`/api/orders/${orderId}/status`, {
+  const json = await requestJson(`/api/orders/${orderId}/status`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    body: payload,
+    defaultError: 'Error al actualizar estado'
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Error al actualizar estado');
   return json.data;
 }
 
 export async function updateKdsStatus(orderId, kdsStatus, itemChecks = null) {
   const payload = { kdsStatus };
   if (itemChecks) payload.itemChecks = itemChecks;
-  const res = await fetch(`/api/orders/${orderId}/kds-status`, {
+  const json = await requestJson(`/api/orders/${orderId}/kds-status`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    body: payload,
+    defaultError: 'Error al actualizar KDS'
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Error al actualizar KDS');
   return json.data;
 }
 
 export async function fetchTables() {
   try {
-    const res = await fetch('/api/tables');
-    const json = await res.json();
-    if (json.success && json.data && json.data.length > 0) return json.data;
+    const json = await requestJson('/api/tables', {
+      defaultError: 'Error al obtener mesas'
+    });
+    if (json && json.data && json.data.length > 0) return json.data;
   } catch (e) {
     console.error('Error fetching tables:', e);
   }
@@ -84,75 +75,78 @@ export async function fetchTables() {
 
 export async function sendDigitalReceipt(orderId, type, destination) {
   try {
-    const res = await fetch(`/api/orders/${orderId}/receipt`, {
+    return await requestJson(`/api/orders/${orderId}/receipt`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, destination })
+      body: { type, destination },
+      defaultError: 'Error al enviar recibo digital'
     });
-    const json = await res.json();
-    return json;
   } catch (err) {
     console.error('Error sending digital receipt:', err);
-    return { success: true, simulated: true };
+    return { success: false, error: err.message };
   }
 }
 
 // 7b. Enviar mensaje de WhatsApp (Meta Graph API Cloud v25.0)
 export async function sendWhatsAppMessage(to, body, extra = {}) {
-  const res = await fetch('/api/whatsapp/send', {
+  return await requestJson('/api/whatsapp/send', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ to, body, ...extra })
+    body: { to, body, ...extra },
+    defaultError: 'Error al enviar mensaje de WhatsApp'
   });
-  const json = await res.json();
-  if (!json.success && !json.simulated) {
-    throw new Error(json.error || 'Error al enviar mensaje de WhatsApp');
-  }
-  return json;
 }
 
 // 8. Crear QR Oficial de Bancolombia / Nequi (Wompi)
 export async function createWompiQr(orderId, amount, customerEmail = 'kiosco@serviplus.pos', extra = {}) {
-  const res = await fetch('/api/payments/wompi/qr', {
+  const json = await requestJson('/api/payments/wompi/qr', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ orderId, amount, customerEmail, ...extra })
+    body: { orderId, amount, customerEmail, ...extra },
+    defaultError: 'Error al generar código QR de Bancolombia'
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Error al generar código QR de Bancolombia');
   return json.data;
+}
+
+// 8b. Consultar estado de transacción Wompi
+export async function fetchWompiTransactionStatus(transactionId) {
+  const json = await requestJson(`/api/payments/wompi/status/${transactionId}`, {
+    noStore: true,
+    defaultError: 'Error al consultar estado del pago'
+  });
+  return json ? json.data : null;
 }
 
 // 9. Autenticación de Administrador Aldelo (SecurityLevel <= 2)
 export async function adminLogin(pin) {
-  const res = await fetch('/api/admin/auth', {
+  const json = await requestJson('/api/admin/auth', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ pin })
+    body: { pin },
+    defaultError: 'Código de administrador inválido'
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Código de administrador inválido');
+  if (json.data && json.data.token) {
+    setAuthToken(json.data.token, { isAdmin: true });
+  }
   return json.data;
 }
 
 // 9b. Autenticación de Empleado / Cajero / Terminal General
 export async function employeeLogin(pin) {
-  const res = await fetch('/api/auth/login', {
+  const json = await requestJson('/api/auth/login', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ pin })
+    body: { pin },
+    defaultError: 'Código de empleado inválido'
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Código de empleado inválido');
+  if (json.data && json.data.token) {
+    setAuthToken(json.data.token, { isAdmin: Boolean(json.data.employee?.isAdmin) });
+  }
   return json.data;
 }
 
 // 10. Consultar configuración pública del kiosco y restaurante
 export async function fetchPublicConfig() {
   try {
-    const res = await fetch('/api/config/public');
-    const json = await res.json();
-    if (json.success) return json.data;
+    const json = await requestJson('/api/config/public', {
+      defaultError: 'Error al obtener configuración pública'
+    });
+    if (json && json.success) return json.data;
   } catch (err) {
     console.warn('[Config] Error obteniendo configuración pública, usando defaults locales:', err);
   }
@@ -161,122 +155,116 @@ export async function fetchPublicConfig() {
 
 // 11. Consultar configuración del sistema (Admin)
 export async function getAdminConfig() {
-  const res = await fetch('/api/admin/config');
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Error al obtener configuración');
+  const json = await requestJson('/api/admin/config', {
+    preferAdminToken: true,
+    defaultError: 'Error al obtener configuración'
+  });
   return json.data;
 }
 
 // 12. Guardar configuración del sistema en caliente (Admin)
 export async function saveAdminConfig(configPayload) {
-  const res = await fetch('/api/admin/config', {
+  const json = await requestJson('/api/admin/config', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(configPayload)
+    body: configPayload,
+    preferAdminToken: true,
+    defaultError: 'Error al guardar configuración'
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Error al guardar configuración');
   return json.data;
 }
 
 // 13. Obtener todos los productos (incluyendo agotados) para administración
 export async function fetchAdminProducts() {
-  const res = await fetch(`/api/products/admin?_t=${Date.now()}`);
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Error al obtener productos');
+  const json = await requestJson('/api/products/admin', {
+    noStore: true,
+    defaultError: 'Error al obtener productos'
+  });
   return json.data;
 }
 
 // 14. Activar o desactivar producto (Agotado / 86'd)
 export async function toggleProductActive(id, isActive) {
-  const res = await fetch(`/api/products/${id}/toggle-active`, {
+  const json = await requestJson(`/api/products/${id}/toggle-active`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ isActive })
+    body: { isActive },
+    defaultError: 'Error al actualizar disponibilidad'
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Error al actualizar disponibilidad');
   return json.data;
 }
 
 // 15. Consultar turno de caja activo (Arqueo en vivo)
 export async function fetchCurrentCashShift() {
-  const res = await fetch(`/api/cashier/shift/current?_t=${Date.now()}`);
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Error al consultar turno de caja');
+  const json = await requestJson('/api/cashier/shift/current', {
+    noStore: true,
+    defaultError: 'Error al consultar turno de caja'
+  });
   return json.data;
 }
 
 // 16. Abrir turno de caja
 export async function openCashShift({ cashierId, cashierName, initialCash, notes }) {
-  const res = await fetch('/api/cashier/shift/open', {
+  const json = await requestJson('/api/cashier/shift/open', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ cashierId, cashierName, initialCash, notes })
+    body: { cashierId, cashierName, initialCash, notes },
+    defaultError: 'Error al abrir turno de caja'
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Error al abrir turno de caja');
   return json.data;
 }
 
 // 17. Cerrar turno de caja (Corte Z)
 export async function closeCashShift({ actualCashInDrawer, closedBy, notes }) {
-  const res = await fetch('/api/cashier/shift/close', {
+  const json = await requestJson('/api/cashier/shift/close', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ actualCashInDrawer, closedBy, notes })
+    body: { actualCashInDrawer, closedBy, notes },
+    defaultError: 'Error al cerrar turno de caja'
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Error al cerrar turno de caja');
   return json.data;
 }
 
 // 18. Historial de turnos de caja
 export async function fetchCashShiftHistory() {
-  const res = await fetch(`/api/cashier/shift/history?_t=${Date.now()}`);
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Error al obtener historial de turnos');
+  const json = await requestJson('/api/cashier/shift/history', {
+    noStore: true,
+    defaultError: 'Error al obtener historial de turnos'
+  });
   return json.data;
 }
 
 // 19. Consultar estado y configuración de la impresora térmica
 export async function fetchPrinterStatus() {
-  const res = await fetch(`/api/printer/status?_t=${Date.now()}`);
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Error al consultar estado de impresora');
+  const json = await requestJson('/api/printer/status', {
+    noStore: true,
+    defaultError: 'Error al consultar estado de impresora'
+  });
   return json.data;
 }
 
 // 20. Listar todas las impresoras instaladas en Windows
 export async function fetchPrinterList() {
-  const res = await fetch(`/api/printer/list?_t=${Date.now()}`);
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Error al listar impresoras');
+  const json = await requestJson('/api/printer/list', {
+    noStore: true,
+    defaultError: 'Error al listar impresoras'
+  });
   return json.printers || [];
 }
 
 // 21. Guardar configuración de la impresora térmica
 export async function savePrinterConfig(printerSettings) {
-  const res = await fetch('/api/printer/config', {
+  const json = await requestJson('/api/printer/config', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(printerSettings)
+    body: printerSettings,
+    defaultError: 'Error al guardar configuración de impresora'
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Error al guardar configuración de impresora');
   return json.data;
 }
 
 // 22. Imprimir ticket de prueba de diagnóstico
 export async function printTestTicket(printerName = null) {
-  const res = await fetch('/api/printer/test', {
+  return await requestJson('/api/printer/test', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ printerName })
+    body: { printerName },
+    defaultError: 'Error al imprimir ticket de prueba'
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Error al imprimir ticket de prueba');
-  return json;
 }
 
 // 23. Imprimir orden (por ID o por payload directo)
@@ -291,36 +279,27 @@ export async function printOrderTicket(orderDataOrId, options = {}) {
     body = { ...orderDataOrId, ...options };
   }
 
-  const res = await fetch(url, {
+  return await requestJson(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    body,
+    defaultError: 'Error al enviar orden a la impresora'
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Error al enviar orden a la impresora');
-  return json;
 }
 
 // 24. Imprimir comprobante de turno de caja (Apertura o Cierre Z)
 export async function printCashShiftSlip(shiftData, isClosing = false, printerName = null) {
-  const res = await fetch('/api/printer/shift', {
+  return await requestJson('/api/printer/shift', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ shiftData, isClosing, printerName })
+    body: { shiftData, isClosing, printerName },
+    defaultError: 'Error al imprimir comprobante de turno'
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Error al imprimir comprobante de turno');
-  return json;
 }
 
 // 25. Abrir gaveta / cajón monedero
 export async function openCashDrawer(printerName = null) {
-  const res = await fetch('/api/printer/drawer/open', {
+  return await requestJson('/api/printer/drawer/open', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ printerName })
+    body: { printerName },
+    defaultError: 'Error al abrir gaveta monedero'
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Error al abrir gaveta monedero');
-  return json;
 }

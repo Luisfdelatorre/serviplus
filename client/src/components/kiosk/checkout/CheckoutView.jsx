@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useCartStore } from '../../../store/useCartStore';
-import { createOrder, fetchTables, sendDigitalReceipt, createWompiQr, sendWhatsAppMessage } from '../../../api';
+import { createOrder, fetchTables, sendDigitalReceipt, createWompiQr, fetchWompiTransactionStatus, sendWhatsAppMessage } from '../../../api';
 import { sfx } from '../../../utils/audio';
 import { socket } from '../../../socket';
 import { KIOSK_CONFIG } from '../../../config/kioskConfig';
@@ -170,12 +170,9 @@ export function CheckoutView({ isOpen = true, onClose, onOrderCompleted }) {
       pollTimer = setInterval(async () => {
         if (isHandled) return;
         try {
-          const res = await fetch(`/api/payments/wompi/status/${wompiQrData.transactionId}`);
-          if (res.ok) {
-            const json = await res.json();
-            if (json?.data?.status === 'APPROVED') {
-              onApproved(json.data);
-            }
+          const txData = await fetchWompiTransactionStatus(wompiQrData.transactionId);
+          if (txData?.status === 'APPROVED') {
+            onApproved(txData);
           }
         } catch (e) {
           // Micro-corte de red
