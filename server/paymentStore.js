@@ -1,24 +1,13 @@
-const fs = require('fs');
 const path = require('path');
+const { writeJsonAtomic, readJsonSafe } = require('./lib/atomicFile');
 
 const PAYMENTS_FILE = path.join(__dirname, '..', 'payments_state.dat');
 
-let memoryPayments = {};
-
-// Cargar pagos existentes desde archivo persistente
-try {
-  if (fs.existsSync(PAYMENTS_FILE)) {
-    const raw = fs.readFileSync(PAYMENTS_FILE, 'utf8');
-    memoryPayments = JSON.parse(raw);
-  }
-} catch (e) {
-  console.error('[Payment Store] Error al cargar payments_state.dat, iniciando vacío:', e.message);
-  memoryPayments = {};
-}
+let memoryPayments = readJsonSafe(PAYMENTS_FILE, {});
 
 function persist() {
   try {
-    fs.writeFileSync(PAYMENTS_FILE, JSON.stringify(memoryPayments, null, 2), 'utf8');
+    writeJsonAtomic(PAYMENTS_FILE, memoryPayments);
   } catch (e) {
     console.error('[Payment Store] Error al guardar payments_state.dat:', e.message);
   }

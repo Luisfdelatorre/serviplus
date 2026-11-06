@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { writeJsonAtomic } = require('./lib/atomicFile');
 
 const KDS_FILE = path.join(__dirname, '..', 'kds_state.dat');
 const LEGACY_KDS_FILE = path.join(__dirname, '..', 'kds_state.json');
@@ -35,9 +36,9 @@ try {
 
 function persist() {
   try {
-    fs.writeFileSync(KDS_FILE, JSON.stringify(memoryStore, null, 2), 'utf8');
+    writeJsonAtomic(KDS_FILE, memoryStore);
   } catch (e) {
-    console.error('[KDS Store] Error saving kds_state.json:', e.message);
+    console.error('[KDS Store] Error saving kds_state.dat:', e.message);
   }
 }
 

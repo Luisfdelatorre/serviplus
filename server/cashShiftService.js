@@ -3,8 +3,8 @@
  * Persiste los turnos en cash_shifts.json para total control operativo y auditoría
  */
 
-const fs = require('fs');
 const path = require('path');
+const { writeJsonAtomic, readJsonSafe } = require('./lib/atomicFile');
 
 const SHIFTS_FILE = path.join(__dirname, '../cash_shifts.json');
 
@@ -15,22 +15,13 @@ class CashShiftService {
   }
 
   load() {
-    try {
-      if (fs.existsSync(SHIFTS_FILE)) {
-        const raw = fs.readFileSync(SHIFTS_FILE, 'utf8');
-        this.shifts = JSON.parse(raw);
-      } else {
-        this.shifts = [];
-      }
-    } catch (err) {
-      console.error('[CashShiftService] Error cargando cash_shifts.json:', err.message);
-      this.shifts = [];
-    }
+    const loaded = readJsonSafe(SHIFTS_FILE, []);
+    this.shifts = Array.isArray(loaded) ? loaded : [];
   }
 
   save() {
     try {
-      fs.writeFileSync(SHIFTS_FILE, JSON.stringify(this.shifts, null, 2), 'utf8');
+      writeJsonAtomic(SHIFTS_FILE, this.shifts);
     } catch (err) {
       console.error('[CashShiftService] Error guardando cash_shifts.json:', err.message);
     }

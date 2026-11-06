@@ -14,6 +14,9 @@ const paymentStore = require('./paymentStore');
 const CloudBridgeClient = require('./cloudBridgeClient');
 const cashShiftService = require('./cashShiftService');
 const printerService = require('./printerService');
+const auditService = require('./auditService');
+const { createCashShiftRoutes } = require('./routes/cashShiftRoutes');
+const { createAdminRoutes } = require('./routes/adminRoutes');
 const {
   pinRateLimiter,
   signSessionToken,
@@ -139,6 +142,13 @@ app.post('/api/products/:id/toggle-active', requireRole('cashier', 'admin'), asy
     const { isActive } = req.body;
     const result = await aldeloService.setProductAvailability(id, isActive);
 
+    auditService.record({
+      action: 'PRODUCT_AVAILABILITY_TOGGLE',
+      actor: (req.user && req.user.name) || 'staff',
+      target: id,
+      details: { isActive: Boolean(isActive) }
+    });
+
     if (io) {
       io.emit('product:status_changed', { id: parseInt(id, 10), isActive: Boolean(isActive) });
       io.emit('kiosk:menu_updated', { trigger: 'toggle_product', id, isActive });
@@ -155,49 +165,8 @@ app.post('/api/products/:id/toggle-active', requireRole('cashier', 'admin'), asy
 // 2. GESTIÓN DE TURNOS DE CAJA (Apertura, Arqueo en Vivo y Cierre Z)
 // ============================================================================
 
-app.get('/api/cashier/shift/current', (req, res) => {
-  try {
-    const current = cashShiftService.getCurrentShift();
-    res.json({ success: true, data: current });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-app.post('/api/cashier/shift/open', requireRole('cashier', 'admin'), validateShiftOpenPayload, async (req, res) => {
-  try {
-    const { cashierId, cashierName, initialCash, notes } = req.body;
-    const shift = cashShiftService.openShift({ cashierId, cashierName, initialCash, notes });
-    aldeloService.signInCashier({ employeeId: cashierId, startAmount: initialCash }).catch((e) => console.warn('[Aldelo SignInCashier]', e.message));
-    if (io) io.emit('cashier:shift_opened', shift);
-    res.status(201).json({ success: true, data: shift });
-  } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
-  }
-});
-
-app.post('/api/cashier/shift/close', requireRole('cashier', 'admin'), async (req, res) => {
-  try {
-    const actualCash = req.body.actualCashInDrawer !== undefined ? req.body.actualCashInDrawer : req.body.actualCash;
-    const closedBy = req.body.closedBy || req.body.cashierName || (req.user && req.user.name) || 'Cajero';
-    const notes = req.body.notes || '';
-    const shift = cashShiftService.closeShift({ actualCashInDrawer: actualCash, closedBy, notes });
-    aldeloService.signOutCashier({ endAmount: actualCash, discrepancy: shift.closing?.difference, notes }).catch((e) => console.warn('[Aldelo SignOutCashier]', e.message));
-    if (io) io.emit('cashier:shift_closed', shift);
-    res.json({ success: true, data: shift });
-  } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
-  }
-});
-
-app.get('/api/cashier/shift/history', requireRole('cashier', 'admin'), (req, res) => {
-  try {
-    const history = cashShiftService.getHistory();
-    res.json({ success: true, data: history });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
+app.use('/api/cashier/shift', createCashShiftRoutes(io));
+app.use('/api/admin', createAdminRoutes());
 
 // ============================================================================
 // 3. EMPLEADOS, AUTENTICACIÓN Y MESAS
@@ -232,30 +201,6 @@ app.post('/api/auth/login', pinRateLimiter, async (req, res) => {
     });
   } catch (err) {
     console.error('Error in /api/auth/login:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-app.post('/api/admin/auth', pinRateLimiter, async (req, res) => {
-  try {
-    const { pin } = req.body || {};
-    const result = await aldeloService.verifyAdminAccess(pin);
-    if (!result.success) {
-      if (req.recordFailedPinAttempt) req.recordFailedPinAttempt();
-      return res.status(401).json({ success: false, error: result.error });
-    }
-    if (req.clearPinAttempts) req.clearPinAttempts();
-    const adminEmp = { ...result.employee, role: 'admin', isAdmin: true };
-    const token = signSessionToken(adminEmp, '8h');
-    res.json({
-      success: true,
-      data: {
-        token,
-        employee: adminEmp
-      }
-    });
-  } catch (err) {
-    console.error('Error in /api/admin/auth:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -373,6 +318,13 @@ app.put('/api/orders/:id/status', requireRole('cashier', 'admin'), validateOrder
     if (status === '2') {
       io.emit('kds:status_changed', { orderId, kdsStatus: 'PREPARING', tableReady: false });
     }
+
+    auditService.record({
+      action: status === '3' ? 'ORDER_VOID' : 'ORDER_STATUS_CHANGE',
+      actor: (req.user && req.user.name) || employeeId || 'cashier',
+      target: orderId,
+      details: { status, tableReady, paymentMethod }
+    });
 
     io.emit('order:status_changed', { orderId, status, tableReady, isPaid: status === '2' });
     console.log(`[Order Status] Order #${orderId} changed to ${status} (isPaid: ${status === '2'})`);
@@ -557,19 +509,6 @@ app.post('/api/payments/wompi/webhook', (req, res) => {
   }
 });
 
-app.get('/api/admin/payments', requireRole('admin', 'cashier'), async (req, res) => {
-  try {
-    const limit = parseInt(req.query.limit, 10) || 50;
-    let payments = await aldeloService.getKioskPayments(limit);
-    if (!payments || payments.length === 0) {
-      payments = paymentStore.getAllPayments(limit);
-    }
-    res.json({ success: true, data: payments });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
 // ============================================================================
 // 6. CONFIGURACIÓN DEL SISTEMA (PÚBLICA Y ADMINISTRATIVA)
 // ============================================================================
@@ -581,36 +520,6 @@ app.get('/api/config/public', (req, res) => {
       data: configStore.getPublicConfig()
     });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-app.get('/api/admin/config', requireRole('admin'), (req, res) => {
-  try {
-    res.json({
-      success: true,
-      data: configStore.getRedactedConfig()
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-app.post('/api/admin/config', requireRole('admin'), (req, res) => {
-  try {
-    const newConfig = req.body;
-    if (!newConfig || typeof newConfig !== 'object') {
-      return res.status(400).json({ success: false, error: 'Configuración inválida' });
-    }
-    const updated = configStore.saveConfig(newConfig);
-    console.log('[Admin] Configuración actualizada (secretos en .env, ajustes en config.json)');
-    res.json({
-      success: true,
-      data: updated,
-      message: 'Configuración actualizada con éxito'
-    });
-  } catch (err) {
-    console.error('Error saving configuration:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -860,6 +769,11 @@ app.post('/api/printer/drawer/open', requireRole('cashier', 'admin'), async (req
   try {
     const { printerName } = req.body || {};
     const result = await printerService.openCashDrawer(printerName);
+    auditService.record({
+      action: 'CASH_DRAWER_OPEN',
+      actor: (req.user && req.user.name) || 'cashier',
+      target: printerName || 'default_printer'
+    });
     res.json(result);
   } catch (err) {
     console.error('Error in POST /api/printer/drawer/open:', err);

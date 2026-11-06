@@ -52,3 +52,5 @@ printer/build/
 Thumbs.db
 .vscode/
 .idea/
+audit_log.json
+*.tmp
