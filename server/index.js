@@ -6,15 +6,27 @@ const path = require('path');
 const aldeloService = require('./aldeloService');
 const receiptService = require('./receiptService');
 const WhatsAppService = require('./whatsappService');
+const CloudBridgeClient = require('./cloudBridgeClient');
+const cashShiftService = require('./cashShiftService');
+const printerService = require('./printerService');
 
-const whatsappService = new WhatsAppService(() => {
+const getConfig = () => {
   try {
     delete require.cache[require.resolve('../config.json')];
     return require('../config.json');
   } catch (_) {
     return {};
   }
-});
+};
+
+const whatsappService = new WhatsAppService(getConfig);
+
+const appConfig = getConfig();
+let cloudBridgeClient = null;
+if (appConfig.cloud && appConfig.cloud.enabled) {
+  cloudBridgeClient = new CloudBridgeClient(getConfig);
+  cloudBridgeClient.start();
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -67,6 +79,81 @@ app.get('/api/menu', async (req, res) => {
   }
 });
 
+// 1b. Obtener todos los productos (incluyendo agotados) para administración
+app.get('/api/products/admin', async (req, res) => {
+  try {
+    const products = await aldeloService.getAllProductsAdmin();
+    res.json({ success: true, data: products });
+  } catch (err) {
+    console.error('Error in /api/products/admin:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 1c. Activar o Desactivar producto (Agotado / 86'd)
+app.post('/api/products/:id/toggle-active', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+    const result = await aldeloService.setProductAvailability(id, isActive);
+
+    if (io) {
+      io.emit('product:status_changed', { id: parseInt(id, 10), isActive: Boolean(isActive) });
+      io.emit('kiosk:menu_updated', { trigger: 'toggle_product', id, isActive });
+    }
+
+    res.json({ success: true, data: result });
+  } catch (err) {
+    console.error('Error in /api/products/:id/toggle-active:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// --- GESTIÓN DE TURNOS DE CAJA (Apertura, Arqueo en Vivo y Cierre Z) ---
+app.get('/api/cashier/shift/current', (req, res) => {
+  try {
+    const current = cashShiftService.getCurrentShift();
+    res.json({ success: true, data: current });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/cashier/shift/open', async (req, res) => {
+  try {
+    const { cashierId, cashierName, initialCash, notes } = req.body;
+    const shift = cashShiftService.openShift({ cashierId, cashierName, initialCash, notes });
+    aldeloService.signInCashier({ employeeId: cashierId, startAmount: initialCash }).catch((e) => console.warn('[Aldelo SignInCashier]', e.message));
+    if (io) io.emit('cashier:shift_opened', shift);
+    res.status(201).json({ success: true, data: shift });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/cashier/shift/close', async (req, res) => {
+  try {
+    const actualCash = req.body.actualCashInDrawer !== undefined ? req.body.actualCashInDrawer : req.body.actualCash;
+    const closedBy = req.body.closedBy || req.body.cashierName || 'Cajero';
+    const notes = req.body.notes || '';
+    const shift = cashShiftService.closeShift({ actualCashInDrawer: actualCash, closedBy, notes });
+    aldeloService.signOutCashier({ endAmount: actualCash, discrepancy: shift.closing?.difference, notes }).catch((e) => console.warn('[Aldelo SignOutCashier]', e.message));
+    if (io) io.emit('cashier:shift_closed', shift);
+    res.json({ success: true, data: shift });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/cashier/shift/history', (req, res) => {
+  try {
+    const history = cashShiftService.getHistory();
+    res.json({ success: true, data: history });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // 2. Obtener lista de empleados / cajeros
 app.get('/api/employees', async (req, res) => {
   try {
@@ -74,6 +161,27 @@ app.get('/api/employees', async (req, res) => {
     res.json({ success: true, data: employees });
   } catch (err) {
     console.error('Error in /api/employees:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 2b. Autenticación general de empleado / cajero / admin para Terminal POS
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { pin } = req.body;
+    const result = await aldeloService.verifyEmployeeLogin(pin);
+    if (!result.success) {
+      return res.status(401).json({ success: false, error: result.error });
+    }
+    res.json({
+      success: true,
+      data: {
+        token: `session_${result.employee.id}_${Date.now()}`,
+        employee: result.employee
+      }
+    });
+  } catch (err) {
+    console.error('Error in /api/auth/login:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -121,9 +229,41 @@ app.post('/api/orders', async (req, res) => {
     const activeOrders = await aldeloService.getActiveOrders();
     const fullOrder = activeOrders.find(o => o.id === newOrder.orderId) || newOrder;
 
+    // Generar código y URL oficial de factura digital
+    const receiptInfo = receiptService.generateReceiptCode(newOrder.orderId);
+    fullOrder.receiptCode = receiptInfo.urlCode;
+    fullOrder.receiptUrl = receiptInfo.path;
+    fullOrder.receiptFullUrl = receiptInfo.fullUrl;
+    fullOrder.transactionRef = receiptInfo.transactionRef;
+
     // Emitir en tiempo real a todas las pantallas conectadas (KDS, Turnos, Caja)
     io.emit('order:new', fullOrder);
     console.log(`[Order Created] Order #${newOrder.orderId} emitted via Socket.io`);
+
+    // Impresión automática en impresora térmica
+    try {
+      const prnCfg = printerService.getPrinterConfig();
+      if (prnCfg.enabled && prnCfg.autoPrintOrder) {
+        const printPayload = {
+          orderId: newOrder.orderId,
+          orderNumber: newOrder.orderNumber,
+          orderType: orderType || 1,
+          tableId,
+          items: items || [],
+          total: fullOrder.total || (items || []).reduce((acc, i) => acc + (Number(i.price || 0) * Number(i.quantity || 1)), 0),
+          paymentMethod: paymentMethod || 'CASH',
+          receiptCode: receiptInfo.urlCode,
+          receiptFullUrl: receiptInfo.fullUrl,
+          notes: notes || ''
+        };
+        const printType = prnCfg.autoPrintKitchen ? 'both' : (prnCfg.printCustomerReceipt ? 'customer' : 'kitchen');
+        printerService.printOrder(printPayload, { type: printType })
+          .then(pRes => console.log(`[Printer] Auto-impresión completada orden #${newOrder.orderId}:`, pRes.success))
+          .catch(pErr => console.warn(`[Printer] Error en auto-impresión orden #${newOrder.orderId}:`, pErr.message));
+      }
+    } catch (printErr) {
+      console.warn('[Printer] Excepción preparando auto-impresión:', printErr.message);
+    }
 
     res.status(201).json({ success: true, data: fullOrder });
   } catch (err) {
@@ -289,15 +429,52 @@ app.post('/api/orders/:id/receipt', async (req, res) => {
 // 7a. Enviar Mensaje de WhatsApp directo (Meta Graph API Cloud v25.0)
 app.post('/api/whatsapp/send', async (req, res) => {
   try {
-    const { to, body, orderNumber, receiptUrl } = req.body;
-    let messageBody = body;
-    if (!messageBody && receiptUrl) {
-      const config = whatsappService.getConfig();
-      const restaurantName = config.restaurant?.name || 'Serviplus';
-      messageBody = `¡Hola! 👋 Aquí tienes el comprobante de tu pedido #${orderNumber || ''} en ${restaurantName}:\n\n🔗 ${receiptUrl}\n\n¡Gracias por tu compra!`;
+    const { to, phone, body, message, orderNumber, orderId, receiptUrl } = req.body;
+    const targetNumber = to || phone;
+
+    // Asegurar que la URL del recibo sea pública (HTTPS) y contenga el código único para que WhatsApp la reconozca como un link web interactivo
+    let finalReceiptUrl = receiptUrl || '';
+    const targetId = orderId || orderNumber;
+    if (targetId && (!finalReceiptUrl || finalReceiptUrl.includes('192.168.') || finalReceiptUrl.includes('localhost') || finalReceiptUrl.endsWith('/p/'))) {
+      try {
+        const info = receiptService.generateReceiptCode(parseInt(targetId, 10));
+        if (info && info.fullUrl) finalReceiptUrl = info.fullUrl;
+      } catch (_) { }
+    }
+    if (finalReceiptUrl && (finalReceiptUrl.includes('192.168.') || finalReceiptUrl.includes('localhost') || finalReceiptUrl.includes('127.0.0.1'))) {
+      const pIdx = finalReceiptUrl.indexOf('/p/');
+      if (pIdx !== -1) {
+        finalReceiptUrl = `https://serviplus.upaysolutions.app${finalReceiptUrl.substring(pIdx)}`;
+      }
     }
 
-    const result = await whatsappService.sendMessage(to, messageBody);
+    // Si incluye URL de recibo, usar la plantilla oficial aprobada por Meta para entrega 100% garantizada
+    if (finalReceiptUrl) {
+      try {
+        const components = [
+          {
+            type: 'body',
+            parameters: [
+              { type: 'text', text: String(orderNumber || orderId || '1') },
+              { type: 'text', text: String(finalReceiptUrl) }
+            ]
+          }
+        ];
+        const tplResult = await whatsappService.sendTemplateMessage(targetNumber, 'serviplus_receipt_v1', 'es', components);
+        return res.json(tplResult);
+      } catch (tplErr) {
+        console.warn('[POST /api/whatsapp/send] Fallback plantilla falló, enviando texto:', tplErr.message);
+      }
+    }
+
+    let messageBody = body || message;
+    if (!messageBody && finalReceiptUrl) {
+      const config = whatsappService.getConfig();
+      const restaurantName = config.restaurant?.name || 'Serviplus';
+      messageBody = `¡Hola! 👋 Aquí tienes el comprobante de tu pedido #${orderNumber || orderId || ''} en ${restaurantName}:\n\nVer Recibo Digital:\n${finalReceiptUrl}\n\n¡Gracias por tu compra!`;
+    }
+
+    const result = await whatsappService.sendMessage(targetNumber, messageBody);
     res.json(result);
   } catch (err) {
     console.error('Error in POST /api/whatsapp/send:', err);
@@ -329,6 +506,141 @@ app.get('/api/receipts/:code', async (req, res) => {
     });
   } catch (err) {
     console.error('Error in GET /api/receipts/:code:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ========================================================
+// MÓDULO DE IMPRESIÓN TÉRMICA ESC/POS (TICKETS Y COMANDAS)
+// ========================================================
+
+// 1. Obtener estado de la impresora configurada
+app.get('/api/printer/status', async (req, res) => {
+  try {
+    const status = await printerService.getPrinterStatus();
+    const config = printerService.getPrinterConfig();
+    res.json({ success: true, data: { ...status, config } });
+  } catch (err) {
+    console.error('Error in GET /api/printer/status:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 2. Listar todas las impresoras instaladas en Windows
+app.get('/api/printer/list', async (req, res) => {
+  try {
+    const result = await printerService.listInstalledPrinters();
+    res.json(result);
+  } catch (err) {
+    console.error('Error in GET /api/printer/list:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 3. Guardar configuración de la impresora
+app.post('/api/printer/config', (req, res) => {
+  try {
+    const updated = printerService.updatePrinterConfig(req.body);
+    res.json(updated);
+  } catch (err) {
+    console.error('Error in POST /api/printer/config:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 4. Imprimir ticket de prueba de diagnóstico
+app.post('/api/printer/test', async (req, res) => {
+  try {
+    const { printerName } = req.body || {};
+    const result = await printerService.printTestTicket(printerName);
+    res.json(result);
+  } catch (err) {
+    console.error('Error in POST /api/printer/test:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 5. Imprimir orden por ID (desde BD Aldelo)
+app.post('/api/printer/order/:id', async (req, res) => {
+  try {
+    const orderId = parseInt(req.params.id, 10);
+    const { type = 'customer', copies = 1, printerName } = req.body || {};
+
+    let orderData = await aldeloService.getOrderReceiptData(orderId);
+    if (!orderData) {
+      const activeOrders = await aldeloService.getActiveOrders();
+      const found = activeOrders.find(o => o.id === orderId);
+      if (found) {
+        orderData = {
+          orderId: found.id,
+          orderNumber: found.orderNumber || found.id,
+          orderType: found.orderType || 1,
+          tableId: found.tableId,
+          items: found.items || [],
+          total: found.total || 0,
+          paymentMethod: found.paymentMethod || 'CASH'
+        };
+      }
+    }
+
+    if (!orderData) {
+      return res.status(404).json({ success: false, error: `Orden #${orderId} no encontrada` });
+    }
+
+    const receiptInfo = receiptService.generateReceiptCode(orderId);
+    orderData.receiptCode = receiptInfo.urlCode;
+    orderData.receiptFullUrl = receiptInfo.fullUrl;
+
+    const printResult = await printerService.printOrder(orderData, { type, copies, printerName });
+    res.json(printResult);
+  } catch (err) {
+    console.error(`Error in POST /api/printer/order/${req.params.id}:`, err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 6. Imprimir orden directamente desde el payload del Kiosco / Frontend
+app.post('/api/printer/order', async (req, res) => {
+  try {
+    const payload = req.body || {};
+    const { type = 'customer', copies = 1, printerName } = payload;
+
+    if (payload.receiptCode && !payload.receiptFullUrl) {
+      payload.receiptFullUrl = `https://serviplus.upaysolutions.app/p/${payload.receiptCode}`;
+    }
+
+    const printResult = await printerService.printOrder(payload, { type, copies, printerName });
+    res.json(printResult);
+  } catch (err) {
+    console.error('Error in POST /api/printer/order:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 7. Imprimir comprobante de turno de caja (Apertura o Cierre Z)
+app.post('/api/printer/shift', async (req, res) => {
+  try {
+    const { shiftData, isClosing, printerName } = req.body || {};
+    const data = shiftData || cashShiftService.getCurrentShift();
+    if (!data) {
+      return res.status(400).json({ success: false, error: 'No hay datos de turno para imprimir' });
+    }
+    const result = await printerService.printCashShift(data, Boolean(isClosing), printerName);
+    res.json(result);
+  } catch (err) {
+    console.error('Error in POST /api/printer/shift:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 8. Abrir gaveta / cajón monedero
+app.post('/api/printer/drawer/open', async (req, res) => {
+  try {
+    const { printerName } = req.body || {};
+    const result = await printerService.openCashDrawer(printerName);
+    res.json(result);
+  } catch (err) {
+    console.error('Error in POST /api/printer/drawer/open:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });

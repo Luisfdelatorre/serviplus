@@ -3,6 +3,7 @@ import QRCode from 'qrcode';
 import { sfx } from '../../../utils/audio';
 import { KIOSK_CONFIG } from '../../../config/kioskConfig';
 import { ThermalReceiptTicket } from './ThermalReceiptTicket';
+import { printOrderTicket } from '../../../api';
 
 export function SuccessStep({
   createdOrderNumber,
@@ -13,6 +14,7 @@ export function SuccessStep({
   paymentMethod,
   createdReceiptCode,
   createdReceiptUrl,
+  createdReceiptFullUrl,
   completedOrderItems = [],
   activeReceiptTab,
   setActiveReceiptTab,
@@ -27,7 +29,36 @@ export function SuccessStep({
   onFinish
 }) {
   const [localQrDataUrl, setLocalQrDataUrl] = useState('');
-  const qrFullUrl = `${window.location.origin}${createdReceiptUrl || `/p/${createdReceiptCode || 'SP-24'}`}`;
+  const [thermalPrintStatus, setThermalPrintStatus] = useState('idle'); // 'idle' | 'printing' | 'success' | 'error'
+  const [thermalPrintError, setThermalPrintError] = useState('');
+  const qrFullUrl = createdReceiptFullUrl || `https://serviplus.upaysolutions.app${createdReceiptUrl || `/p/${createdReceiptCode || 'SP-24'}`}`;
+
+  const handlePrintThermalTicket = async () => {
+    sfx.playTap();
+    setThermalPrintStatus('printing');
+    setThermalPrintError('');
+    try {
+      await printOrderTicket({
+        orderId: createdOrderId,
+        orderNumber: createdOrderNumber,
+        orderType,
+        tableId,
+        items: completedOrderItems,
+        total: finalTotal,
+        paymentMethod,
+        receiptCode: createdReceiptCode,
+        receiptFullUrl: qrFullUrl
+      });
+      setThermalPrintStatus('success');
+      sfx.playSuccess();
+      setTimeout(() => setThermalPrintStatus('idle'), 6000);
+    } catch (err) {
+      console.error('[SuccessStep] Error printing thermal ticket:', err);
+      setThermalPrintStatus('error');
+      setThermalPrintError(err.message || 'Error al conectar con la impresora');
+      setTimeout(() => setThermalPrintStatus('idle'), 5000);
+    }
+  };
 
   useEffect(() => {
     QRCode.toDataURL(qrFullUrl, {
@@ -230,6 +261,62 @@ export function SuccessStep({
           paymentMethod={paymentMethod}
           reference={createdReceiptCode || 'SP-1793691288288'}
         />
+
+        {/* Botón de Impresión en Impresora Térmica Física */}
+        <div style={{ marginTop: '14px', width: '100%', maxWidth: '340px' }}>
+          <button
+            type="button"
+            onClick={handlePrintThermalTicket}
+            disabled={thermalPrintStatus === 'printing'}
+            style={{
+              width: '100%',
+              padding: '14px 20px',
+              borderRadius: '16px',
+              border: thermalPrintStatus === 'success' ? '2px solid #10b981' : '2px solid #0f172a',
+              background: thermalPrintStatus === 'success'
+                ? '#ecfdf5'
+                : thermalPrintStatus === 'error'
+                  ? '#fef2f2'
+                  : '#0f172a',
+              color: thermalPrintStatus === 'success'
+                ? '#065f46'
+                : thermalPrintStatus === 'error'
+                  ? '#b91c1c'
+                  : '#ffffff',
+              fontSize: '1rem',
+              fontWeight: 800,
+              cursor: thermalPrintStatus === 'printing' ? 'wait' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              boxShadow: '0 8px 20px -4px rgba(15, 23, 42, 0.25)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            {thermalPrintStatus === 'printing' ? (
+              <>
+                <span style={{ fontSize: '1.2rem', animation: 'spin 1s linear infinite', display: 'inline-block' }}>🔄</span>
+                <span>Imprimiendo en POS-58...</span>
+              </>
+            ) : thermalPrintStatus === 'success' ? (
+              <>
+                <span style={{ fontSize: '1.2rem' }}>✓</span>
+                <span>¡Ticket Impreso con Éxito!</span>
+              </>
+            ) : thermalPrintStatus === 'error' ? (
+              <>
+                <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+                <span>Reintentar Impresión ({thermalPrintError ? 'Error' : 'Reintentar'})</span>
+              </>
+            ) : (
+              <>
+                <span style={{ fontSize: '1.25rem' }}>🖨️</span>
+                <span>Imprimir Ticket Térmico</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

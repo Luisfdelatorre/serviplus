@@ -1,0 +1,39 @@
+{\rtf1\ansi\deff0
+{\fonttbl{\f0\fnil\fcharset0 Courier New;}}
+\viewkind4\uc1\pard\f0\fs20
+\qc\b\fs28\{RESTAURANT_NAME\}\par
+\qc\b0\fs20\{RESTAURANT_NIT\}\par
+\ql================================\par
+\qc\b\fs32\{SHIFT_TITLE\}\par
+\ql\b0\fs20================================\par
+\ql Fecha:\tab\{DATE\}\par
+\ql Hora:\tab\{TIME\}\par
+\ql Cajero:\tab\{CASHIER_NAME\}\par
+\ql ID Turno:\tab\{SHIFT_ID\}\par
+\ql--------------------------------\par
+\ql Fondo Inicial:\tab\{INITIAL_CASH\}\par
+[IF_CLOSING]\par
+\ql--------------------------------\par
+\ql\b RESUMEN DE VENTAS DEL TURNO:\par
+\ql\b0 Ventas Efectivo:\tab\{SALES_CASH\}\par
+\ql Ventas Wompi / QR:\tab\{SALES_QR\}\par
+\ql Ventas Tarjeta:\tab\{SALES_CARD\}\par
+\ql--------------------------------\par
+\ql\b TOTAL VENTAS:\tab\{SALES_TOTAL\}\par
+\ql\b0================================\par
+\ql Efectivo Esperado:\tab\{EXPECTED_CASH\}\par
+\ql Efectivo en Gaveta:\tab\{ACTUAL_CASH\}\par
+\ql--------------------------------\par
+\ql\b\fs28 DIFERENCIA:\tab\{DIFFERENCE\}\par
+\ql\b0\fs20\par
+[IF_NOTES]\par
+\ql Notas de cierre: \{CLOSING_NOTES\}\par
+[/IF_NOTES]\par
+[/IF_CLOSING]\par
+\par
+\ql--------------------------------\par
+\qc Firma Cajero: ___________________\par
+\par
+\qc Firma Supervisor: ________________\par
+[CUT]\par
+}

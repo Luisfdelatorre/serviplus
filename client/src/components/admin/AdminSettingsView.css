@@ -1,0 +1,632 @@
+/* ==========================================================
+   UPAYSOLUTIONS S.A.S. - PANEL DE ADMINISTRACIÓN INMERSIVO
+   Diseño de Alta Fidelidad Corporativo • No Modal
+   ========================================================== */
+
+.asv-viewport {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  background-color: #f8fafc;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #1e293b;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* HEADER SUPERIOR INMERSIVO */
+.asv-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 28px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03);
+}
+
+.asv-brand-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.asv-brand-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0f766e 0%, #0d9488 50%, #2dd4bf 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 8px 20px -4px rgba(13, 148, 136, 0.35);
+  flex-shrink: 0;
+}
+
+.asv-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.asv-main-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.asv-version-badge {
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: #f0fdfa;
+  color: #0f766e;
+  border: 1px solid #ccfbf1;
+  border-radius: 6px;
+}
+
+.asv-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.asv-emp-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.asv-dot-sep {
+  color: #cbd5e1;
+}
+
+.asv-company-tag {
+  color: #0f766e;
+  font-weight: 700;
+}
+
+/* BOTÓN DE CIERRE / REGRESO AL HUB */
+.asv-close-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.asv-close-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.asv-close-btn:active {
+  transform: scale(0.97);
+}
+
+/* TOAST BANNER NOTIFICACIÓN */
+.asv-toast-bar {
+  position: absolute;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 22px;
+  background: #0f172a;
+  color: #f8fafc;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
+  animation: asvFadeSlideDown 0.25s ease-out;
+}
+
+@keyframes asvFadeSlideDown {
+  from { opacity: 0; transform: translate(-50%, -10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* BARRA DE NAVEGACIÓN DE PESTAÑAS (TABS) */
+.asv-tabs-nav {
+  position: sticky;
+  top: 75px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  background: rgba(248, 250, 252, 0.95);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #e2e8f0;
+  overflow-x: auto;
+}
+
+.asv-tabs-track {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.asv-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 18px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.asv-tab-btn:hover {
+  color: #0f172a;
+}
+
+.asv-tab-btn.active {
+  color: #0f766e;
+  background: #ffffff;
+  border-bottom-color: #0d9488;
+  font-weight: 700;
+}
+
+.asv-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #10b981;
+  animation: asvPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes asvPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* CUERPO PRINCIPAL CON SCROLL */
+.asv-main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 28px 40px;
+  background: #f8fafc;
+}
+
+.asv-max-w {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* TARJETAS DE SECCIÓN */
+.asv-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.04);
+}
+
+.asv-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 14px;
+  margin-bottom: 18px;
+}
+
+.asv-card-header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.asv-card-header p {
+  margin: 3px 0 0 0;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+/* BOTONES PRESETS */
+.asv-preset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.asv-preset-btn.primary {
+  background: #f0fdfa;
+  color: #0f766e;
+  border: 1px solid #ccfbf1;
+}
+
+.asv-preset-btn.primary:hover {
+  background: #ccfbf1;
+}
+
+.asv-preset-btn.secondary {
+  background: #ffffff;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.asv-preset-btn.secondary:hover {
+  background: #f8fafc;
+}
+
+/* CONTROL SEGMENTADO ENTORNO */
+.asv-segmented-ctrl {
+  display: inline-flex;
+  padding: 4px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.asv-segmented-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.asv-segmented-btn.active {
+  background: #0d9488;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(13, 148, 136, 0.25);
+}
+
+/* GRID DE INPUTS Y CAMPOS */
+.asv-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.asv-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.asv-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .asv-grid-2, .asv-grid-3, .asv-grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.asv-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.asv-field-group label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.asv-field-group label span {
+  font-weight: 400;
+  color: #94a3b8;
+}
+
+.asv-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.asv-input {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  color: #0f172a;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.asv-input.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.78rem;
+}
+
+.asv-input:focus {
+  background: #ffffff;
+  border-color: #0d9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
+}
+
+.asv-input-addon-btn {
+  position: absolute;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.asv-input-addon-btn:hover {
+  color: #0d9488;
+}
+
+/* CHECKBOX TILES DE MÉTODOS DE PAGO */
+.asv-method-tile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.asv-method-tile.selected {
+  border-color: #0d9488;
+  background: #f0fdfa;
+}
+
+.asv-method-tile input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #0d9488;
+  cursor: pointer;
+}
+
+.asv-method-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  background: #f1f5f9;
+}
+
+.asv-method-tile.selected .asv-method-icon-box {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+/* TOGGLES SWITCH DE OPERACIÓN */
+.asv-switch-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.asv-switch-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.asv-switch-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.asv-switch-ui {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.asv-switch-ui input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.asv-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #cbd5e1;
+  transition: .3s;
+  border-radius: 34px;
+}
+
+.asv-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+}
+
+input:checked + .asv-slider {
+  background-color: #0d9488;
+}
+
+input:checked + .asv-slider:before {
+  transform: translateX(20px);
+}
+
+/* FOOTER INMERSIVO FIJO */
+.asv-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 28px;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  box-shadow: 0 -4px 16px -2px rgba(0, 0, 0, 0.04);
+}
+
+.asv-footer-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.asv-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.asv-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px -2px rgba(13, 148, 136, 0.35);
+  transition: all 0.15s ease;
+}
+
+.asv-save-btn:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.asv-save-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.asv-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* STOCK / PRODUCTOS AGOTADOS GRID */
+.asv-stock-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.asv-stock-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  transition: all 0.15s ease;
+}
+
+.asv-stock-item.is-86 {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.asv-stock-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.asv-stock-toggle-btn.available {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.asv-stock-toggle-btn.out {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}

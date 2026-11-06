@@ -135,6 +135,18 @@ export async function adminLogin(pin) {
   return json.data;
 }
 
+// 9b. Autenticación de Empleado / Cajero / Terminal General
+export async function employeeLogin(pin) {
+  const res = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pin })
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Código de empleado inválido');
+  return json.data;
+}
+
 // 10. Consultar configuración pública del kiosco y restaurante
 export async function fetchPublicConfig() {
   try {
@@ -165,4 +177,150 @@ export async function saveAdminConfig(configPayload) {
   const json = await res.json();
   if (!json.success) throw new Error(json.error || 'Error al guardar configuración');
   return json.data;
+}
+
+// 13. Obtener todos los productos (incluyendo agotados) para administración
+export async function fetchAdminProducts() {
+  const res = await fetch(`/api/products/admin?_t=${Date.now()}`);
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Error al obtener productos');
+  return json.data;
+}
+
+// 14. Activar o desactivar producto (Agotado / 86'd)
+export async function toggleProductActive(id, isActive) {
+  const res = await fetch(`/api/products/${id}/toggle-active`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ isActive })
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Error al actualizar disponibilidad');
+  return json.data;
+}
+
+// 15. Consultar turno de caja activo (Arqueo en vivo)
+export async function fetchCurrentCashShift() {
+  const res = await fetch(`/api/cashier/shift/current?_t=${Date.now()}`);
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Error al consultar turno de caja');
+  return json.data;
+}
+
+// 16. Abrir turno de caja
+export async function openCashShift({ cashierId, cashierName, initialCash, notes }) {
+  const res = await fetch('/api/cashier/shift/open', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cashierId, cashierName, initialCash, notes })
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Error al abrir turno de caja');
+  return json.data;
+}
+
+// 17. Cerrar turno de caja (Corte Z)
+export async function closeCashShift({ actualCashInDrawer, closedBy, notes }) {
+  const res = await fetch('/api/cashier/shift/close', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ actualCashInDrawer, closedBy, notes })
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Error al cerrar turno de caja');
+  return json.data;
+}
+
+// 18. Historial de turnos de caja
+export async function fetchCashShiftHistory() {
+  const res = await fetch(`/api/cashier/shift/history?_t=${Date.now()}`);
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Error al obtener historial de turnos');
+  return json.data;
+}
+
+// 19. Consultar estado y configuración de la impresora térmica
+export async function fetchPrinterStatus() {
+  const res = await fetch(`/api/printer/status?_t=${Date.now()}`);
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Error al consultar estado de impresora');
+  return json.data;
+}
+
+// 20. Listar todas las impresoras instaladas en Windows
+export async function fetchPrinterList() {
+  const res = await fetch(`/api/printer/list?_t=${Date.now()}`);
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Error al listar impresoras');
+  return json.printers || [];
+}
+
+// 21. Guardar configuración de la impresora térmica
+export async function savePrinterConfig(printerSettings) {
+  const res = await fetch('/api/printer/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(printerSettings)
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Error al guardar configuración de impresora');
+  return json.data;
+}
+
+// 22. Imprimir ticket de prueba de diagnóstico
+export async function printTestTicket(printerName = null) {
+  const res = await fetch('/api/printer/test', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ printerName })
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Error al imprimir ticket de prueba');
+  return json;
+}
+
+// 23. Imprimir orden (por ID o por payload directo)
+export async function printOrderTicket(orderDataOrId, options = {}) {
+  let url = '/api/printer/order';
+  let body = {};
+
+  if (typeof orderDataOrId === 'number' || typeof orderDataOrId === 'string') {
+    url = `/api/printer/order/${orderDataOrId}`;
+    body = { ...options };
+  } else {
+    body = { ...orderDataOrId, ...options };
+  }
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Error al enviar orden a la impresora');
+  return json;
+}
+
+// 24. Imprimir comprobante de turno de caja (Apertura o Cierre Z)
+export async function printCashShiftSlip(shiftData, isClosing = false, printerName = null) {
+  const res = await fetch('/api/printer/shift', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ shiftData, isClosing, printerName })
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Error al imprimir comprobante de turno');
+  return json;
+}
+
+// 25. Abrir gaveta / cajón monedero
+export async function openCashDrawer(printerName = null) {
+  const res = await fetch('/api/printer/drawer/open', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ printerName })
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Error al abrir gaveta monedero');
+  return json;
 }

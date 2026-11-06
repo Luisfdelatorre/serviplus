@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { getAdminConfig, saveAdminConfig } from '../../api';
+import {
+  getAdminConfig,
+  saveAdminConfig,
+  fetchAdminProducts,
+  toggleProductActive,
+  fetchPrinterList,
+  printTestTicket,
+  openCashDrawer
+} from '../../api';
 import { sfx } from '../../utils/audio';
+import { formatCOP } from '../../utils/format';
 import { KIOSK_CONFIG, updateKioskConfig } from '../../config/kioskConfig';
 import {
   Settings,
@@ -8,6 +17,7 @@ import {
   MessageSquare,
   Building2,
   Tv,
+  Printer,
   Check,
   Save,
   X,
@@ -15,7 +25,11 @@ import {
   ShieldCheck,
   Sparkles,
   AlertTriangle,
-  QrCode
+  QrCode,
+  Package,
+  CheckCircle2,
+  XCircle,
+  Search
 } from 'lucide-react';
 
 export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
@@ -24,6 +38,18 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+
+  // Estados para pestaña de Agotados (86'd)
+  const [stockProducts, setStockProducts] = useState([]);
+  const [loadingStock, setLoadingStock] = useState(false);
+  const [stockSearch, setStockSearch] = useState('');
+  const [togglingStockId, setTogglingStockId] = useState(null);
+
+  // Estados para pestaña de Impresora Térmica
+  const [installedPrinters, setInstalledPrinters] = useState([]);
+  const [loadingPrinters, setLoadingPrinters] = useState(false);
+  const [testingPrinter, setTestingPrinter] = useState(false);
+  const [openingDrawer, setOpeningDrawer] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -41,6 +67,78 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
       console.error('Error loading config:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPrinters = async () => {
+    try {
+      setLoadingPrinters(true);
+      const list = await fetchPrinterList();
+      setInstalledPrinters(list || []);
+    } catch (err) {
+      console.warn('Error loading printers:', err);
+    } finally {
+      setLoadingPrinters(false);
+    }
+  };
+
+  const handleTestPrint = async () => {
+    sfx.playTap();
+    setTestingPrinter(true);
+    try {
+      const pName = config?.printer?.printerName || 'POS-58';
+      await printTestTicket(pName);
+      showToast(`🖨️ Ticket de prueba enviado a "${pName}"`);
+    } catch (err) {
+      console.error('Error al imprimir prueba:', err);
+      alert('Error de impresión: ' + err.message);
+    } finally {
+      setTestingPrinter(false);
+    }
+  };
+
+  const handleOpenDrawer = async () => {
+    sfx.playTap();
+    setOpeningDrawer(true);
+    try {
+      const pName = config?.printer?.printerName || 'POS-58';
+      await openCashDrawer(pName);
+      showToast('🔓 Pulso de apertura enviado al cajón monedero');
+    } catch (err) {
+      console.error('Error abriendo cajón:', err);
+      alert('Error al abrir cajón: ' + err.message);
+    } finally {
+      setOpeningDrawer(false);
+    }
+  };
+
+  const loadStockProducts = async () => {
+    try {
+      setLoadingStock(true);
+      const data = await fetchAdminProducts();
+      setStockProducts(data || []);
+    } catch (err) {
+      console.error('Error cargando stock:', err);
+    } finally {
+      setLoadingStock(false);
+    }
+  };
+
+  const handleToggleStock = async (prod) => {
+    const nextState = !prod.isActive;
+    setTogglingStockId(prod.id);
+    sfx.playTap();
+    try {
+      await toggleProductActive(prod.id, nextState);
+      setStockProducts((prev) =>
+        prev.map((p) => (p.id === prod.id ? { ...p, isActive: nextState } : p))
+      );
+      showToast(nextState ? `🟢 "${prod.name}" marcado como DISPONIBLE` : `🔴 "${prod.name}" marcado como AGOTADO`);
+    } catch (err) {
+      console.error('Error actualizando stock:', err);
+      alert('Error: ' + err.message);
+    } finally {
+      setTogglingStockId(null);
     }
   };
 
@@ -182,6 +280,22 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
           >
             <Tv size={18} />
             <span>Kiosco & Pantalla</span>
+          </button>
+          <button
+            type="button"
+            className={`admin-tab-btn ${activeTab === 'stock' ? 'active' : ''}`}
+            onClick={() => { sfx.playTap(); setActiveTab('stock'); loadStockProducts(); }}
+          >
+            <Package size={18} />
+            <span>Disponibilidad (86'd)</span>
+          </button>
+          <button
+            type="button"
+            className={`admin-tab-btn ${activeTab === 'printer' ? 'active' : ''}`}
+            onClick={() => { sfx.playTap(); setActiveTab('printer'); loadPrinters(); }}
+          >
+            <Printer size={18} />
+            <span>Impresora Térmica POS</span>
           </button>
         </div>
 
@@ -627,6 +741,401 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                         }}
                       />
                       <small className="help-text">Cuenta regresiva antes de cerrar automáticamente tras pago exitoso (por defecto 20s).</small>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 5: DISPONIBILIDAD Y AGOTADOS (86'd) */}
+              {activeTab === 'stock' && (
+                <div className="admin-form-section">
+                  <div className="admin-section-header">
+                    <div>
+                      <h3>Control de Platos Agotados (Stock 86'd)</h3>
+                      <p>Desactiva platos temporalmente cuando se agoten los ingredientes. Se actualiza en vivo en el Kiosco y en Aldelo.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={loadStockProducts}
+                      disabled={loadingStock}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 12px',
+                        background: '#334155',
+                        border: 'none',
+                        borderRadius: '6px',
+                        color: '#f8fafc',
+                        cursor: 'pointer',
+                        fontSize: '0.8rem'
+                      }}
+                    >
+                      <RefreshCw size={14} className={loadingStock ? 'spin' : ''} />
+                      <span>Refrescar</span>
+                    </button>
+                  </div>
+
+                  <div style={{ marginBottom: '14px' }}>
+                    <input
+                      type="text"
+                      placeholder="Buscar plato por nombre o categoría..."
+                      value={stockSearch}
+                      onChange={(e) => setStockSearch(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        background: '#0f172a',
+                        border: '1px solid #334155',
+                        borderRadius: '8px',
+                        color: '#fff',
+                        fontSize: '0.9rem'
+                      }}
+                    />
+                  </div>
+
+                  {loadingStock ? (
+                    <div style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
+                      <RefreshCw size={24} className="spin" style={{ margin: '0 auto 8px auto', display: 'block' }} />
+                      <span>Cargando productos de Aldelo...</span>
+                    </div>
+                  ) : (
+                    <div style={{ maxHeight: '380px', overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '10px' }}>
+                      {stockProducts
+                        .filter((p) => {
+                          const q = stockSearch.toLowerCase().trim();
+                          return !q || p.name.toLowerCase().includes(q) || (p.categoryName && p.categoryName.toLowerCase().includes(q));
+                        })
+                        .map((prod) => {
+                          const isToggling = togglingStockId === prod.id;
+                          return (
+                            <div
+                              key={prod.id}
+                              style={{
+                                background: prod.isActive ? '#1e293b' : '#3f1a1a',
+                                border: prod.isActive ? '1px solid #334155' : '1px solid #ef4444',
+                                borderRadius: '8px',
+                                padding: '12px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between',
+                                gap: '8px'
+                              }}
+                            >
+                              <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#94a3b8' }}>
+                                  <span>{prod.categoryName}</span>
+                                  <span style={{ fontWeight: 600, color: prod.isActive ? '#38bdf8' : '#94a3b8' }}>
+                                    {formatCOP(prod.price)}
+                                  </span>
+                                </div>
+                                <h4 style={{ margin: '4px 0 0 0', fontSize: '0.95rem', color: prod.isActive ? '#f8fafc' : '#fca5a5' }}>
+                                  {prod.name}
+                                </h4>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => handleToggleStock(prod)}
+                                disabled={isToggling}
+                                style={{
+                                  padding: '6px 10px',
+                                  borderRadius: '6px',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '6px',
+                                  fontWeight: 600,
+                                  fontSize: '0.8rem',
+                                  background: prod.isActive ? '#065f46' : '#991b1b',
+                                  color: '#fff'
+                                }}
+                              >
+                                {prod.isActive ? (
+                                  <>
+                                    <CheckCircle2 size={14} />
+                                    <span>Disponible</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <XCircle size={14} />
+                                    <span>Agotado</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 6: IMPRESORA TÉRMICA POS */}
+              {activeTab === 'printer' && (
+                <div className="admin-form-section">
+                  <div className="admin-section-header">
+                    <div>
+                      <h3>Impresora Térmica ESC/POS (Tickets & Comandas)</h3>
+                      <p>Configuración directa de tickets en impresoras de 58mm / 80mm y cajón monedero.</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={handleTestPrint}
+                        disabled={testingPrinter}
+                        className="preset-btn prod"
+                        style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        {testingPrinter ? <RefreshCw className="spin" size={16} /> : <Printer size={16} />}
+                        <span>{testingPrinter ? 'Imprimiendo...' : 'Imprimir Ticket de Prueba'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleOpenDrawer}
+                        disabled={openingDrawer}
+                        className="preset-btn test"
+                        style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        {openingDrawer ? <RefreshCw className="spin" size={16} /> : <span>🔓</span>}
+                        <span>{openingDrawer ? 'Abriendo...' : 'Probar Cajón Monedero'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Estado del Dispositivo */}
+                  <div className="admin-mode-card" style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div
+                        style={{
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '12px',
+                          background: installedPrinters.some(p => p.toLowerCase() === (config.printer?.printerName || 'POS-58').toLowerCase()) ? '#ecfdf5' : '#fef2f2',
+                          color: installedPrinters.some(p => p.toLowerCase() === (config.printer?.printerName || 'POS-58').toLowerCase()) ? '#059669' : '#dc2626',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <Printer size={22} />
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.95rem' }}>
+                          Impresora Activa: <span style={{ color: '#da291c' }}>{config.printer?.printerName || 'POS-58'}</span>
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                          <span
+                            style={{
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
+                              background: installedPrinters.some(p => p.toLowerCase() === (config.printer?.printerName || 'POS-58').toLowerCase()) ? '#10b981' : '#f59e0b',
+                              display: 'inline-block'
+                            }}
+                          />
+                          {installedPrinters.some(p => p.toLowerCase() === (config.printer?.printerName || 'POS-58').toLowerCase())
+                            ? 'Detectada en el sistema (Spooler de Windows Listo)'
+                            : 'Buscando impresora instalada o en cola...'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={loadPrinters}
+                        disabled={loadingPrinters}
+                        className="preset-btn test"
+                        style={{ padding: '6px 12px' }}
+                      >
+                        <RefreshCw className={loadingPrinters ? 'spin' : ''} size={14} />
+                        <span>Actualizar Lista</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Campos de Configuración */}
+                  <div className="admin-fields-grid">
+                    {/* Habilitar Impresión */}
+                    <div className="form-group full-width" style={{ background: '#f8fafc', padding: '14px 18px', borderRadius: '14px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <label style={{ margin: 0, fontSize: '0.92rem', fontWeight: 800, color: '#0f172a' }}>Habilitar Módulo de Impresión Térmica:</label>
+                        <p style={{ margin: '2px 0 0 0', fontSize: '0.78rem', color: '#64748b' }}>Permite enviar tickets físicos a las impresoras térmicas conectadas.</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={config.printer?.enabled !== false}
+                        onChange={(e) => setConfig({
+                          ...config,
+                          printer: { ...(config.printer || {}), enabled: e.target.checked }
+                        })}
+                        style={{ width: '22px', height: '22px', cursor: 'pointer' }}
+                      />
+                    </div>
+
+                    {/* Selector de Impresora */}
+                    <div className="form-group">
+                      <label>Seleccionar Impresora en Windows:</label>
+                      <select
+                        value={config.printer?.printerName || 'POS-58'}
+                        onChange={(e) => setConfig({
+                          ...config,
+                          printer: { ...(config.printer || {}), printerName: e.target.value }
+                        })}
+                        style={{ padding: '10px 14px', borderRadius: '12px', border: '1.5px solid #cbd5e1', fontSize: '0.9rem', fontWeight: 600, width: '100%', background: '#fff' }}
+                      >
+                        {installedPrinters.length > 0 ? (
+                          installedPrinters.map((prn) => (
+                            <option key={prn} value={prn}>
+                              {prn} {prn.toLowerCase().includes('pos') || prn.toLowerCase().includes('58') ? '⭐ (Térmica POS)' : ''}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="POS-58">POS-58 (Predeterminada)</option>
+                        )}
+                      </select>
+                    </div>
+
+                    {/* Ancho del Papel */}
+                    <div className="form-group">
+                      <label>Ancho de Papel del Rollo:</label>
+                      <select
+                        value={config.printer?.paperWidth || 58}
+                        onChange={(e) => setConfig({
+                          ...config,
+                          printer: { ...(config.printer || {}), paperWidth: parseInt(e.target.value, 10) }
+                        })}
+                        style={{ padding: '10px 14px', borderRadius: '12px', border: '1.5px solid #cbd5e1', fontSize: '0.9rem', fontWeight: 600, width: '100%', background: '#fff' }}
+                      >
+                        <option value="58">58 mm (Estándar POS-58 / 32 Columnas)</option>
+                        <option value="80">80 mm (Estándar POS-80 / 48 Columnas)</option>
+                      </select>
+                    </div>
+
+                    {/* Reglas de Impresión Automática */}
+                    <div className="form-group" style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <label style={{ margin: 0, fontSize: '0.86rem', fontWeight: 700 }}>Impresión Automática en Kiosco / Caja:</label>
+                        <span style={{ fontSize: '0.74rem', color: '#64748b' }}>Imprime el ticket inmediatamente al confirmar la orden</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={config.printer?.autoPrintOrder !== false}
+                        onChange={(e) => setConfig({
+                          ...config,
+                          printer: { ...(config.printer || {}), autoPrintOrder: e.target.checked }
+                        })}
+                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                      />
+                    </div>
+
+                    <div className="form-group" style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <label style={{ margin: 0, fontSize: '0.86rem', fontWeight: 700 }}>Comanda para Cocina (Kitchen):</label>
+                        <span style={{ fontSize: '0.74rem', color: '#64748b' }}>Imprime comanda con modificadores para preparación</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(config.printer?.autoPrintKitchen)}
+                        onChange={(e) => setConfig({
+                          ...config,
+                          printer: { ...(config.printer || {}), autoPrintKitchen: e.target.checked }
+                        })}
+                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                      />
+                    </div>
+
+                    <div className="form-group" style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <label style={{ margin: 0, fontSize: '0.86rem', fontWeight: 700 }}>Código QR de Recibo Digital:</label>
+                        <span style={{ fontSize: '0.74rem', color: '#64748b' }}>Imprime QR nativo para ver la factura en el móvil</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={config.printer?.printDigitalReceiptQr !== false}
+                        onChange={(e) => setConfig({
+                          ...config,
+                          printer: { ...(config.printer || {}), printDigitalReceiptQr: e.target.checked }
+                        })}
+                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                      />
+                    </div>
+
+                    <div className="form-group" style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <label style={{ margin: 0, fontSize: '0.86rem', fontWeight: 700 }}>Abrir Cajón en Efectivo:</label>
+                        <span style={{ fontSize: '0.74rem', color: '#64748b' }}>Envía pulso a la gaveta conectada por RJ11</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(config.printer?.openCashDrawer)}
+                        onChange={(e) => setConfig({
+                          ...config,
+                          printer: { ...(config.printer || {}), openCashDrawer: e.target.checked }
+                        })}
+                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                      />
+                    </div>
+
+                    <div className="form-group" style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <label style={{ margin: 0, fontSize: '0.86rem', fontWeight: 700 }}>Corte Automático (Auto-Cut):</label>
+                        <span style={{ fontSize: '0.74rem', color: '#64748b' }}>Ejecuta comando GS V al terminar de imprimir</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={config.printer?.cutPaper !== false}
+                        onChange={(e) => setConfig({
+                          ...config,
+                          printer: { ...(config.printer || {}), cutPaper: e.target.checked }
+                        })}
+                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Número de Copias de Recibo:</label>
+                      <select
+                        value={config.printer?.copies || 1}
+                        onChange={(e) => setConfig({
+                          ...config,
+                          printer: { ...(config.printer || {}), copies: parseInt(e.target.value, 10) }
+                        })}
+                        style={{ padding: '10px 14px', borderRadius: '12px', border: '1.5px solid #cbd5e1', fontSize: '0.9rem', fontWeight: 600, width: '100%', background: '#fff' }}
+                      >
+                        <option value="1">1 Copia (Cliente)</option>
+                        <option value="2">2 Copias (Cliente + Comercio)</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Líneas de avance antes del corte:</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="8"
+                        value={config.printer?.feedLines || 3}
+                        onChange={(e) => setConfig({
+                          ...config,
+                          printer: { ...(config.printer || {}), feedLines: parseInt(e.target.value, 10) || 3 }
+                        })}
+                      />
+                    </div>
+
+                    <div className="form-group full-width">
+                      <label>Mensaje de Despedida / Pie de Ticket:</label>
+                      <input
+                        type="text"
+                        value={config.printer?.customFooter || '¡Gracias por su compra!'}
+                        onChange={(e) => setConfig({
+                          ...config,
+                          printer: { ...(config.printer || {}), customFooter: e.target.value }
+                        })}
+                        placeholder="¡Gracias por su compra! Vuelva pronto..."
+                      />
                     </div>
                   </div>
                 </div>

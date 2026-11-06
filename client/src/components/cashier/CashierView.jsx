@@ -1,14 +1,25 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useMenuStore } from '../../store/useMenuStore';
 import { useKdsStore } from '../../store/useKdsStore';
-import { fetchEmployees, createOrder, updateOrderStatus, fetchTables } from '../../api';
+import { fetchEmployees, createOrder, updateOrderStatus, fetchTables, fetchAdminProducts, toggleProductActive } from '../../api';
 import { formatCOP, getElapsedMinutes, formatRegularTime } from '../../utils/format';
 import { sfx } from '../../utils/audio';
 import { ModifierModal } from '../kiosk/ModifierModal';
+import { CashShiftModal } from './CashShiftModal';
+import { ProductAvailabilityModal } from '../admin/ProductAvailabilityModal';
 
 export function CashierView() {
   const categories = useMenuStore((state) => state.categories);
   const activeOrders = useKdsStore((state) => state.activeOrders);
+
+  // Modales de Turno de Caja y Agotados
+  const [showCashShiftModal, setShowCashShiftModal] = useState(false);
+  const [showStockModal, setShowStockModal] = useState(false);
+
+  // Modo iOS Shaking / Wiggle para Agotados en directo
+  const [isStockJiggleMode, setIsStockJiggleMode] = useState(false);
+  const [adminProducts, setAdminProducts] = useState([]);
+  const [togglingItemId, setTogglingItemId] = useState(null);
 
   // Estados de Personal y Servicio
   const [employees, setEmployees] = useState([]);
@@ -66,18 +77,76 @@ export function CashierView() {
         }
       })
       .catch((err) => console.error('Error fetching tables:', err));
+
+    loadStockStatus();
   }, []);
 
-  // Platillos con su categoría asociada
+  const loadStockStatus = () => {
+    fetchAdminProducts()
+      .then((prods) => setAdminProducts(prods || []))
+      .catch((err) => console.error('Error fetching admin products:', err));
+  };
+
+  // Platillos con su categoría y estado de disponibilidad en vivo
   const allItems = useMemo(() => {
-    return categories.flatMap((c) =>
+    const availabilityMap = {};
+    adminProducts.forEach((p) => {
+      availabilityMap[p.id] = p.isActive;
+    });
+
+    const itemsFromCats = categories.flatMap((c) =>
       (c.items || []).map((it) => ({
         ...it,
         categoryName: c.name,
-        categoryId: c.id
+        categoryId: c.id,
+        isActive: availabilityMap[it.id] !== undefined ? availabilityMap[it.id] : true
       }))
     );
-  }, [categories]);
+
+    // Integrar productos desactivados que no vienen en el getMenu() normal para que aparezcan en caja
+    const existingIds = new Set(itemsFromCats.map((i) => i.id));
+    adminProducts.forEach((ap) => {
+      if (!existingIds.has(ap.id)) {
+        itemsFromCats.push({
+          id: ap.id,
+          name: ap.name,
+          price: ap.price,
+          categoryName: ap.categoryName || 'General',
+          categoryId: ap.categoryId,
+          description: ap.description || '',
+          modifiers: [],
+          hasModifiers: false,
+          isActive: false
+        });
+      }
+    });
+
+    return itemsFromCats;
+  }, [categories, adminProducts]);
+
+  // Cambiar disponibilidad de producto estilo iOS directo
+  const handleToggleStockDirect = async (item, e) => {
+    if (e) e.stopPropagation();
+    const nextState = !item.isActive;
+    setTogglingItemId(item.id);
+    sfx.playTap();
+    try {
+      await toggleProductActive(item.id, nextState);
+      setAdminProducts((prev) =>
+        prev.map((p) => (p.id === item.id ? { ...p, isActive: nextState } : p))
+      );
+      if (nextState) {
+        sfx.playSuccess();
+      } else {
+        sfx.playWarning();
+      }
+    } catch (err) {
+      console.error('Error cambiando disponibilidad de producto:', err);
+      alert('Error: ' + err.message);
+    } finally {
+      setTogglingItemId(null);
+    }
+  };
 
   // Filtrar platillos por categoría y texto de búsqueda
   const filteredItems = useMemo(() => {
@@ -112,8 +181,21 @@ export function CashierView() {
     });
   }, [pendingPaymentOrders, serviceFilter]);
 
-  // Agregar producto al hacer clic en tarjeta
+  // Agregar producto al hacer clic en tarjeta (o toggle si está en modo jiggle)
   const handleItemClick = (item) => {
+    // Si estamos en modo de edición de stock (estilo iOS), hacer toggle directo
+    if (isStockJiggleMode) {
+      handleToggleStockDirect(item);
+      return;
+    }
+
+    // Si el producto está agotado y no estamos en modo edición, bloquear y avisar
+    if (item.isActive === false) {
+      sfx.playWarning();
+      alert(`⚠️ "${item.name}" está marcado como AGOTADO (86'd).\nActiva el "Modo Agotados (iOS)" arriba para volver a habilitarlo.`);
+      return;
+    }
+
     sfx.playTap();
     if (item.modifiers && item.modifiers.length > 0) {
       setModifyingItem(item);
@@ -514,8 +596,62 @@ export function CashierView() {
           </div>
         )}
 
-        {/* Lado Derecho: Estado y Limpiar */}
+        {/* Lado Derecho: Estado, Turno de Caja, Agotados y Limpiar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            type="button"
+            onClick={() => { sfx.playTap(); setShowCashShiftModal(true); }}
+            style={{
+              background: '#10b981',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '6px 12px',
+              fontSize: '0.8rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}
+            title="Apertura, Arqueo en Vivo y Cierre Z"
+          >
+            <span>💵 Turno Caja</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              sfx.playTap();
+              const nextMode = !isStockJiggleMode;
+              setIsStockJiggleMode(nextMode);
+              if (nextMode) loadStockStatus();
+            }}
+            style={{
+              background: isStockJiggleMode ? '#3b82f6' : '#334155',
+              color: '#ffffff',
+              border: isStockJiggleMode ? '2px solid #60a5fa' : '1px solid #475569',
+              borderRadius: '8px',
+              padding: '6px 14px',
+              fontSize: '0.8rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: isStockJiggleMode ? '0 0 14px rgba(59, 130, 246, 0.7)' : 'none',
+              transition: 'all 0.2s ease'
+            }}
+            title="Activar/desactivar modo edición estilo iOS para cambiar disponibilidad de platos en vivo"
+          >
+            {isStockJiggleMode ? (
+              <span>✅ Listo (Salir Modo iOS)</span>
+            ) : (
+              <span>📱 Agotados (Modo iOS)</span>
+            )}
+          </button>
+
           {cart.length > 0 && activeView === 'order' && (
             <button
               type="button"
@@ -652,6 +788,64 @@ export function CashierView() {
 
             {/* GRID DE PRODUCTOS ESTILO RAPID ORDER */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '14px', background: '#f1f5f9' }}>
+              <style>{`
+                @keyframes iosJiggle {
+                  0% { transform: rotate(-1.2deg) translateY(-1px); }
+                  50% { transform: rotate(1.3deg) translateY(1px); }
+                  100% { transform: rotate(-1.2deg) translateY(-1px); }
+                }
+                @keyframes iosJiggleAlt {
+                  0% { transform: rotate(1.3deg) translateY(1px); }
+                  50% { transform: rotate(-1.2deg) translateY(-1px); }
+                  100% { transform: rotate(1.3deg) translateY(1px); }
+                }
+              `}</style>
+
+              {/* Banner informativo cuando el modo iOS está activo */}
+              {isStockJiggleMode && (
+                <div
+                  style={{
+                    background: 'linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%)',
+                    color: '#ffffff',
+                    padding: '10px 16px',
+                    borderRadius: '10px',
+                    marginBottom: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    boxShadow: '0 4px 12px rgba(30, 64, 175, 0.25)',
+                    border: '1px solid #3b82f6'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '1.2rem' }}>📱</span>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>Modo Edición de Stock Activo (Estilo iOS)</div>
+                      <div style={{ fontSize: '0.8rem', color: '#bfdbfe' }}>
+                        Toca directamente cualquier tarjeta o su botón para marcarlo como <strong>Disponible 🟢</strong> o <strong>Agotado 🔴</strong>.
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { sfx.playTap(); setIsStockJiggleMode(false); }}
+                    style={{
+                      background: '#ffffff',
+                      color: '#1e40af',
+                      fontWeight: 800,
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '8px 16px',
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                    }}
+                  >
+                    ✅ Listo (Terminar)
+                  </button>
+                </div>
+              )}
+
               <div
                 style={{
                   display: 'grid',
@@ -659,19 +853,23 @@ export function CashierView() {
                   gap: '10px'
                 }}
               >
-                {filteredItems.map((item) => {
+                {filteredItems.map((item, idx) => {
                   const hasModifiers = Boolean(item.modifiers && item.modifiers.length > 0);
                   const inCartQty = cart
                     .filter((c) => c.id === item.id)
                     .reduce((sum, c) => sum + c.quantity, 0);
+                  const isItemInactive = item.isActive === false;
+                  const isToggling = togglingItemId === item.id;
 
                   return (
                     <div
                       key={item.id}
                       onClick={() => handleItemClick(item)}
                       style={{
-                        background: '#ffffff',
-                        border: inCartQty > 0 ? '2px solid #3b82f6' : '1px solid #cbd5e1',
+                        background: isItemInactive ? (isStockJiggleMode ? '#451a1a' : '#f8fafc') : '#ffffff',
+                        border: isItemInactive
+                          ? '2px dashed #ef4444'
+                          : (inCartQty > 0 ? '2px solid #3b82f6' : '1px solid #cbd5e1'),
                         borderRadius: '12px',
                         padding: '12px',
                         cursor: 'pointer',
@@ -681,12 +879,64 @@ export function CashierView() {
                         minHeight: '105px',
                         position: 'relative',
                         boxShadow: inCartQty > 0 ? '0 4px 12px rgba(59, 130, 246, 0.15)' : '0 1px 3px rgba(0,0,0,0.06)',
-                        transition: 'all 0.12s ease',
+                        opacity: isItemInactive && !isStockJiggleMode ? 0.45 : (isToggling ? 0.6 : 1),
+                        animation: isStockJiggleMode
+                          ? (idx % 2 === 0 ? 'iosJiggle 0.24s infinite ease-in-out' : 'iosJiggleAlt 0.22s infinite ease-in-out')
+                          : 'none',
+                        transition: isStockJiggleMode ? 'none' : 'all 0.12s ease',
                         userSelect: 'none'
                       }}
                     >
+                      {/* Botón / Badge estilo iOS de Disponibilidad */}
+                      {isStockJiggleMode ? (
+                        <button
+                          type="button"
+                          onClick={(e) => handleToggleStockDirect(item, e)}
+                          title="Clic para cambiar disponibilidad"
+                          style={{
+                            position: 'absolute',
+                            top: '-8px',
+                            right: '-8px',
+                            background: isItemInactive ? '#ef4444' : '#10b981',
+                            color: '#ffffff',
+                            border: '2px solid #ffffff',
+                            borderRadius: '20px',
+                            padding: '3px 8px',
+                            fontSize: '0.72rem',
+                            fontWeight: 900,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                            zIndex: 10
+                          }}
+                        >
+                          {isItemInactive ? '🔴 Agotado' : '🟢 Activo'}
+                        </button>
+                      ) : (
+                        isItemInactive && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: '6px',
+                              right: '6px',
+                              background: '#ef4444',
+                              color: '#ffffff',
+                              fontSize: '0.65rem',
+                              fontWeight: 900,
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              letterSpacing: '0.5px'
+                            }}
+                          >
+                            AGOTADO (86)
+                          </div>
+                        )
+                      )}
+
                       {/* Badge de cantidad si está en el carrito */}
-                      {inCartQty > 0 && (
+                      {!isStockJiggleMode && inCartQty > 0 && (
                         <div
                           style={{
                             position: 'absolute',
@@ -711,16 +961,17 @@ export function CashierView() {
 
                       {/* Info de Producto */}
                       <div>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 800, color: isItemInactive && isStockJiggleMode ? '#fca5a5' : '#94a3b8', textTransform: 'uppercase' }}>
                           {item.categoryName}
                         </div>
                         <div
                           style={{
                             fontSize: '0.92rem',
                             fontWeight: 800,
-                            color: '#0f172a',
+                            color: isItemInactive ? (isStockJiggleMode ? '#fef2f2' : '#64748b') : '#0f172a',
                             marginTop: '2px',
-                            lineHeight: 1.25
+                            lineHeight: 1.25,
+                            textDecoration: isItemInactive && !isStockJiggleMode ? 'line-through' : 'none'
                           }}
                         >
                           {item.name}
@@ -729,7 +980,7 @@ export function CashierView() {
 
                       {/* Footer de Tarjeta con Precio y Badge de Modificadores */}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px' }}>
-                        <span style={{ fontSize: '1rem', fontWeight: 900, color: '#059669' }}>
+                        <span style={{ fontSize: '1rem', fontWeight: 900, color: isItemInactive ? '#94a3b8' : '#059669' }}>
                           {formatCOP(item.price)}
                         </span>
 
@@ -1677,6 +1928,18 @@ export function CashierView() {
           </div>
         );
       })()}
+
+      {/* Modal de Turno de Caja (Apertura, Arqueo Z y Cierre) */}
+      <CashShiftModal
+        isOpen={showCashShiftModal}
+        onClose={() => setShowCashShiftModal(false)}
+      />
+
+      {/* Modal de Disponibilidad de Productos (Agotados / 86'd) */}
+      <ProductAvailabilityModal
+        isOpen={showStockModal}
+        onClose={() => setShowStockModal(false)}
+      />
 
     </div>
   );

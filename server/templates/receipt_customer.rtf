@@ -1,0 +1,44 @@
+{\rtf1\ansi\deff0
+{\fonttbl{\f0\fnil\fcharset0 Courier New;}}
+\viewkind4\uc1\pard\f0\fs20
+\qc\b\fs24\{RESTAURANT_NAME\}\par
+\qc\b0\fs20\{RESTAURANT_ADDRESS\}\par
+\qc NIT: \{RESTAURANT_NIT\}\par
+\qc Tel: \{RESTAURANT_PHONE\}\par
+\qc\b\fs44 #\{ORDER_NUMBER\}\par
+\ql\b0\fs20 --------------------------------\par
+\ql Cajero: \{CASHIER_NAME\} Estacion: \{STATION\}\par
+\ql --------------------------------\par
+\ql # de Orden: \{ORDER_ID\}\par
+\qr\{SERVICE_TYPE\}\par
+\ql --------------------------------\par
+[IF_NOTES]\par
+\qc * \{ORDER_NOTES\} *\par
+[/IF_NOTES]\par
+[ITEMS]\par
+\ql\{QTY\} \{NAME\}\tab\{PRICE\}\par
+[MODS]\par
+\ql + \{MOD_NAME\}\tab\{MOD_PRICE\}\par
+[/MODS]\par
+[NOTES]\par
+\ql * \{NOTE\}\par
+[/NOTES]\par
+[/ITEMS]\par
+\ql SUB TOTAL:\tab\{SUBTOTAL\}\par
+\ql IVA (19%):\tab\{TAX\}\par
+\qr ================================\par
+\ql\b\fs32 TOTAL :\tab\{TOTAL\}\par
+\ql\b0\fs20 >> # de cuenta: \{ACCOUNT_NUMBER\} <<\par
+\qc\{DATE_TIME\}\par
+[IF_QR]\par
+\ql --------------------------------\par
+\qc\b VER FACTURA DIGITAL\par
+\qc\b0 [QR]\{QR_URL\}[/QR]\par
+\qc Codigo: \{RECEIPT_CODE\}\par
+\qc serviplus.upaysolutions.app\par
+[/IF_QR]\par
+\ql --------------------------------\par
+\qc\{DIAN_RESOLUTION\}\par
+\qc\{CUSTOM_FOOTER\}\par
+[CUT]\par
+}

@@ -58,9 +58,10 @@ export function Header() {
       {/* Navigation Tabs */}
       <nav style={{ display: 'flex', gap: '6px' }}>
         {[
-          { id: 'kiosk', label: 'Kiosk' },
+          { id: 'home', label: '🏠 Inicio' },
           { id: 'cashier', label: 'Caja' },
           { id: 'kds', label: 'KDS' },
+          { id: 'kiosk', label: 'Kiosk' },
           // { id: 'turns', label: '📢 Monitor de Turnos' }
         ].map((t) => {
           const isActive = activeTab === t.id;

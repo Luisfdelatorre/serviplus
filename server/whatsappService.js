@@ -51,6 +51,7 @@ class WhatsAppService {
       to: cleanPhone,
       type: 'text',
       text: {
+        preview_url: true,
         body: String(bodyText || '')
       }
     });
@@ -83,6 +84,100 @@ class WhatsAppService {
 
           if (res.statusCode >= 200 && res.statusCode < 300) {
             console.log(`[WhatsApp Service] Mensaje enviado exitosamente a ${cleanPhone} (HTTP ${res.statusCode}):`, parsed);
+            resolve({
+              success: true,
+              data: parsed,
+              to: cleanPhone
+            });
+          } else {
+            const errorMsg = parsed?.error?.message || `Error en Meta Graph API (HTTP ${res.statusCode})`;
+            console.error(`[WhatsApp Service] Error de Meta Graph API (${res.statusCode}):`, parsed);
+            reject(new Error(errorMsg));
+          }
+        });
+      });
+
+      req.on('error', (err) => {
+        console.error('[WhatsApp Service] Error de conexión con graph.facebook.com:', err.message);
+        reject(err);
+      });
+
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error('Timeout de conexión al conectar con Meta Graph API'));
+      });
+
+      req.write(payload);
+      req.end();
+    });
+  }
+
+  /**
+   * Envía un mensaje basado en plantilla aprobada (ej. hello_world)
+   * Necesario para iniciar conversaciones fuera de la ventana de 24 horas
+   */
+  async sendTemplateMessage(to, templateName = 'hello_world', languageCode = 'en_US', components = [], options = {}) {
+    const config = this.getConfig() || {};
+    const waConfig = config.whatsapp || {};
+
+    const phoneNumberId = options.phoneNumberId || process.env.WA_PHONE_NUMBER_ID || waConfig.phoneNumberId || '';
+    const accessToken = options.accessToken || process.env.WA_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN || waConfig.accessToken || '';
+    const apiVersion = options.apiVersion || waConfig.apiVersion || 'v25.0';
+
+    let cleanPhone = String(to || '').replace(/\D/g, '');
+    if (cleanPhone.length === 10 && cleanPhone.startsWith('3')) {
+      cleanPhone = '57' + cleanPhone;
+    } else if (cleanPhone.length === 10 && (cleanPhone.startsWith('787') || cleanPhone.startsWith('939'))) {
+      cleanPhone = '1' + cleanPhone;
+    }
+
+    if (!cleanPhone) {
+      throw new Error('El número telefónico de destino es requerido');
+    }
+
+    const payloadObj = {
+      messaging_product: 'whatsapp',
+      to: cleanPhone,
+      type: 'template',
+      template: {
+        name: templateName,
+        language: { code: languageCode }
+      }
+    };
+
+    if (Array.isArray(components) && components.length > 0) {
+      payloadObj.template.components = components;
+    }
+
+    const payload = JSON.stringify(payloadObj);
+    const path = `/${apiVersion}/${phoneNumberId}/messages`;
+    console.log(`[WhatsApp Service] Enviando plantilla "${templateName}" a ${cleanPhone}...`);
+
+    return new Promise((resolve, reject) => {
+      const req = https.request({
+        hostname: 'graph.facebook.com',
+        port: 443,
+        path: path,
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payload)
+        },
+        timeout: 15000
+      }, (res) => {
+        let resData = '';
+        res.on('data', (chunk) => { resData += chunk; });
+        res.on('end', () => {
+          let parsed = {};
+          try {
+            parsed = JSON.parse(resData);
+          } catch (_) {
+            parsed = { raw: resData };
+          }
+
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            console.log(`[WhatsApp Service] Plantilla enviada exitosamente a ${cleanPhone} (HTTP ${res.statusCode}):`, parsed);
             resolve({
               success: true,
               data: parsed,

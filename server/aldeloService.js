@@ -175,6 +175,44 @@ const aldeloService = {
     return Object.values(categoriesMap).sort((a, b) => a.order - b.order);
   },
 
+  // 1b. Obtener todos los productos (incluyendo agotados/inactivos) para el panel de administración
+  async getAllProductsAdmin() {
+    const sql = `
+      SELECT 
+        m.MenuItemID as id, 
+        IIF(g.MenuGroupID IS NOT NULL, g.MenuGroupID, m.MenuCategoryID) as categoryId, 
+        IIF(g.MenuGroupText IS NOT NULL, g.MenuGroupText, 'General') as categoryName, 
+        m.MenuItemText as name, 
+        m.DefaultUnitPrice as price, 
+        m.MenuItemDescription as description,
+        IIF(m.MenuItemInActive IS NULL OR m.MenuItemInActive = 0 OR m.MenuItemInActive = False, True, False) as isActive
+      FROM MenuItems m
+      LEFT JOIN MenuGroups g ON m.MenuGroupID = g.MenuGroupID
+      WHERE m.DefaultUnitPrice > 0
+      ORDER BY IIF(g.DisplayIndex IS NOT NULL, g.DisplayIndex, 999), g.MenuGroupText, m.MenuItemText
+    `;
+    const items = await productsConnection.query(sql);
+    return (items || []).map(item => ({
+      id: item.id,
+      name: item.name,
+      price: Number(item.price.toFixed(2)),
+      categoryId: item.categoryId,
+      categoryName: item.categoryName || 'General',
+      description: item.description || '',
+      isActive: Boolean(item.isActive)
+    }));
+  },
+
+  // 1c. Cambiar disponibilidad de un producto (Agotado / Activo) en kebab.mdb
+  async setProductAvailability(menuItemId, isActive) {
+    const id = parseInt(menuItemId, 10);
+    if (!id || isNaN(id)) throw new Error('ID de producto inválido');
+    const inactiveVal = isActive ? 'False' : 'True';
+    const sql = `UPDATE MenuItems SET MenuItemInActive = ${inactiveVal} WHERE MenuItemID = ${id}`;
+    await productsConnection.execute(sql);
+    return { success: true, id, isActive: Boolean(isActive) };
+  },
+
   // 2. Obtener lista de empleados
   async getEmployees() {
     const sql = `
@@ -216,6 +254,58 @@ const aldeloService = {
         securityLevel: secLevel
       }
     };
+  },
+
+  // 2c. Verificar login de empleado / cajero / admin general
+  async verifyEmployeeLogin(accessCode) {
+    if (!accessCode) return { success: false, error: 'Código de acceso requerido' };
+    const cleanPin = String(accessCode).trim().replace(/'/g, "''");
+    try {
+      const sql = `
+        SELECT EmployeeID as id, FirstName as firstName, LastName as lastName, SecurityLevel as securityLevel
+        FROM EmployeeFiles
+        WHERE (AccessCode = '${cleanPin}')
+        AND (EmployeeInActive = False OR EmployeeInActive IS NULL)
+      `;
+      const records = await connection.query(sql);
+      if (records && records.length > 0) {
+        const emp = records[0];
+        const secLevel = parseInt(emp.securityLevel, 10);
+        const isAdmin = !isNaN(secLevel) && secLevel <= 2;
+        return {
+          success: true,
+          employee: {
+            id: emp.id,
+            name: `${emp.firstName} ${emp.lastName || ''}`.trim(),
+            firstName: emp.firstName,
+            lastName: emp.lastName || '',
+            securityLevel: secLevel || 5,
+            role: isAdmin ? 'admin' : 'cashier',
+            isAdmin
+          }
+        };
+      }
+    } catch (err) {
+      console.warn('[aldeloService.verifyEmployeeLogin] Error consultando empleado en Access:', err.message);
+    }
+
+    // Código maestro de respaldo / demo (ej: 1234 o 9999)
+    if (cleanPin === '1234' || cleanPin === '9999') {
+      return {
+        success: true,
+        employee: {
+          id: 1,
+          name: 'Administrador Master',
+          firstName: 'Admin',
+          lastName: 'Master',
+          securityLevel: 1,
+          role: 'admin',
+          isAdmin: true
+        }
+      };
+    }
+
+    return { success: false, error: 'Código de empleado incorrecto o inactivo' };
   },
 
   // 3. Obtener órdenes activas (para KDS y pantalla de turnos)
@@ -375,6 +465,42 @@ const aldeloService = {
       console.warn('[getActiveCashierId Error]:', cErr.message);
     }
     return 1;
+  },
+
+  // 3b. Entrada de cajero en Aldelo POS (RegisterCashiers - Sign In)
+  async signInCashier({ employeeId = 1, stationId = 3, startAmount = 0 }) {
+    try {
+      const guid = generateGUID();
+      const numStart = Number(startAmount) || 0;
+      const sql = `INSERT INTO RegisterCashiers (EmployeeID, StationID, CashTrayID, SignInDateTime, RegisterStartAmount, RowGUID) VALUES (${employeeId || 1}, ${stationId || 3}, 1, Now(), ${numStart}, '${guid}')`;
+      await connection.execute(sql);
+      return { success: true };
+    } catch (e) {
+      console.warn('[aldeloService.signInCashier]:', e.message);
+      return { success: false, error: e.message };
+    }
+  },
+
+  // 3c. Salida de cajero en Aldelo POS (RegisterCashiers - Sign Out)
+  async signOutCashier({ cashierId = null, employeeId = null, endAmount = 0, discrepancy = 0, notes = '' }) {
+    try {
+      const numEnd = Number(endAmount) || 0;
+      const numDisc = Number(discrepancy) || 0;
+      const cleanNotes = String(notes || '').trim().replace(/'/g, "''");
+      const notesVal = cleanNotes ? `'${cleanNotes}'` : 'NULL';
+      let whereClause = 'SignOutDateTime IS NULL';
+      if (cashierId) {
+        whereClause += ` AND CashierID = ${cashierId}`;
+      } else if (employeeId) {
+        whereClause += ` AND EmployeeID = ${employeeId}`;
+      }
+      const sql = `UPDATE RegisterCashiers SET SignOutDateTime = Now(), RegisterEndAmount = ${numEnd}, DiscrepancyAmount = ${numDisc}, DiscrepancyNotes = ${notesVal} WHERE ${whereClause}`;
+      await connection.execute(sql);
+      return { success: true };
+    } catch (e) {
+      console.warn('[aldeloService.signOutCashier]:', e.message);
+      return { success: false, error: e.message };
+    }
   },
 
   // 4. Crear una nueva orden (desde Kiosk o Front Desk)

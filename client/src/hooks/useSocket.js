@@ -1,11 +1,14 @@
 import { useEffect } from 'react';
 import { socket } from '../socket';
 import { useKdsStore } from '../store/useKdsStore';
+import { useMenuStore } from '../store/useMenuStore';
+import { fetchMenu } from '../api';
 import { sfx } from '../utils/audio';
 
 export function useSocket() {
   const addOrder = useKdsStore((state) => state.addOrder);
   const updateLocalOrder = useKdsStore((state) => state.updateLocalOrder);
+  const setCategories = useMenuStore((state) => state.setCategories);
 
   useEffect(() => {
     function handleNewOrder(order) {
@@ -50,16 +53,32 @@ export function useSocket() {
       }
     }
 
+    function handleMenuUpdated(payload) {
+      console.log('[Socket] Actualización de menú en tiempo real recibida:', payload);
+      fetchMenu()
+        .then((data) => {
+          if (data && data.length > 0) {
+            setCategories(data);
+            console.log('[Socket] ✅ Catálogo del Kiosco actualizado en vivo con los últimos cambios de Aldelo');
+          }
+        })
+        .catch((err) => console.error('[Socket] Error al refrescar menú:', err));
+    }
+
     socket.on('order:new', handleNewOrder);
     socket.on('order:status_changed', handleStatusChanged);
     socket.on('kds:status_changed', handleKdsStatusChanged);
     socket.on('kds:mirror_sync', handleMirrorSync);
+    socket.on('kiosk:menu_updated', handleMenuUpdated);
+    socket.on('menu:updated', handleMenuUpdated);
 
     return () => {
       socket.off('order:new', handleNewOrder);
       socket.off('order:status_changed', handleStatusChanged);
       socket.off('kds:status_changed', handleKdsStatusChanged);
       socket.off('kds:mirror_sync', handleMirrorSync);
+      socket.off('kiosk:menu_updated', handleMenuUpdated);
+      socket.off('menu:updated', handleMenuUpdated);
     };
-  }, [addOrder, updateLocalOrder]);
+  }, [addOrder, updateLocalOrder, setCategories]);
 }

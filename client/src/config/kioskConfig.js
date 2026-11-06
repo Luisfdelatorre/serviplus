@@ -92,7 +92,25 @@ export const KIOSK_CONFIG = {
   },
 
   // -------------------------------------------------------------
-  // 5. PLANTILLAS DE MENSAJES SALIENTES
+  // 5. CONFIGURACIÓN DE IMPRESORA TÉRMICA ESC/POS
+  // -------------------------------------------------------------
+  printer: {
+    enabled: true,
+    printerName: 'POS-58',
+    paperWidth: 58,
+    autoPrintOrder: true,
+    autoPrintKitchen: false,
+    printCustomerReceipt: true,
+    printKitchenComanda: true,
+    printDigitalReceiptQr: true,
+    openCashDrawer: false,
+    copies: 1,
+    feedLines: 3,
+    cutPaper: true
+  },
+
+  // -------------------------------------------------------------
+  // 6. PLANTILLAS DE MENSAJES SALIENTES
   // -------------------------------------------------------------
   messages: {
     /**
@@ -101,7 +119,8 @@ export const KIOSK_CONFIG = {
     whatsappTemplate: (orderNumber, receiptUrl, storeName = 'Serviplus Restaurante') => {
       return (
         `¡Hola! 👋 Aquí tienes el comprobante de tu pedido #${orderNumber} en ${storeName}:\n\n` +
-        `🔗 ${receiptUrl}\n\n` +
+        `Ver Recibo Digital:\n` +
+        `${receiptUrl}\n\n` +
         `¡Gracias por tu compra!`
       );
     },
@@ -137,6 +156,13 @@ export function updateKioskConfig(serverConfig) {
     if (serverConfig.kiosk.receiptSentAutoCloseSeconds) KIOSK_CONFIG.timeouts.receiptSentAutoCloseSeconds = serverConfig.kiosk.receiptSentAutoCloseSeconds;
     if (serverConfig.kiosk.wompiPollIntervalMs) KIOSK_CONFIG.timeouts.wompiPollIntervalMs = serverConfig.kiosk.wompiPollIntervalMs;
     if (serverConfig.kiosk.stepTransitionDelayMs) KIOSK_CONFIG.timeouts.stepTransitionDelayMs = serverConfig.kiosk.stepTransitionDelayMs;
+  }
+
+  if (serverConfig.printer) {
+    KIOSK_CONFIG.printer = {
+      ...(KIOSK_CONFIG.printer || {}),
+      ...serverConfig.printer
+    };
   }
 }
 

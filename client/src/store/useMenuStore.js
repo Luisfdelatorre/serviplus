@@ -4,22 +4,29 @@ const getInitialTab = () => {
   if (typeof window !== 'undefined') {
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab');
-    if (tabParam && ['kiosk', 'cashier', 'kds', 'turns'].includes(tabParam.toLowerCase())) {
+    if (tabParam && ['home', 'kiosk', 'cashier', 'kds', 'turns', 'pos', 'cash-in', 'apertura', 'admin', 'settings', 'config'].includes(tabParam.toLowerCase())) {
+      if (tabParam.toLowerCase() === 'pos') return 'cashier';
+      if (tabParam.toLowerCase() === 'apertura') return 'cash-in';
+      if (tabParam.toLowerCase() === 'settings' || tabParam.toLowerCase() === 'config') return 'admin';
       return tabParam.toLowerCase();
     }
     const hash = window.location.hash.toLowerCase();
+    if (hash.includes('cash-in') || hash.includes('apertura')) return 'cash-in';
+    if (hash.includes('admin') || hash.includes('settings') || hash.includes('config') || hash.includes('manage')) return 'admin';
+    if (hash.includes('home')) return 'home';
+    if (hash.includes('pos') || hash.includes('cashier') || hash.includes('caja')) return 'cashier';
+    if (hash.includes('pickup') || hash.includes('turn')) return 'turns';
     if (hash.includes('kds')) return 'kds';
-    if (hash.includes('cashier') || hash.includes('caja')) return 'cashier';
-    if (hash.includes('turn')) return 'turns';
-    if (hash.includes('kiosk') || hash.includes('autoservice') || hash.includes('auto')) return 'kiosk';
+    if (hash.includes('kiosk') || hash.includes('autoservice') || hash.includes('auto') || hash.includes('customers')) return 'kiosk';
 
     const pathname = window.location.pathname.toLowerCase();
+    if (pathname === '/' || pathname === '') return 'home';
     if (pathname.includes('kds')) return 'kds';
-    if (pathname.includes('cashier')) return 'cashier';
-    if (pathname.includes('turns')) return 'turns';
+    if (pathname.includes('cashier') || pathname.includes('pos')) return 'cashier';
+    if (pathname.includes('turns') || pathname.includes('pickup')) return 'turns';
     if (pathname.includes('kiosk') || pathname.includes('autoservice')) return 'kiosk';
   }
-  return 'kiosk';
+  return 'home';
 };
 
 const getInitialFullscreen = () => {
@@ -73,6 +80,42 @@ export const useMenuStore = create((set) => ({
   isFullscreen: getInitialFullscreen(),
   isKioskFullscreen: getInitialFullscreen(),
 
+  // Sesión de Empleado / Cajero en Terminal POS
+  sessionEmployee: (() => {
+    try {
+      const stored = localStorage.getItem('terminal_session_employee');
+      return stored ? JSON.parse(stored) : null;
+    } catch (_) {
+      return null;
+    }
+  })(),
+  isLoginModalOpen: false,
+  openLoginModal: () => set({ isLoginModalOpen: true }),
+  closeLoginModal: () => set({ isLoginModalOpen: false }),
+
+  // Modal de Entrada y Salida de Cajero (Apertura y Cierre Z)
+  isCashShiftModalOpen: false,
+  openCashShiftModal: () => set({ isCashShiftModalOpen: true }),
+  closeCashShiftModal: () => set({ isCashShiftModalOpen: false }),
+  loginEmployee: (empData, token) => {
+    try {
+      localStorage.setItem('terminal_session_employee', JSON.stringify(empData));
+      if (token) localStorage.setItem('terminal_session_token', token);
+    } catch (_) {}
+    set({
+      sessionEmployee: empData,
+      currentCashier: (empData && empData.id) || 1,
+      isLoginModalOpen: false
+    });
+  },
+  logoutEmployee: () => {
+    try {
+      localStorage.removeItem('terminal_session_employee');
+      localStorage.removeItem('terminal_session_token');
+    } catch (_) {}
+    set({ sessionEmployee: null });
+  },
+
   // Estado de Administrador y Configuración
   isAdminLoginOpen: false,
   isAdminSettingsOpen: false,
@@ -81,8 +124,9 @@ export const useMenuStore = create((set) => ({
   closeAdminLogin: () => set({ isAdminLoginOpen: false }),
   openAdminSettings: (adminData) => set({
     isAdminLoginOpen: false,
-    isAdminSettingsOpen: true,
-    currentAdmin: adminData || null
+    isAdminSettingsOpen: false,
+    currentAdmin: adminData || null,
+    activeTab: 'admin'
   }),
   closeAdminSettings: () => set({ isAdminSettingsOpen: false }),
 

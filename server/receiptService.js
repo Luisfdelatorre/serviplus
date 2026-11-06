@@ -6,6 +6,15 @@ const fs = require('fs');
 const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 const SECRET_KEY = process.env.RECEIPT_SECRET || 'serviplus_digital_receipts_secret_key_v1';
 
+function getReceiptBaseUrl() {
+  try {
+    const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json'), 'utf8'));
+    return cfg.cloud?.baseUrl || cfg.restaurant?.publicUrl || 'https://serviplus.upaysolutions.app';
+  } catch (_) {
+    return 'https://serviplus.upaysolutions.app';
+  }
+}
+
 // Máscaras de ofuscación de bits (50 bits en total para 10 caracteres)
 const MASK_A = 0x5a3f29; // 24 bits
 const MASK_B = 0x8e71;   // 16 bits
@@ -111,13 +120,14 @@ function generateReceiptCode(orderId, date = new Date(), meta = {}) {
   };
   persistCache();
 
+  const baseUrl = getReceiptBaseUrl().replace(/\/+$/, '');
   return {
     txId,
     checksum,
     transactionRef,
     urlCode,
     path: `/p/${urlCode}`,
-    fullUrl: `https://upaysolutions.app/p/${urlCode}`
+    fullUrl: `${baseUrl}/p/${urlCode}`
   };
 }
 

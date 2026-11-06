@@ -9,8 +9,12 @@ import { KdsGrid } from './components/kds/KdsGrid';
 import { KioskView } from './components/kiosk/KioskView';
 import { CashierView } from './components/cashier/CashierView';
 import { TurnsBoard } from './components/turns/TurnsBoard';
-import { AdminLoginModal } from './components/admin/AdminLoginModal';
+import { HomeHubView } from './components/home/HomeHubView';
+import { UnifiedLoginModal } from './components/auth/UnifiedLoginModal';
+import { CashShiftModal } from './components/cashier/CashShiftModal';
+import { CashDrawerOpeningView } from './components/cashier/CashDrawerOpeningView';
 import { AdminSettingsModal } from './components/admin/AdminSettingsModal';
+import { AdminSettingsView } from './components/admin/AdminSettingsView';
 import './components/admin/AdminModals.css';
 
 export function App() {
@@ -24,7 +28,11 @@ export function App() {
   const setActiveOrders = useKdsStore((state) => state.setActiveOrders);
   const setActiveTab = useMenuStore((state) => state.setActiveTab);
 
-  // Estados del modal Admin
+  // Estados de modales (Terminal Login, Entrada/Salida Caja, Admin)
+  const isLoginModalOpen = useMenuStore((state) => state.isLoginModalOpen);
+  const closeLoginModal = useMenuStore((state) => state.closeLoginModal);
+  const isCashShiftModalOpen = useMenuStore((state) => state.isCashShiftModalOpen);
+  const closeCashShiftModal = useMenuStore((state) => state.closeCashShiftModal);
   const isAdminLoginOpen = useMenuStore((state) => state.isAdminLoginOpen);
   const isAdminSettingsOpen = useMenuStore((state) => state.isAdminSettingsOpen);
   const currentAdmin = useMenuStore((state) => state.currentAdmin);
@@ -56,15 +64,24 @@ export function App() {
       const tabParam = params.get('tab');
       const pathname = window.location.pathname.toLowerCase();
 
-      if (tabParam && ['kiosk', 'cashier', 'kds', 'turns'].includes(tabParam.toLowerCase())) {
-        setActiveTab(tabParam.toLowerCase());
+      if (tabParam && ['home', 'kiosk', 'cashier', 'kds', 'turns', 'pos', 'cash-in', 'apertura', 'admin', 'settings', 'config'].includes(tabParam.toLowerCase())) {
+        if (tabParam.toLowerCase() === 'pos') setActiveTab('cashier');
+        else if (tabParam.toLowerCase() === 'apertura') setActiveTab('cash-in');
+        else if (tabParam.toLowerCase() === 'settings' || tabParam.toLowerCase() === 'config') setActiveTab('admin');
+        else setActiveTab(tabParam.toLowerCase());
+      } else if (hash.includes('cash-in') || hash.includes('apertura')) {
+        setActiveTab('cash-in');
+      } else if (hash.includes('admin') || hash.includes('settings') || hash.includes('config') || hash.includes('manage')) {
+        setActiveTab('admin');
+      } else if (hash.includes('home')) {
+        setActiveTab('home');
       } else if (hash.includes('kds') || pathname.includes('kds')) {
         setActiveTab('kds');
-      } else if (hash.includes('cashier') || hash.includes('caja')) {
+      } else if (hash.includes('cashier') || hash.includes('caja') || hash.includes('pos')) {
         setActiveTab('cashier');
-      } else if (hash.includes('turn')) {
+      } else if (hash.includes('turn') || hash.includes('pickup')) {
         setActiveTab('turns');
-      } else if (hash.includes('kiosk') || hash.includes('autoservice')) {
+      } else if (hash.includes('kiosk') || hash.includes('autoservice') || hash.includes('customers')) {
         setActiveTab('kiosk');
       }
 
@@ -124,18 +141,35 @@ export function App() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', overflow: 'hidden' }}>
-      {!isFullscreen && <Header />}
+      {!isFullscreen && activeTab !== 'home' && activeTab !== 'cash-in' && activeTab !== 'admin' && <Header />}
       <main style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+        {activeTab === 'home' && <HomeHubView />}
+        {activeTab === 'cash-in' && <CashDrawerOpeningView />}
         {activeTab === 'kds' && <KdsGrid />}
         {activeTab === 'kiosk' && <KioskView />}
         {activeTab === 'cashier' && <CashierView />}
-        {/* {activeTab === 'turns' && <TurnsBoard />}*/}
+        {activeTab === 'turns' && <TurnsBoard />}
+        {activeTab === 'admin' && <AdminSettingsView />}
       </main>
 
-      {/* Modales de Administración Aldelo */}
-      <AdminLoginModal
+      {/* Modal Reutilizable de Identificación y Acceso de Terminal POS */}
+      <UnifiedLoginModal
+        isOpen={isLoginModalOpen}
+        onClose={closeLoginModal}
+        mode="terminal"
+      />
+
+      {/* Modal de Entrada y Salida de Cajero (Apertura y Cierre Z) */}
+      <CashShiftModal
+        isOpen={isCashShiftModalOpen}
+        onClose={closeCashShiftModal}
+      />
+
+      {/* Modal Reutilizable de Acceso Administrativo Aldelo */}
+      <UnifiedLoginModal
         isOpen={isAdminLoginOpen}
         onClose={closeAdminLogin}
+        mode="admin"
         onSuccess={(employee) => openAdminSettings(employee)}
       />
 

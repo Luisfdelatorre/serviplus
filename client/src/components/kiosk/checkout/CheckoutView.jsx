@@ -31,6 +31,7 @@ export function CheckoutView({ isOpen = true, onClose, onOrderCompleted }) {
   const [createdOrderId, setCreatedOrderId] = useState(null);
   const [createdReceiptCode, setCreatedReceiptCode] = useState(null);
   const [createdReceiptUrl, setCreatedReceiptUrl] = useState(null);
+  const [createdReceiptFullUrl, setCreatedReceiptFullUrl] = useState(null);
   const [finalTotal, setFinalTotal] = useState(0);
   const [receiptMode, setReceiptMode] = useState(null); // null | 'email' | 'text' | 'sent'
   const [receiptInput, setReceiptInput] = useState('');
@@ -263,10 +264,12 @@ export function CheckoutView({ isOpen = true, onClose, onOrderCompleted }) {
       const assignedNumber = res.orderNumber || res.id;
       setCreatedOrderNumber(assignedNumber);
       setCreatedOrderId(res.id || res.orderId);
-      const rCode = res.receiptCode || null;
-      const rUrl = res.receiptUrl || (rCode ? `/p/${rCode}` : null);
+      const rCode = res.receiptCode || res.data?.receiptCode || null;
+      const rUrl = res.receiptUrl || res.data?.receiptUrl || (rCode ? `/p/${rCode}` : null);
+      const rFullUrl = res.receiptFullUrl || res.data?.receiptFullUrl || (rCode ? `https://serviplus.upaysolutions.app/p/${rCode}` : null);
       setCreatedReceiptCode(rCode);
       setCreatedReceiptUrl(rUrl);
+      setCreatedReceiptFullUrl(rFullUrl);
       sfx.playReadyChime();
       clearCart();
       setReceiptMode(null);
@@ -300,7 +303,13 @@ export function CheckoutView({ isOpen = true, onClose, onOrderCompleted }) {
         cleanPhone = `${KIOSK_CONFIG.validation.defaultCountryCode}${cleanPhone}`;
       }
 
-      const fullReceiptUrl = window.location.origin + (createdReceiptUrl || `/p/${createdReceiptCode || ''}`);
+      // Siempre generar y enviar la URL pública oficial HTTPS con el código de factura para que WhatsApp la reconozca como un enlace interactivo
+      const publicBase = 'https://serviplus.upaysolutions.app';
+      const receiptPath = createdReceiptUrl || (createdReceiptCode ? `/p/${createdReceiptCode}` : '');
+      const fullReceiptUrl = (createdReceiptFullUrl && createdReceiptFullUrl.startsWith('https://'))
+        ? createdReceiptFullUrl
+        : (receiptPath ? `${publicBase}${receiptPath}` : `${publicBase}/p/${createdOrderNumber || '1'}`);
+
       const messageBody = KIOSK_CONFIG.messages.whatsappTemplate(
         createdOrderNumber,
         fullReceiptUrl,
@@ -309,6 +318,7 @@ export function CheckoutView({ isOpen = true, onClose, onOrderCompleted }) {
 
       // Enviar directamente vía Meta Cloud API v25.0
       await sendWhatsAppMessage(cleanPhone, messageBody, {
+        orderId: createdOrderId,
         orderNumber: createdOrderNumber,
         receiptUrl: fullReceiptUrl
       });
@@ -441,6 +451,7 @@ export function CheckoutView({ isOpen = true, onClose, onOrderCompleted }) {
             paymentMethod={paymentMethod}
             createdReceiptCode={createdReceiptCode}
             createdReceiptUrl={createdReceiptUrl}
+            createdReceiptFullUrl={createdReceiptFullUrl}
             completedOrderItems={completedOrderItems}
             activeReceiptTab={activeReceiptTab}
             setActiveReceiptTab={setActiveReceiptTab}
