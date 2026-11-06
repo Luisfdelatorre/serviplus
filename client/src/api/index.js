@@ -1,5 +1,6 @@
 // API REST client para Aldelo POS & Serviplus (centralizado sobre httpClient)
 import { requestJson, setAuthToken } from '../shared/api/httpClient';
+import { enqueueOfflineOrder, flushOrderOutbox } from '../shared/offline/orderOutbox';
 
 export async function fetchMenu() {
   const json = await requestJson('/api/menu', {
@@ -26,12 +27,22 @@ export async function fetchActiveOrders() {
 }
 
 export async function createOrder(payload) {
-  const json = await requestJson('/api/orders', {
-    method: 'POST',
-    body: payload,
-    defaultError: 'Error al crear orden'
-  });
-  return json.data;
+  try {
+    const json = await requestJson('/api/orders', {
+      method: 'POST',
+      body: payload,
+      defaultError: 'Error al crear orden'
+    });
+    // Aprovechar conexión exitosa para vaciar cola offline si existía
+    flushOrderOutbox().catch(() => {});
+    return json.data;
+  } catch (err) {
+    // Si es error de red (sin código HTTP o navegador offline), encolar en Outbox local
+    if (!err.status && (typeof navigator === 'undefined' || !navigator.onLine || err.name === 'TypeError')) {
+      return enqueueOfflineOrder(payload);
+    }
+    throw err;
+  }
 }
 
 export async function updateOrderStatus(orderId, status, tableReady = null) {
@@ -302,4 +313,14 @@ export async function openCashDrawer(printerName = null) {
     body: { printerName },
     defaultError: 'Error al abrir gaveta monedero'
   });
+}
+
+// 26. Consultar bitácora de auditoría POS (Admin)
+export async function fetchAuditLogs(limit = 100) {
+  const json = await requestJson(`/api/admin/audit?limit=${limit}`, {
+    preferAdminToken: true,
+    noStore: true,
+    defaultError: 'Error al obtener bitácora de auditoría'
+  });
+  return json.data || [];
 }

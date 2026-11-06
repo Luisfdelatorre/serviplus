@@ -1,16 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMenuStore } from '../../store/useMenuStore';
 import { useI18n } from '../../i18n';
 import { sfx } from '../../utils/audio';
+import { subscribeOutbox, flushOrderOutbox } from '../../shared/offline/orderOutbox';
 import { Shield, RotateCw } from 'lucide-react';
 import './CommonComponents.css';
 
 export function Header() {
   const [isReloading, setIsReloading] = useState(false);
+  const [isOnline, setIsOnline] = useState(() => (typeof navigator !== 'undefined' ? navigator.onLine : true));
+  const [outboxCount, setOutboxCount] = useState(0);
   const activeTab = useMenuStore((state) => state.activeTab);
   const setActiveTab = useMenuStore((state) => state.setActiveTab);
   const openAdminLogin = useMenuStore((state) => state.openAdminLogin);
   const { lang, setLang } = useI18n();
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      flushOrderOutbox().catch(() => {});
+    };
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    const unsubscribe = subscribeOutbox((count) => setOutboxCount(count));
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      unsubscribe();
+    };
+  }, []);
 
   const handleTabChange = (tab) => {
     sfx.playTap();
@@ -105,10 +126,20 @@ export function Header() {
           <span>Admin</span>
         </button>
 
-        {/* Status Dot */}
-        <div className="hdr-status">
-          <span className="hdr-status-dot" />
-          <span>En línea</span>
+        {/* Status Dot & Offline Outbox Badge */}
+        <div className={`hdr-status ${isOnline ? 'online' : 'offline'}`}>
+          <span className={`hdr-status-dot ${isOnline ? 'online' : 'offline'}`} />
+          <span>{isOnline ? 'En línea' : 'Sin conexión'}</span>
+          {outboxCount > 0 && (
+            <button
+              type="button"
+              onClick={() => flushOrderOutbox()}
+              className="hdr-outbox-badge"
+              title="Órdenes en cola offline pendientes de sincronizar (clic para reintentar)"
+            >
+              ⏳ {outboxCount}
+            </button>
+          )}
         </div>
       </div>
     </header>
