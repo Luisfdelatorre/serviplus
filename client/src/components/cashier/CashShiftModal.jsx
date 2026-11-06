@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { fetchCurrentCashShift, openCashShift, closeCashShift, fetchCashShiftHistory, fetchEmployees, printCashShiftSlip } from '../../api';
 import { formatCOP } from '../../utils/format';
 import { sfx } from '../../utils/audio';
+import './CashShiftModal.css';
 import {
   DollarSign,
   Lock,
@@ -137,34 +138,22 @@ export function CashShiftModal({ isOpen, onClose }) {
 
   return (
     <div className="admin-modal-overlay">
-      <div className="admin-settings-container" style={{ maxWidth: '780px', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}>
+      <div className="admin-settings-container cshift-s-1">
         {/* Header */}
-        <div className="admin-settings-header" style={{ paddingBottom: '16px' }}>
+        <div className="admin-settings-header cshift-s-2">
           <div className="admin-settings-title-group">
-            <div className="admin-header-badge" style={{ background: isShiftOpen ? '#10b981' : '#f59e0b' }}>
+            <div className={`admin-header-badge ${isShiftOpen ? 'shift-open' : 'shift-closed'}`}>
               <DollarSign size={22} color="#fff" />
             </div>
             <div>
               <h2>Control de Caja (Turnos y Arqueo Z)</h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    padding: '2px 8px',
-                    borderRadius: '12px',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    background: isShiftOpen ? '#065f46' : '#78350f',
-                    color: isShiftOpen ? '#34d399' : '#fcd34d'
-                  }}
-                >
+              <div className="cshift-s-3">
+                <span className={`cshift-status-pill ${isShiftOpen ? 'open' : 'closed'}`}>
                   {isShiftOpen ? <Unlock size={12} /> : <Lock size={12} />}
                   {isShiftOpen ? `Turno #${currentShift.shiftNumber} ABIERTO` : 'CAJA CERRADA'}
                 </span>
                 {isShiftOpen && (
-                  <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                  <span className="cshift-s-4">
                     Responsable: <strong>{currentShift.cashierName}</strong>
                   </span>
                 )}
@@ -177,39 +166,17 @@ export function CashShiftModal({ isOpen, onClose }) {
         </div>
 
         {/* Pestañas: Turno Actual vs Historial */}
-        <div style={{ padding: '0 24px 12px 24px', display: 'flex', gap: '10px' }}>
+        <div className="cshift-s-5">
           <button
             onClick={() => setActiveTab('current')}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: 'none',
-              background: activeTab === 'current' ? '#3b82f6' : '#1e293b',
-              color: '#fff',
-              cursor: 'pointer',
-              fontWeight: 500,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
+            className={`cshift-tab-btn ${activeTab === 'current' ? 'active' : ''}`}
           >
             <DollarSign size={16} />
             <span>Turno Actual</span>
           </button>
           <button
             onClick={() => setActiveTab('history')}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: 'none',
-              background: activeTab === 'history' ? '#3b82f6' : '#1e293b',
-              color: '#fff',
-              cursor: 'pointer',
-              fontWeight: 500,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
+            className={`cshift-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
           >
             <History size={16} />
             <span>Historial ({history.length})</span>
@@ -217,18 +184,7 @@ export function CashShiftModal({ isOpen, onClose }) {
 
           <button
             onClick={loadData}
-            style={{
-              marginLeft: 'auto',
-              padding: '8px 12px',
-              borderRadius: '8px',
-              border: 'none',
-              background: '#334155',
-              color: '#cbd5e1',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
+            className="cshift-s-6"
           >
             <RefreshCw size={14} className={loading ? 'spin' : ''} />
             <span>Actualizar</span>
@@ -236,33 +192,25 @@ export function CashShiftModal({ isOpen, onClose }) {
         </div>
 
         {/* Contenido */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 24px 24px' }}>
+        <div className="cshift-s-7">
           {activeTab === 'history' ? (
             <div>
-              <h3 style={{ margin: '0 0 12px 0', fontSize: '1rem', color: '#e2e8f0' }}>Historial de Turnos Cerrados</h3>
+              <h3 className="cshift-s-8">Historial de Turnos Cerrados</h3>
               {history.length === 0 ? (
-                <p style={{ color: '#64748b' }}>No hay turnos registrados en el historial.</p>
+                <p className="cshift-s-9">No hay turnos registrados en el historial.</p>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div className="cshift-s-10">
                   {history.map((h) => (
                     <div
                       key={h.id}
-                      style={{
-                        background: '#1e293b',
-                        border: '1px solid #334155',
-                        borderRadius: '8px',
-                        padding: '14px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '6px'
-                      }}
+                      className="cshift-s-11"
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontWeight: 600, color: '#f8fafc' }}>
+                      <div className="cshift-s-12">
+                        <span className="cshift-s-13">
                           Turno #{h.shiftNumber} • {h.cashierName}
                         </span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                        <div className="cshift-s-14">
+                          <span className="cshift-s-4">
                             {new Date(h.openedAt).toLocaleDateString()} {new Date(h.openedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                           <button
@@ -276,28 +224,19 @@ export function CashShiftModal({ isOpen, onClose }) {
                                 alert('Error al imprimir: ' + e.message);
                               }
                             }}
-                            style={{
-                              padding: '3px 8px',
-                              borderRadius: '6px',
-                              border: '1px solid #475569',
-                              background: '#0f172a',
-                              color: '#38bdf8',
-                              cursor: 'pointer',
-                              fontSize: '0.72rem',
-                              fontWeight: 600
-                            }}
+                            className="cshift-s-15"
                           >
                             🖨️ Imprimir
                           </button>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: '16px', fontSize: '0.85rem', flexWrap: 'wrap', marginTop: '4px' }}>
+                      <div className="cshift-s-16">
                         <span>Base: <strong>{formatCOP(h.initialCash || 0)}</strong></span>
                         <span>Ventas Efectivo: <strong>{formatCOP(h.sales?.cashTotal || 0)}</strong></span>
                         <span>Wompi QR: <strong>{formatCOP(h.sales?.wompiTotal || 0)}</strong></span>
-                        <span>Total Ventas: <strong style={{ color: '#38bdf8' }}>{formatCOP(h.sales?.totalSales || 0)}</strong></span>
+                        <span>Total Ventas: <strong className="cshift-s-17">{formatCOP(h.sales?.totalSales || 0)}</strong></span>
                         {h.closing && (
-                          <span style={{ color: h.closing.difference >= 0 ? '#4ade80' : '#f87171' }}>
+                          <span className={h.closing.difference >= 0 ? 'cshift-diff-pos' : 'cshift-diff-neg'}>
                             Diferencia: <strong>{formatCOP(h.closing.difference)}</strong> ({h.closing.statusDifference})
                           </span>
                         )}
@@ -309,48 +248,48 @@ export function CashShiftModal({ isOpen, onClose }) {
             </div>
           ) : isShiftOpen ? (
             /* VISTA TURNO ABIERTO (ARQUEO EN VIVO + CORTE Z) */
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="cshift-s-18">
               {/* Tarjetas de Balance en Vivo */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px' }}>
-                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '8px', padding: '12px' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <div className="cshift-s-19">
+                <div className="cshift-s-20">
+                  <span className="cshift-s-21">
                     <Lock size={12} /> Base Inicial
                   </span>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f8fafc', marginTop: '4px' }}>
+                  <div className="cshift-s-22">
                     {formatCOP(currentShift.initialCash || 0)}
                   </div>
                 </div>
 
-                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '8px', padding: '12px' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#34d399', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div className="cshift-s-20">
+                  <span className="cshift-s-23">
                     <DollarSign size={12} /> Efectivo Cobrado
                   </span>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#34d399', marginTop: '4px' }}>
+                  <div className="cshift-s-24">
                     {formatCOP(currentShift.sales?.cashTotal || 0)}
                   </div>
                 </div>
 
-                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '8px', padding: '12px' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div className="cshift-s-20">
+                  <span className="cshift-s-25">
                     <QrCode size={12} /> Wompi QR / Transf.
                   </span>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#38bdf8', marginTop: '4px' }}>
+                  <div className="cshift-s-26">
                     {formatCOP(currentShift.sales?.wompiTotal || 0)}
                   </div>
                 </div>
 
-                <div style={{ background: '#1e293b', border: '1px solid #3b82f6', borderRadius: '8px', padding: '12px' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#93c5fd', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div className="cshift-s-27">
+                  <span className="cshift-s-28">
                     <TrendingUp size={12} /> Total Ventas ({currentShift.sales?.ordersCount || 0} ped.)
                   </span>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#60a5fa', marginTop: '4px' }}>
+                  <div className="cshift-s-29">
                     {formatCOP(currentShift.sales?.totalSales || 0)}
                   </div>
                 </div>
               </div>
 
               {/* Botón Imprimir Arqueo en Vivo */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <div className="cshift-s-30">
                 <button
                   type="button"
                   onClick={async () => {
@@ -362,19 +301,7 @@ export function CashShiftModal({ isOpen, onClose }) {
                       alert('Error al imprimir arqueo: ' + e.message);
                     }
                   }}
-                  style={{
-                    padding: '8px 14px',
-                    borderRadius: '8px',
-                    border: '1px solid #38bdf8',
-                    background: '#0f172a',
-                    color: '#38bdf8',
-                    cursor: 'pointer',
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
+                  className="cshift-s-31"
                 >
                   <span>🖨️</span>
                   <span>Imprimir Arqueo en Vivo (Ticket Parcial)</span>
@@ -383,38 +310,30 @@ export function CashShiftModal({ isOpen, onClose }) {
 
               {/* Dinero Total Esperado en Gaveta Física */}
               <div
-                style={{
-                  background: 'linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%)',
-                  border: '1px solid #2563eb',
-                  borderRadius: '10px',
-                  padding: '16px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}
+                className="cshift-s-32"
               >
                 <div>
-                  <span style={{ fontSize: '0.8rem', color: '#93c5fd', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  <span className="cshift-s-33">
                     Dinero Físico Esperado en Gaveta
                   </span>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+                  <p className="cshift-s-34">
                     Base Inicial ({formatCOP(currentShift.initialCash || 0)}) + Ventas Efectivo ({formatCOP(currentShift.sales?.cashTotal || 0)})
                   </p>
                 </div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff' }}>
+                <div className="cshift-s-35">
                   {formatCOP(expectedCash)}
                 </div>
               </div>
 
               {/* Formulario de Cierre Z */}
-              <form onSubmit={handleCloseShift} style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '10px', padding: '16px' }}>
-                <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <form onSubmit={handleCloseShift} className="cshift-s-36">
+                <h4 className="cshift-s-37">
                   <Lock size={16} color="#ef4444" /> Realizar Cierre de Turno (Corte Z)
                 </h4>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+                <div className="cshift-s-38">
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '6px' }}>
+                    <label className="cshift-s-39">
                       Efectivo Contado Físicamente en Caja:
                     </label>
                     <input
@@ -422,35 +341,16 @@ export function CashShiftModal({ isOpen, onClose }) {
                       required
                       value={actualCash}
                       onChange={(e) => setActualCash(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        background: '#0f172a',
-                        border: '1px solid #334155',
-                        borderRadius: '6px',
-                        color: '#fff',
-                        fontSize: '1.1rem',
-                        fontWeight: 600
-                      }}
+                      className="cshift-s-40"
                     />
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '6px' }}>
+                    <label className="cshift-s-39">
                       Balance / Diferencia de Caja:
                     </label>
                     <div
-                      style={{
-                        padding: '10px 12px',
-                        borderRadius: '6px',
-                        background: diff === 0 ? '#064e3b' : (diff > 0 ? '#1e3a8a' : '#7f1d1d'),
-                        color: diff === 0 ? '#34d399' : (diff > 0 ? '#93c5fd' : '#fca5a5'),
-                        fontSize: '1.1rem',
-                        fontWeight: 700,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}
+                      className={`cshift-diff-box ${diff === 0 ? 'exact' : diff > 0 ? 'surplus' : 'shortage'}`}
                     >
                       <span>{diff === 0 ? 'Exacto' : (diff > 0 ? 'Sobrante' : 'Faltante')}:</span>
                       <span>{formatCOP(diff)}</span>
@@ -458,8 +358,8 @@ export function CashShiftModal({ isOpen, onClose }) {
                   </div>
                 </div>
 
-                <div style={{ marginBottom: '14px' }}>
-                  <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>
+                <div className="cshift-s-41">
+                  <label className="cshift-s-42">
                     Notas u observaciones de cierre (opcional):
                   </label>
                   <input
@@ -467,36 +367,14 @@ export function CashShiftModal({ isOpen, onClose }) {
                     placeholder="Ej. Billetes rotos, propinas entregadas, etc."
                     value={closeNotes}
                     onChange={(e) => setCloseNotes(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      background: '#0f172a',
-                      border: '1px solid #334155',
-                      borderRadius: '6px',
-                      color: '#fff',
-                      fontSize: '0.85rem'
-                    }}
+                    className="cshift-s-43"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={submitting}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background: '#dc2626',
-                    color: '#fff',
-                    fontWeight: 700,
-                    fontSize: '0.95rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px'
-                  }}
+                  className="cshift-s-44"
                 >
                   <Lock size={18} />
                   <span>{submitting ? 'Procesando Cierre Z...' : 'Confirmar Cierre de Turno y Arqueo Z'}</span>
@@ -505,34 +383,25 @@ export function CashShiftModal({ isOpen, onClose }) {
             </div>
           ) : (
             /* VISTA CAJA CERRADA (FORMULARIO DE APERTURA) */
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="cshift-s-18">
               <div
-                style={{
-                  background: '#78350f',
-                  border: '1px solid #f59e0b',
-                  borderRadius: '8px',
-                  padding: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  color: '#fef3c7'
-                }}
+                className="cshift-s-45"
               >
-                <AlertTriangle size={24} color="#f59e0b" style={{ flexShrink: 0 }} />
+                <AlertTriangle size={24} color="#f59e0b" className="cshift-s-46" />
                 <div>
-                  <h4 style={{ margin: '0 0 2px 0', fontSize: '0.95rem' }}>La caja se encuentra cerrada</h4>
-                  <p style={{ margin: 0, fontSize: '0.85rem' }}>
+                  <h4 className="cshift-s-47">La caja se encuentra cerrada</h4>
+                  <p className="cshift-s-48">
                     Abre el turno indicando la base de efectivo inicial para habilitar el control de ventas del día.
                   </p>
                 </div>
               </div>
 
-              <form onSubmit={handleOpenShift} style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '10px', padding: '18px' }}>
-                <h3 style={{ margin: '0 0 16px 0', fontSize: '1.05rem', color: '#f8fafc' }}>Apertura de Turno de Caja</h3>
+              <form onSubmit={handleOpenShift} className="cshift-s-49">
+                <h3 className="cshift-s-50">Apertura de Turno de Caja</h3>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div className="cshift-s-51">
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>
+                    <label className="cshift-s-52">
                       Cajero Responsable:
                     </label>
                     <select
@@ -543,15 +412,7 @@ export function CashShiftModal({ isOpen, onClose }) {
                         const emp = employees.find((x) => x.id === id);
                         if (emp) setOpenCashierName(emp.name);
                       }}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        background: '#0f172a',
-                        border: '1px solid #334155',
-                        borderRadius: '6px',
-                        color: '#fff',
-                        fontSize: '0.9rem'
-                      }}
+                      className="cshift-s-53"
                     >
                       {employees.map((emp) => (
                         <option key={emp.id} value={emp.id}>
@@ -562,7 +423,7 @@ export function CashShiftModal({ isOpen, onClose }) {
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>
+                    <label className="cshift-s-52">
                       Base de Dinero Inicial en Gaveta (COP):
                     </label>
                     <input
@@ -573,21 +434,12 @@ export function CashShiftModal({ isOpen, onClose }) {
                       value={initialCash}
                       onChange={(e) => setInitialCash(e.target.value)}
                       placeholder="150000"
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        background: '#0f172a',
-                        border: '1px solid #334155',
-                        borderRadius: '6px',
-                        color: '#fff',
-                        fontSize: '1.1rem',
-                        fontWeight: 600
-                      }}
+                      className="cshift-s-40"
                     />
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>
+                    <label className="cshift-s-52">
                       Observaciones de apertura:
                     </label>
                     <input
@@ -595,36 +447,14 @@ export function CashShiftModal({ isOpen, onClose }) {
                       value={openNotes}
                       onChange={(e) => setOpenNotes(e.target.value)}
                       placeholder="Base para cambio inicial"
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        background: '#0f172a',
-                        border: '1px solid #334155',
-                        borderRadius: '6px',
-                        color: '#fff',
-                        fontSize: '0.9rem'
-                      }}
+                      className="cshift-s-53"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={submitting}
-                    style={{
-                      marginTop: '8px',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      background: '#10b981',
-                      color: '#fff',
-                      fontWeight: 700,
-                      fontSize: '1rem',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px'
-                    }}
+                    className="cshift-s-54"
                   >
                     <Unlock size={18} />
                     <span>{submitting ? 'Iniciando turno...' : '🟢 Abrir Turno de Caja'}</span>

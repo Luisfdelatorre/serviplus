@@ -593,7 +593,7 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                     </div>
                   </div>
 
-                  <div className="form-group" style={{ marginTop: '16px' }}>
+                  <div className="form-group asmod-s-1">
                     <label>Plantilla del Mensaje de Texto (SMS):</label>
                     <input
                       type="text"
@@ -758,49 +758,30 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                       type="button"
                       onClick={loadStockProducts}
                       disabled={loadingStock}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '6px 12px',
-                        background: '#334155',
-                        border: 'none',
-                        borderRadius: '6px',
-                        color: '#f8fafc',
-                        cursor: 'pointer',
-                        fontSize: '0.8rem'
-                      }}
+                      className="asmod-s-2"
                     >
                       <RefreshCw size={14} className={loadingStock ? 'spin' : ''} />
                       <span>Refrescar</span>
                     </button>
                   </div>
 
-                  <div style={{ marginBottom: '14px' }}>
+                  <div className="asmod-s-3">
                     <input
                       type="text"
                       placeholder="Buscar plato por nombre o categoría..."
                       value={stockSearch}
                       onChange={(e) => setStockSearch(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        background: '#0f172a',
-                        border: '1px solid #334155',
-                        borderRadius: '8px',
-                        color: '#fff',
-                        fontSize: '0.9rem'
-                      }}
+                      className="asmod-s-4"
                     />
                   </div>
 
                   {loadingStock ? (
-                    <div style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
-                      <RefreshCw size={24} className="spin" style={{ margin: '0 auto 8px auto', display: 'block' }} />
+                    <div className="asmod-s-5">
+                      <RefreshCw size={24} className="spin asmod-s-6" />
                       <span>Cargando productos de Aldelo...</span>
                     </div>
                   ) : (
-                    <div style={{ maxHeight: '380px', overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '10px' }}>
+                    <div className="asmod-s-7">
                       {stockProducts
                         .filter((p) => {
                           const q = stockSearch.toLowerCase().trim();
@@ -811,25 +792,16 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                           return (
                             <div
                               key={prod.id}
-                              style={{
-                                background: prod.isActive ? '#1e293b' : '#3f1a1a',
-                                border: prod.isActive ? '1px solid #334155' : '1px solid #ef4444',
-                                borderRadius: '8px',
-                                padding: '12px',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                justifyContent: 'space-between',
-                                gap: '8px'
-                              }}
+                              className={`asmod-stock-card ${prod.isActive ? 'active' : 'inactive'}`}
                             >
                               <div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#94a3b8' }}>
+                                <div className="asmod-s-8">
                                   <span>{prod.categoryName}</span>
-                                  <span style={{ fontWeight: 600, color: prod.isActive ? '#38bdf8' : '#94a3b8' }}>
+                                  <span className={`asmod-stock-price ${prod.isActive ? 'active' : 'inactive'}`}>
                                     {formatCOP(prod.price)}
                                   </span>
                                 </div>
-                                <h4 style={{ margin: '4px 0 0 0', fontSize: '0.95rem', color: prod.isActive ? '#f8fafc' : '#fca5a5' }}>
+                                <h4 className={`asmod-stock-title ${prod.isActive ? 'active' : 'inactive'}`}>
                                   {prod.name}
                                 </h4>
                               </div>
@@ -838,20 +810,7 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                                 type="button"
                                 onClick={() => handleToggleStock(prod)}
                                 disabled={isToggling}
-                                style={{
-                                  padding: '6px 10px',
-                                  borderRadius: '6px',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  gap: '6px',
-                                  fontWeight: 600,
-                                  fontSize: '0.8rem',
-                                  background: prod.isActive ? '#065f46' : '#991b1b',
-                                  color: '#fff'
-                                }}
+                                className={`asmod-stock-toggle-btn ${prod.isActive ? 'active' : 'inactive'}`}
                               >
                                 {prod.isActive ? (
                                   <>
@@ -881,13 +840,12 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                       <h3>Impresora Térmica ESC/POS (Tickets & Comandas)</h3>
                       <p>Configuración directa de tickets en impresoras de 58mm / 80mm y cajón monedero.</p>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div className="asmod-s-9">
                       <button
                         type="button"
                         onClick={handleTestPrint}
                         disabled={testingPrinter}
-                        className="preset-btn prod"
-                        style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                        className="preset-btn prod asmod-s-10"
                       >
                         {testingPrinter ? <RefreshCw className="spin" size={16} /> : <Printer size={16} />}
                         <span>{testingPrinter ? 'Imprimiendo...' : 'Imprimir Ticket de Prueba'}</span>
@@ -896,8 +854,7 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                         type="button"
                         onClick={handleOpenDrawer}
                         disabled={openingDrawer}
-                        className="preset-btn test"
-                        style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                        className="preset-btn test asmod-s-10"
                       >
                         {openingDrawer ? <RefreshCw className="spin" size={16} /> : <span>🔓</span>}
                         <span>{openingDrawer ? 'Abriendo...' : 'Probar Cajón Monedero'}</span>
@@ -906,35 +863,20 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                   </div>
 
                   {/* Estado del Dispositivo */}
-                  <div className="admin-mode-card" style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div className="admin-mode-card asmod-s-11">
+                    <div className="asmod-s-12">
                       <div
-                        style={{
-                          width: '40px',
-                          height: '40px',
-                          borderRadius: '12px',
-                          background: installedPrinters.some(p => p.toLowerCase() === (config.printer?.printerName || 'POS-58').toLowerCase()) ? '#ecfdf5' : '#fef2f2',
-                          color: installedPrinters.some(p => p.toLowerCase() === (config.printer?.printerName || 'POS-58').toLowerCase()) ? '#059669' : '#dc2626',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
+                        className={`asmod-printer-icon-box ${installedPrinters.some(p => p.toLowerCase() === (config.printer?.printerName || 'POS-58').toLowerCase()) ? 'detected' : 'missing'}`}
                       >
                         <Printer size={22} />
                       </div>
                       <div>
-                        <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.95rem' }}>
-                          Impresora Activa: <span style={{ color: '#da291c' }}>{config.printer?.printerName || 'POS-58'}</span>
+                        <div className="asmod-s-13">
+                          Impresora Activa: <span className="asmod-s-14">{config.printer?.printerName || 'POS-58'}</span>
                         </div>
-                        <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                        <div className="asmod-s-15">
                           <span
-                            style={{
-                              width: '8px',
-                              height: '8px',
-                              borderRadius: '50%',
-                              background: installedPrinters.some(p => p.toLowerCase() === (config.printer?.printerName || 'POS-58').toLowerCase()) ? '#10b981' : '#f59e0b',
-                              display: 'inline-block'
-                            }}
+                            className={`asmod-printer-status-dot ${installedPrinters.some(p => p.toLowerCase() === (config.printer?.printerName || 'POS-58').toLowerCase()) ? 'detected' : 'missing'}`}
                           />
                           {installedPrinters.some(p => p.toLowerCase() === (config.printer?.printerName || 'POS-58').toLowerCase())
                             ? 'Detectada en el sistema (Spooler de Windows Listo)'
@@ -943,13 +885,12 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div className="asmod-s-16">
                       <button
                         type="button"
                         onClick={loadPrinters}
                         disabled={loadingPrinters}
-                        className="preset-btn test"
-                        style={{ padding: '6px 12px' }}
+                        className="preset-btn test asmod-s-17"
                       >
                         <RefreshCw className={loadingPrinters ? 'spin' : ''} size={14} />
                         <span>Actualizar Lista</span>
@@ -960,10 +901,10 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                   {/* Campos de Configuración */}
                   <div className="admin-fields-grid">
                     {/* Habilitar Impresión */}
-                    <div className="form-group full-width" style={{ background: '#f8fafc', padding: '14px 18px', borderRadius: '14px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="form-group full-width asmod-s-18">
                       <div>
-                        <label style={{ margin: 0, fontSize: '0.92rem', fontWeight: 800, color: '#0f172a' }}>Habilitar Módulo de Impresión Térmica:</label>
-                        <p style={{ margin: '2px 0 0 0', fontSize: '0.78rem', color: '#64748b' }}>Permite enviar tickets físicos a las impresoras térmicas conectadas.</p>
+                        <label className="asmod-s-19">Habilitar Módulo de Impresión Térmica:</label>
+                        <p className="asmod-s-20">Permite enviar tickets físicos a las impresoras térmicas conectadas.</p>
                       </div>
                       <input
                         type="checkbox"
@@ -972,7 +913,7 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                           ...config,
                           printer: { ...(config.printer || {}), enabled: e.target.checked }
                         })}
-                        style={{ width: '22px', height: '22px', cursor: 'pointer' }}
+                        className="asmod-s-21"
                       />
                     </div>
 
@@ -985,7 +926,7 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                           ...config,
                           printer: { ...(config.printer || {}), printerName: e.target.value }
                         })}
-                        style={{ padding: '10px 14px', borderRadius: '12px', border: '1.5px solid #cbd5e1', fontSize: '0.9rem', fontWeight: 600, width: '100%', background: '#fff' }}
+                        className="asmod-s-22"
                       >
                         {installedPrinters.length > 0 ? (
                           installedPrinters.map((prn) => (
@@ -1008,7 +949,7 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                           ...config,
                           printer: { ...(config.printer || {}), paperWidth: parseInt(e.target.value, 10) }
                         })}
-                        style={{ padding: '10px 14px', borderRadius: '12px', border: '1.5px solid #cbd5e1', fontSize: '0.9rem', fontWeight: 600, width: '100%', background: '#fff' }}
+                        className="asmod-s-22"
                       >
                         <option value="58">58 mm (Estándar POS-58 / 32 Columnas)</option>
                         <option value="80">80 mm (Estándar POS-80 / 48 Columnas)</option>
@@ -1016,10 +957,10 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                     </div>
 
                     {/* Reglas de Impresión Automática */}
-                    <div className="form-group" style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="form-group asmod-s-23">
                       <div>
-                        <label style={{ margin: 0, fontSize: '0.86rem', fontWeight: 700 }}>Impresión Automática en Kiosco / Caja:</label>
-                        <span style={{ fontSize: '0.74rem', color: '#64748b' }}>Imprime el ticket inmediatamente al confirmar la orden</span>
+                        <label className="asmod-s-24">Impresión Automática en Kiosco / Caja:</label>
+                        <span className="asmod-s-25">Imprime el ticket inmediatamente al confirmar la orden</span>
                       </div>
                       <input
                         type="checkbox"
@@ -1028,14 +969,14 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                           ...config,
                           printer: { ...(config.printer || {}), autoPrintOrder: e.target.checked }
                         })}
-                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                        className="asmod-s-26"
                       />
                     </div>
 
-                    <div className="form-group" style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="form-group asmod-s-23">
                       <div>
-                        <label style={{ margin: 0, fontSize: '0.86rem', fontWeight: 700 }}>Comanda para Cocina (Kitchen):</label>
-                        <span style={{ fontSize: '0.74rem', color: '#64748b' }}>Imprime comanda con modificadores para preparación</span>
+                        <label className="asmod-s-24">Comanda para Cocina (Kitchen):</label>
+                        <span className="asmod-s-25">Imprime comanda con modificadores para preparación</span>
                       </div>
                       <input
                         type="checkbox"
@@ -1044,14 +985,14 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                           ...config,
                           printer: { ...(config.printer || {}), autoPrintKitchen: e.target.checked }
                         })}
-                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                        className="asmod-s-26"
                       />
                     </div>
 
-                    <div className="form-group" style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="form-group asmod-s-23">
                       <div>
-                        <label style={{ margin: 0, fontSize: '0.86rem', fontWeight: 700 }}>Código QR de Recibo Digital:</label>
-                        <span style={{ fontSize: '0.74rem', color: '#64748b' }}>Imprime QR nativo para ver la factura en el móvil</span>
+                        <label className="asmod-s-24">Código QR de Recibo Digital:</label>
+                        <span className="asmod-s-25">Imprime QR nativo para ver la factura en el móvil</span>
                       </div>
                       <input
                         type="checkbox"
@@ -1060,14 +1001,14 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                           ...config,
                           printer: { ...(config.printer || {}), printDigitalReceiptQr: e.target.checked }
                         })}
-                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                        className="asmod-s-26"
                       />
                     </div>
 
-                    <div className="form-group" style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="form-group asmod-s-23">
                       <div>
-                        <label style={{ margin: 0, fontSize: '0.86rem', fontWeight: 700 }}>Abrir Cajón en Efectivo:</label>
-                        <span style={{ fontSize: '0.74rem', color: '#64748b' }}>Envía pulso a la gaveta conectada por RJ11</span>
+                        <label className="asmod-s-24">Abrir Cajón en Efectivo:</label>
+                        <span className="asmod-s-25">Envía pulso a la gaveta conectada por RJ11</span>
                       </div>
                       <input
                         type="checkbox"
@@ -1076,14 +1017,14 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                           ...config,
                           printer: { ...(config.printer || {}), openCashDrawer: e.target.checked }
                         })}
-                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                        className="asmod-s-26"
                       />
                     </div>
 
-                    <div className="form-group" style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="form-group asmod-s-23">
                       <div>
-                        <label style={{ margin: 0, fontSize: '0.86rem', fontWeight: 700 }}>Corte Automático (Auto-Cut):</label>
-                        <span style={{ fontSize: '0.74rem', color: '#64748b' }}>Ejecuta comando GS V al terminar de imprimir</span>
+                        <label className="asmod-s-24">Corte Automático (Auto-Cut):</label>
+                        <span className="asmod-s-25">Ejecuta comando GS V al terminar de imprimir</span>
                       </div>
                       <input
                         type="checkbox"
@@ -1092,7 +1033,7 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                           ...config,
                           printer: { ...(config.printer || {}), cutPaper: e.target.checked }
                         })}
-                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                        className="asmod-s-26"
                       />
                     </div>
 
@@ -1104,7 +1045,7 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                           ...config,
                           printer: { ...(config.printer || {}), copies: parseInt(e.target.value, 10) }
                         })}
-                        style={{ padding: '10px 14px', borderRadius: '12px', border: '1.5px solid #cbd5e1', fontSize: '0.9rem', fontWeight: 600, width: '100%', background: '#fff' }}
+                        className="asmod-s-22"
                       >
                         <option value="1">1 Copia (Cliente)</option>
                         <option value="2">2 Copias (Cliente + Comercio)</option>

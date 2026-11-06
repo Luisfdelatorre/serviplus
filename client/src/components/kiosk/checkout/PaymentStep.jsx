@@ -40,21 +40,21 @@ export function PaymentStep({
       <div className="checkout-payment-summary-box">
         <div>
           <div className="checkout-footer-total-lbl">DESTINO DE TU ORDEN</div>
-          <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a', marginTop: '2px' }}>
+          <div className="pay-s-1">
             {orderType === 'EAT_IN' ? `🍽️ Comer en Mesa #${tableId}` : '🛍️ Empacado Para Llevar'}
           </div>
         </div>
 
-        <div style={{ textAlign: 'right' }}>
+        <div className="pay-s-2">
           <div className="checkout-footer-total-lbl">TOTAL A PAGAR</div>
-          <div style={{ fontSize: '2.1rem', fontWeight: 900, color: '#047857', letterSpacing: '-0.5px' }}>
+          <div className="pay-s-3">
             {formatCOP(total)}
           </div>
         </div>
       </div>
 
       {/* Selector de Medios de Pago */}
-      <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a', margin: '0 0 14px 0' }}>
+      <h3 className="pay-s-4">
         Selecciona tu medio de pago:
       </h3>
 
@@ -68,8 +68,8 @@ export function PaymentStep({
               onClick={() => onSelectPaymentMethod(m.id)}
               className={`checkout-payment-card ${isSelected ? 'selected' : ''}`}
             >
-              <div style={{ fontSize: '2.4rem', marginBottom: '4px' }}>{m.icon}</div>
-              <div style={{ fontSize: '1.05rem', fontWeight: 900 }}>{m.label}</div>
+              <div className="pay-s-5">{m.icon}</div>
+              <div className="pay-s-6">{m.label}</div>
               <span className="checkout-payment-card-badge">{m.badge}</span>
             </button>
           );
@@ -81,20 +81,20 @@ export function PaymentStep({
         {paymentMethod === 'WOMPI_QR' && (
           <div className="checkout-qr-box">
             {qrLoading ? (
-              <div style={{ padding: '30px 20px', textAlign: 'center' }}>
-                <div style={{ fontSize: '2.5rem', animation: 'spin 1s linear infinite', display: 'inline-block', marginBottom: '8px' }}>🔄</div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f172a' }}>Generando QR Bancolombia / Nequi...</div>
-                <p style={{ fontSize: '0.86rem', color: '#64748b', margin: '4px 0 0 0' }}>Conectando con la pasarela de pagos Wompi</p>
+              <div className="pay-s-7">
+                <div className="pay-s-8">🔄</div>
+                <div className="pay-s-9">Generando QR Bancolombia / Nequi...</div>
+                <p className="pay-s-10">Conectando con la pasarela de pagos Wompi</p>
               </div>
             ) : qrError ? (
-              <div style={{ padding: '24px 20px', textAlign: 'center', color: '#b91c1c' }}>
-                <div style={{ fontSize: '2rem', marginBottom: '6px' }}>⚠️</div>
-                <div style={{ fontWeight: 800 }}>{qrError}</div>
-                <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Puedes elegir otro medio de pago para continuar.</p>
+              <div className="pay-s-11">
+                <div className="pay-s-12">⚠️</div>
+                <div className="pay-s-13">{qrError}</div>
+                <p className="pay-s-14">Puedes elegir otro medio de pago para continuar.</p>
               </div>
             ) : wompiQrData?.qrImage ? (
               <div>
-                <div style={{ background: '#ffffff', padding: '14px', borderRadius: '20px', display: 'inline-block', boxShadow: '0 8px 30px rgba(0, 0, 0, 0.08)', border: '1px solid #e2e8f0' }}>
+                <div className="pay-s-15">
                   <img
                     src={
                       wompiQrData.qrImage.startsWith('data:')
@@ -104,44 +104,44 @@ export function PaymentStep({
                           : `data:image/png;base64,${wompiQrData.qrImage}`
                     }
                     alt="Código QR Bancolombia / Nequi"
-                    style={{ width: '210px', height: '210px', display: 'block', margin: '0 auto', borderRadius: '10px' }}
+                    className="pay-s-16"
                   />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '14px' }}>
-                  <span style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0f172a' }}>
+                <div className="pay-s-17">
+                  <span className="pay-s-18">
                     Escanea con tu App Bancolombia o Nequi
                   </span>
-                  <span style={{ background: '#ecfdf5', color: '#047857', fontSize: '0.78rem', fontWeight: 900, padding: '3px 10px', borderRadius: '9999px', border: '1px solid #a7f3d0' }}>
+                  <span className="pay-s-19">
                     ● Listo
                   </span>
                 </div>
-                <p style={{ fontSize: '0.9rem', color: '#64748b', margin: '6px 0 0 0' }}>
-                  Total: <strong style={{ color: '#047857' }}>{formatCOP(total)}</strong> • Ref: <strong>{wompiQrData.reference}</strong>
+                <p className="pay-s-20">
+                  Total: <strong className="pay-s-21">{formatCOP(total)}</strong> • Ref: <strong>{wompiQrData.reference}</strong>
                 </p>
-                <div style={{ marginTop: '10px', fontSize: '0.84rem', color: '#059669', fontWeight: 700, background: '#f0fdf4', padding: '8px 16px', borderRadius: '12px', border: '1px solid #bbf7d0', display: 'inline-block' }}>
+                <div className="pay-s-22">
                   ⚡ Al completar el pago en tu celular, el Kiosco lo detecta y envía la orden a cocina al instante.
                 </div>
               </div>
             ) : localFallbackQr ? (
               <div>
-                <div style={{ background: '#ffffff', padding: '12px', borderRadius: '16px', display: 'inline-block', boxShadow: '0 8px 30px rgba(0, 0, 0, 0.08)', border: '1px solid #e2e8f0' }}>
+                <div className="pay-s-23">
                   <img
                     src={localFallbackQr}
                     alt="Código QR de Pago"
-                    style={{ width: '180px', height: '180px', margin: '0 auto', display: 'block', borderRadius: '10px' }}
+                    className="pay-s-24"
                   />
                 </div>
-                <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', marginTop: '12px' }}>
+                <div className="pay-s-25">
                   Escanea con tu App Bancolombia, Nequi o Cámara
                 </div>
-                <p style={{ fontSize: '0.86rem', color: '#64748b', margin: '4px 0 0 0' }}>
+                <p className="pay-s-10">
                   Tu pago se confirma de inmediato y tu orden pasa directamente a la pantalla de cocina.
                 </p>
               </div>
             ) : (
-              <div style={{ padding: '30px 20px', textAlign: 'center' }}>
-                <div style={{ fontSize: '2.5rem', animation: 'spin 1s linear infinite', display: 'inline-block', marginBottom: '8px' }}>🔄</div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f172a' }}>Generando QR local...</div>
+              <div className="pay-s-7">
+                <div className="pay-s-8">🔄</div>
+                <div className="pay-s-9">Generando QR local...</div>
               </div>
             )}
           </div>
@@ -149,11 +149,11 @@ export function PaymentStep({
 
         {paymentMethod === 'CASH' && (
           <div className="checkout-cash-box">
-            <div style={{ fontSize: '3rem', marginBottom: '8px' }}>💵</div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#065f46' }}>
+            <div className="pay-s-26">💵</div>
+            <div className="pay-s-27">
               Pago en Efectivo en Caja
             </div>
-            <p style={{ fontSize: '0.96rem', color: '#047857', fontWeight: 600, margin: '10px 0 0 0', lineHeight: 1.5 }}>
+            <p className="pay-s-28">
               Al presionar <strong>Confirmar Orden</strong>, tu turno quedará reservado. Acércate a la <strong>Caja / Front Desk</strong> para pagar. La cocina comenzará tu comida tan pronto reciban el pago.
             </p>
           </div>
@@ -161,11 +161,11 @@ export function PaymentStep({
 
         {paymentMethod === 'CARD' && (
           <div className="checkout-card-box">
-            <div style={{ fontSize: '3rem', marginBottom: '8px' }}>💳</div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#1e40af' }}>
+            <div className="pay-s-26">💳</div>
+            <div className="pay-s-29">
               Pago con Tarjeta o Datáfono en Caja
             </div>
-            <p style={{ fontSize: '0.96rem', color: '#1d4ed8', fontWeight: 600, margin: '10px 0 0 0', lineHeight: 1.5 }}>
+            <p className="pay-s-30">
               Acércate con tu número de orden a la <strong>Caja / Front Desk</strong> para pasar tu tarjeta débito o crédito por el datáfono.
             </p>
           </div>
@@ -173,7 +173,7 @@ export function PaymentStep({
       </div>
 
       {/* Botón de Confirmación Final */}
-      <div style={{ marginTop: '24px' }}>
+      <div className="pay-s-31">
         <button
           type="button"
           disabled={isSubmitting}

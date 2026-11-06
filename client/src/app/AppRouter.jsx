@@ -73,3 +73,4 @@ export function AppRouter({ activeTab }) {
     </Suspense>
   );
 }
+

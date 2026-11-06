@@ -195,10 +195,6 @@ export function ModifierModal({ item, categoryName, isOpen, onClose, onAdd, orig
       {/* TARJETA MODAL APAISADA (HORIZONTAL KIOSK DESIGN) */}
       <section
         className={`kiosk-landscape-card ${view === 'customize' ? 'view-customize' : 'view-hero'}`}
-        style={{
-          '--origin-x': `${originPercentX}%`,
-          '--origin-y': `${originPercentY}%`
-        }}
         onClick={(e) => e.stopPropagation()}
         aria-labelledby="product-modal-title"
       >
@@ -271,7 +267,7 @@ export function ModifierModal({ item, categoryName, isOpen, onClose, onAdd, orig
               {/* Columna Derecha: Configuración detallada y Controles Táctiles */}
               <div className="kiosk-stage-info-col">
                 <div className="kiosk-stage-tagline">
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                  <span className="material-symbols-outlined mmod-s-1">
                     stars
                   </span>
                   Recomendado del Chef
@@ -307,7 +303,7 @@ export function ModifierModal({ item, categoryName, isOpen, onClose, onAdd, orig
                   <div className="kiosk-hero-customization-summary">
                     <div className="kiosk-summary-header">
                       <span className="kiosk-summary-title">
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#10b981' }}>
+                        <span className="material-symbols-outlined mmod-s-2">
                           check_circle
                         </span>
                         Personalización ({selectedModsList.length + (notes.trim() ? 1 : 0)}):
@@ -581,13 +577,12 @@ export function ModifierModal({ item, categoryName, isOpen, onClose, onAdd, orig
                             onClick={() => toggleModifier(mod)}
                             className={`kiosk-sauce-btn ${isChecked ? 'selected' : ''}`}
                           >
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span className="mmod-s-3">
                               <span>{getModifierEmoji(mod.name)}</span>
                               <span>{mod.name}</span>
                             </span>
                             <span
-                              className={`kiosk-checkbox-indicator ${isChecked ? 'checked-green' : ''}`}
-                              style={{ width: '18px', height: '18px', borderRadius: '5px' }}
+                              className={`kiosk-checkbox-indicator ${isChecked ? 'checked-green' : ''} mmod-s-4`}
                             >
                               {isChecked ? '✓' : ''}
                             </span>
@@ -602,9 +597,9 @@ export function ModifierModal({ item, categoryName, isOpen, onClose, onAdd, orig
                 <section className="kiosk-section-card">
                   <div className="kiosk-section-header">
                     <div className="kiosk-section-heading-group">
-                      <span style={{ fontSize: '1.2rem' }}>📝</span>
+                      <span className="mmod-s-5">📝</span>
                       <div>
-                        <h2 className="kiosk-section-title" style={{ fontSize: '0.95rem' }}>
+                        <h2 className="kiosk-section-title mmod-s-6">
                           Instrucciones especiales para cocina
                         </h2>
                       </div>
@@ -689,10 +684,9 @@ export function ModifierModal({ item, categoryName, isOpen, onClose, onAdd, orig
                   sfx.playTap();
                   setView('hero');
                 }}
-                className="kiosk-cta-yellow-btn"
-                style={{ fontSize: '1.05rem' }}
+                className="kiosk-cta-yellow-btn mmod-s-7"
               >
-                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="mmod-s-8">
                   <span className="material-symbols-outlined">check</span>
                   <span>Listo • Ver Producto</span>
                 </span>
@@ -747,7 +741,7 @@ export function ModifierModal({ item, categoryName, isOpen, onClose, onAdd, orig
         {/* ============================================================== */}
         {toastMessage && (
           <div className="kiosk-toast-feedback">
-            <span className="material-symbols-outlined" style={{ color: '#ffbc0d' }}>
+            <span className="material-symbols-outlined mmod-s-9">
               check_circle
             </span>
             <span>{toastMessage}</span>

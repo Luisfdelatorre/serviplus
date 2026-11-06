@@ -1557,3 +1557,207 @@
 .checkout-thermal-icon {
   font-size: 1.2rem;
 }
+
+/* === Extracted Static Component Styles (pay-s-*) === */
+.pay-s-1 {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin-top: 2px;
+}
+
+.pay-s-2 {
+  text-align: right;
+}
+
+.pay-s-3 {
+  font-size: 2.1rem;
+  font-weight: 900;
+  color: #047857;
+  letter-spacing: -0.5px;
+}
+
+.pay-s-4 {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0 0 14px 0;
+}
+
+.pay-s-5 {
+  font-size: 2.4rem;
+  margin-bottom: 4px;
+}
+
+.pay-s-6 {
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.pay-s-7 {
+  padding: 30px 20px;
+  text-align: center;
+}
+
+.pay-s-8 {
+  font-size: 2.5rem;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+.pay-s-9 {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.pay-s-10 {
+  font-size: 0.86rem;
+  color: #64748b;
+  margin: 4px 0 0 0;
+}
+
+.pay-s-11 {
+  padding: 24px 20px;
+  text-align: center;
+  color: #b91c1c;
+}
+
+.pay-s-12 {
+  font-size: 2rem;
+  margin-bottom: 6px;
+}
+
+.pay-s-13 {
+  font-weight: 800;
+}
+
+.pay-s-14 {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.pay-s-15 {
+  background: #ffffff;
+  padding: 14px;
+  border-radius: 20px;
+  display: inline-block;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+}
+
+.pay-s-16 {
+  width: 210px;
+  height: 210px;
+  display: block;
+  margin: 0 auto;
+  border-radius: 10px;
+}
+
+.pay-s-17 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.pay-s-18 {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.pay-s-19 {
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 0.78rem;
+  font-weight: 900;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  border: 1px solid #a7f3d0;
+}
+
+.pay-s-20 {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin: 6px 0 0 0;
+}
+
+.pay-s-21 {
+  color: #047857;
+}
+
+.pay-s-22 {
+  margin-top: 10px;
+  font-size: 0.84rem;
+  color: #059669;
+  font-weight: 700;
+  background: #f0fdf4;
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1px solid #bbf7d0;
+  display: inline-block;
+}
+
+.pay-s-23 {
+  background: #ffffff;
+  padding: 12px;
+  border-radius: 16px;
+  display: inline-block;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+}
+
+.pay-s-24 {
+  width: 180px;
+  height: 180px;
+  margin: 0 auto;
+  display: block;
+  border-radius: 10px;
+}
+
+.pay-s-25 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-top: 12px;
+}
+
+.pay-s-26 {
+  font-size: 3rem;
+  margin-bottom: 8px;
+}
+
+.pay-s-27 {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #065f46;
+}
+
+.pay-s-28 {
+  font-size: 0.96rem;
+  color: #047857;
+  font-weight: 600;
+  margin: 10px 0 0 0;
+  line-height: 1.5;
+}
+
+.pay-s-29 {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #1e40af;
+}
+
+.pay-s-30 {
+  font-size: 0.96rem;
+  color: #1d4ed8;
+  font-weight: 600;
+  margin: 10px 0 0 0;
+  line-height: 1.5;
+}
+
+.pay-s-31 {
+  margin-top: 24px;
+}

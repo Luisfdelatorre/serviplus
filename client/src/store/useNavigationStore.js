@@ -26,3 +26,4 @@ export const useNavigationStore = create((set) => ({
   openAdminSettingsModal: () => set({ isAdminSettingsOpen: true }),
   closeAdminSettingsModal: () => set({ isAdminSettingsOpen: false })
 }));
+

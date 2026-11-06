@@ -48,3 +48,4 @@ export const useAuthStore = create((set) => ({
     set({ currentAdmin: adminData || null, isAdminLoginOpen: false });
   }
 }));
+

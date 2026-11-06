@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { useCartStore } from '../../store/useCartStore';
 import { formatCOP } from '../../utils/format';
+import './KioskView.css';
 
 export function CartDrawer({ isOpen, onClose, onCheckout }) {
   const cart = useCartStore((state) => state.cart);
@@ -28,62 +29,24 @@ export function CartDrawer({ isOpen, onClose, onCheckout }) {
 
   return (
     <div
-      className="cart-drawer-overlay"
+      className="cart-drawer-overlay cdrw-s-1"
       onClick={onClose}
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(15, 23, 42, 0.65)',
-        backdropFilter: 'blur(4px)',
-        zIndex: 9999,
-        display: 'flex',
-        justifyContent: 'flex-end',
-        animation: 'fadeIn 0.2s ease-out'
-      }}
     >
       <div
-        className="cart-drawer-slide"
+        className="cart-drawer-slide cdrw-s-2"
         onClick={(e) => e.stopPropagation()}
-        style={{
-          width: '100%',
-          maxWidth: '440px',
-          height: '100%',
-          backgroundColor: '#ffffff',
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: '-8px 0 32px rgba(0, 0, 0, 0.25)',
-          overflow: 'hidden'
-        }}
       >
         {/* Header Mi Pedido */}
         <div
-          className="cart-header"
-          style={{
-            padding: '16px 20px',
-            borderBottom: '1px solid #e2e8f0',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-            backgroundColor: '#ffffff'
-          }}
+          className="cart-header cdrw-s-3"
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0f172a' }}>
+          <div className="cdrw-s-4">
+            <div className="cdrw-s-5">
+              <span className="cdrw-s-6">
                 Mi Pedido
               </span>
               <span
-                style={{
-                  background: '#ffbc0d',
-                  color: '#000000',
-                  padding: '3px 10px',
-                  borderRadius: '9999px',
-                  fontSize: '0.82rem',
-                  fontWeight: 900
-                }}
+                className="cdrw-s-7"
               >
                 {totalItems} {totalItems === 1 ? 'artículo' : 'artículos'}
               </span>
@@ -93,21 +56,7 @@ export function CartDrawer({ isOpen, onClose, onCheckout }) {
             <button
               type="button"
               onClick={onClose}
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                border: 'none',
-                background: '#f1f5f9',
-                color: '#475569',
-                fontWeight: 900,
-                fontSize: '1.1rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.15s ease'
-              }}
+              className="cdrw-s-8"
               title="Volver al menú"
             >
               ✕
@@ -115,57 +64,18 @@ export function CartDrawer({ isOpen, onClose, onCheckout }) {
           </div>
 
           {/* Toggle Comer Aquí / Para Llevar */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '6px',
-              background: '#f1f5f9',
-              padding: '4px',
-              borderRadius: '12px'
-            }}
-          >
+          <div className="cdrw-s-9">
             <button
               type="button"
               onClick={() => setOrderType && setOrderType('DINE_IN')}
-              style={{
-                padding: '8px 10px',
-                borderRadius: '9px',
-                border: orderType === 'DINE_IN' ? '1.5px solid #fecaca' : 'none',
-                background: orderType === 'DINE_IN' ? '#ffffff' : 'transparent',
-                color: orderType === 'DINE_IN' ? '#da291c' : '#64748b',
-                fontWeight: 800,
-                fontSize: '0.82rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                boxShadow: orderType === 'DINE_IN' ? '0 1px 4px rgba(0, 0, 0, 0.06)' : 'none',
-                transition: 'all 0.15s ease'
-              }}
+              className={`cdrw-order-type-btn ${orderType === 'DINE_IN' ? 'active' : ''}`}
             >
               🍽️ Comer Aquí
             </button>
             <button
               type="button"
               onClick={() => setOrderType && setOrderType('TAKE_OUT')}
-              style={{
-                padding: '8px 10px',
-                borderRadius: '9px',
-                border: orderType === 'TAKE_OUT' ? '1.5px solid #fecaca' : 'none',
-                background: orderType === 'TAKE_OUT' ? '#ffffff' : 'transparent',
-                color: orderType === 'TAKE_OUT' ? '#da291c' : '#64748b',
-                fontWeight: 800,
-                fontSize: '0.82rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                boxShadow: orderType === 'TAKE_OUT' ? '0 1px 4px rgba(0, 0, 0, 0.06)' : 'none',
-                transition: 'all 0.15s ease'
-              }}
+              className={`cdrw-order-type-btn ${orderType === 'TAKE_OUT' ? 'active' : ''}`}
             >
               🥡 Para Llevar
             </button>
@@ -175,47 +85,24 @@ export function CartDrawer({ isOpen, onClose, onCheckout }) {
         {/* Items List */}
         <div
           ref={cartListRef}
-          className="cart-items-list"
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            padding: '14px 18px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px'
-          }}
+          className="cart-items-list cdrw-s-10"
         >
           {cart.map((item) => {
             const itemKey = item.cartItemId || item.id;
             return (
               <div
                 key={itemKey}
-                className="cart-item-row"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px 14px',
-                  background: '#f8fafc',
-                  borderRadius: '14px',
-                  border: '1px solid #f1f5f9'
-                }}
+                className="cart-item-row cdrw-s-11"
               >
-                <div style={{ flex: 1, paddingRight: '10px' }}>
-                  <div style={{ fontWeight: 800, fontSize: '0.94rem', color: '#0f172a' }}>
+                <div className="cdrw-s-12">
+                  <div className="cdrw-s-13">
                     {item.name}
                   </div>
 
                   {/* Modificadores seleccionados */}
                   {item.modifiers && item.modifiers.length > 0 && (
                     <div
-                      style={{
-                        fontSize: '0.76rem',
-                        fontWeight: 700,
-                        color: '#b45309',
-                        marginTop: '2px',
-                        lineHeight: 1.2
-                      }}
+                      className="cdrw-s-14"
                     >
                       + {item.modifiers.map((m) => m.name).join(', ')}
                     </div>
@@ -224,64 +111,33 @@ export function CartDrawer({ isOpen, onClose, onCheckout }) {
                   {/* Notas especiales */}
                   {item.notes && (
                     <div
-                      style={{
-                        fontSize: '0.73rem',
-                        color: '#64748b',
-                        fontStyle: 'italic',
-                        marginTop: '2px'
-                      }}
+                      className="cdrw-s-15"
                     >
                       📝 {item.notes}
                     </div>
                   )}
 
-                  <div style={{ fontWeight: 900, fontSize: '0.92rem', color: '#0f172a', marginTop: '4px' }}>
+                  <div className="cdrw-s-16">
                     {formatCOP(item.price * item.quantity)}
                   </div>
                 </div>
 
                 {/* Controles de cantidad */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div className="cdrw-s-17">
                   <button
                     type="button"
                     onClick={() => updateQuantity(itemKey, -1)}
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '8px',
-                      border: '1px solid #cbd5e1',
-                      background: '#ffffff',
-                      color: '#475569',
-                      fontWeight: 900,
-                      fontSize: '1rem',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
+                    className="cdrw-s-18"
                   >
                     -
                   </button>
-                  <span style={{ fontWeight: 900, minWidth: '22px', textAlign: 'center', fontSize: '1rem' }}>
+                  <span className="cdrw-s-19">
                     {item.quantity}
                   </span>
                   <button
                     type="button"
                     onClick={() => updateQuantity(itemKey, 1)}
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '8px',
-                      border: '1.5px solid #f59e0b',
-                      background: '#fffdf0',
-                      color: '#b45309',
-                      fontWeight: 900,
-                      fontSize: '1rem',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
+                    className="cdrw-s-20"
                   >
                     +
                   </button>
@@ -292,37 +148,19 @@ export function CartDrawer({ isOpen, onClose, onCheckout }) {
 
           {cart.length === 0 && (
             <div
-              style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                textAlign: 'center',
-                color: '#94a3b8',
-                padding: '60px 16px'
-              }}
+              className="cdrw-s-21"
             >
-              <div style={{ fontSize: '3.5rem', marginBottom: '12px' }}>🥙</div>
-              <div style={{ fontWeight: 800, color: '#334155', fontSize: '1.05rem', marginBottom: '4px' }}>
+              <div className="cdrw-s-22">🥙</div>
+              <div className="cdrw-s-23">
                 Tu orden está vacía
               </div>
-              <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '0 0 16px 0', lineHeight: 1.4 }}>
+              <p className="cdrw-s-24">
                 Selecciona productos del menú para comenzar.
               </p>
               <button
                 type="button"
                 onClick={onClose}
-                style={{
-                  padding: '8px 18px',
-                  borderRadius: '10px',
-                  background: '#f1f5f9',
-                  border: 'none',
-                  color: '#475569',
-                  fontWeight: 800,
-                  fontSize: '0.88rem',
-                  cursor: 'pointer'
-                }}
+                className="cdrw-s-25"
               >
                 Volver al Menú
               </button>
@@ -332,22 +170,13 @@ export function CartDrawer({ isOpen, onClose, onCheckout }) {
 
         {/* Footer Fijo Total & Botones */}
         <div
-          className="cart-footer"
-          style={{
-            padding: '16px 20px',
-            background: '#ffffff',
-            borderTop: '1px solid #e2e8f0',
-            boxShadow: '0 -4px 14px rgba(0, 0, 0, 0.04)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px'
-          }}
+          className="cart-footer cdrw-s-26"
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '1rem', fontWeight: 800, color: '#64748b' }}>
+          <div className="cdrw-s-4">
+            <span className="cdrw-s-27">
               Total a Pagar:
             </span>
-            <span style={{ fontSize: '1.55rem', fontWeight: 900, color: '#0f172a' }}>
+            <span className="cdrw-s-28">
               {formatCOP(total)}
             </span>
           </div>
@@ -355,28 +184,11 @@ export function CartDrawer({ isOpen, onClose, onCheckout }) {
           {/* Botón Finalizar y Pagar */}
           <button
             type="button"
-            className="cart-checkout-btn"
+            className={`cart-checkout-btn cdrw-checkout-btn ${cart.length > 0 ? 'has-items' : ''}`}
             disabled={cart.length === 0}
             onClick={() => {
               if (onClose) onClose();
               if (onCheckout) onCheckout();
-            }}
-            style={{
-              width: '100%',
-              height: '50px',
-              borderRadius: '14px',
-              background: cart.length > 0 ? '#ffbc0d' : '#cbd5e1',
-              color: cart.length > 0 ? '#000000' : '#64748b',
-              fontWeight: 900,
-              fontSize: '1.05rem',
-              border: 'none',
-              cursor: cart.length > 0 ? 'pointer' : 'not-allowed',
-              boxShadow: cart.length > 0 ? '0 4px 16px rgba(255, 188, 13, 0.4)' : 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              transition: 'all 0.15s ease'
             }}
           >
             <span>Finalizar y Pagar</span>
@@ -390,18 +202,7 @@ export function CartDrawer({ isOpen, onClose, onCheckout }) {
                 clearCart();
                 if (onClose) onClose();
               }}
-              style={{
-                width: '100%',
-                height: '40px',
-                borderRadius: '9999px',
-                background: '#ffffff',
-                border: '1.5px solid #da291c',
-                color: '#da291c',
-                fontWeight: 800,
-                fontSize: '0.88rem',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
-              }}
+              className="cdrw-s-29"
             >
               Cancelar Pedido
             </button>

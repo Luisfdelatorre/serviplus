@@ -387,7 +387,7 @@ export function AdminSettingsView() {
         <div className="asv-brand-group">
           {/* Logo UPAYSOLUTIONS S.A.S. */}
           <div className="asv-brand-icon">
-            <svg style={{ width: '24px', height: '24px' }} fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+            <svg className="asview-s-1" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
             </svg>
           </div>
@@ -398,10 +398,10 @@ export function AdminSettingsView() {
             </div>
             <div className="asv-meta-row">
               <span className="asv-emp-indicator">
-                <svg style={{ width: '14px', height: '14px', color: '#10b981' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="asview-s-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                 </svg>
-                {currentAdmin?.name || sessionEmployee?.name || 'Angelica N.'} <span style={{ color: '#94a3b8' }}>(Nivel Aldelo: {currentAdmin?.securityLevel || 2})</span>
+                {currentAdmin?.name || sessionEmployee?.name || 'Angelica N.'} <span className="asview-s-3">(Nivel Aldelo: {currentAdmin?.securityLevel || 2})</span>
               </span>
               <span className="asv-dot-sep">•</span>
               <span className="asv-company-tag">UPAYSOLUTIONS S.A.S.</span>
@@ -484,7 +484,7 @@ export function AdminSettingsView() {
             <Sliders size={16} />
             <span>Sistema, Hardware & Stock</span>
             {outOfStockCount > 0 && (
-              <span style={{ background: '#fee2e2', color: '#b91c1c', fontSize: '10px', padding: '1px 6px', borderRadius: '999px', fontWeight: 800 }}>
+              <span className="asview-s-4">
                 {outOfStockCount} 86'd
               </span>
             )}
@@ -504,19 +504,19 @@ export function AdminSettingsView() {
           {activeNavTab === 'wompi' && (
             <>
               {/* Encabezado y presets */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+              <div className="asview-s-5">
                 <div>
-                  <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h2 className="asview-s-6">
                     Integración Wompi (Bancolombia & Nequi)
-                    <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0' }}>
+                    <span className="asview-s-7">
                       Activo en Serviplus
                     </span>
                   </h2>
-                  <p style={{ margin: '3px 0 0 0', fontSize: '0.78rem', color: '#64748b' }}>
+                  <p className="asview-s-8">
                     Configura las credenciales de pasarela oficial de UPAYSOLUTIONS para emitir códigos QR dinámicos e instantáneos.
                   </p>
                 </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div className="asview-s-9">
                   <button className="asv-preset-btn primary" type="button" onClick={applyPocketbikeProdKeys}>
                     <Sparkles size={14} />
                     <span>Cargar Producción Pocketbike</span>
@@ -529,14 +529,14 @@ export function AdminSettingsView() {
               </div>
 
               {/* Selector de Entorno Sandbox / Producción */}
-              <div className="asv-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#f0fdfa', border: '1px solid #ccfbf1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0d9488' }}>
+              <div className="asv-card asview-s-10">
+                <div className="asview-s-11">
+                  <div className="asview-s-12">
                     <QrCode size={22} />
                   </div>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 800, color: '#0f172a' }}>Entorno Activo de Comunicación API</h3>
-                    <p style={{ margin: '2px 0 0 0', fontSize: '0.75rem', color: '#64748b' }}>Selecciona el servidor de transacciones para el punto de venta</p>
+                    <h3 className="asview-s-13">Entorno Activo de Comunicación API</h3>
+                    <p className="asview-s-14">Selecciona el servidor de transacciones para el punto de venta</p>
                   </div>
                 </div>
 
@@ -549,7 +549,7 @@ export function AdminSettingsView() {
                       setConfig((prev) => ({ ...prev, wompi: { ...prev.wompi, mode: 'sandbox' } }));
                     }}
                   >
-                    <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#a7f3d0' }}></span>
+                    <span className="asview-s-15"></span>
                     Pruebas (Sandbox)
                   </button>
                   <button
@@ -572,7 +572,7 @@ export function AdminSettingsView() {
                     <h3>Llaves y Secretos Criptográficos</h3>
                     <p>Credenciales de autenticación para generar pagos en {isSandbox ? 'Sandbox' : 'Producción'}</p>
                   </div>
-                  <span style={{ fontSize: '11px', fontWeight: 600, color: '#0f766e', background: '#f0fdfa', padding: '2px 8px', borderRadius: '6px', border: '1px solid #ccfbf1' }}>
+                  <span className="asview-s-16">
                     Cifrado SHA-256
                   </span>
                 </div>
@@ -702,9 +702,9 @@ export function AdminSettingsView() {
                       }
                     />
                     <div className="asv-method-icon-box">QR</div>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0f172a' }}>Código QR Bancolombia / Nequi</span>
-                      <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Pago Dinámico Inmediato</span>
+                    <div className="asview-s-17">
+                      <span className="asview-s-18">Código QR Bancolombia / Nequi</span>
+                      <span className="asview-s-19">Pago Dinámico Inmediato</span>
                     </div>
                   </label>
 
@@ -724,9 +724,9 @@ export function AdminSettingsView() {
                       }
                     />
                     <div className="asv-method-icon-box">💵</div>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0f172a' }}>Pago en Caja / Efectivo</span>
-                      <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Mostrador Front Desk</span>
+                    <div className="asview-s-17">
+                      <span className="asview-s-18">Pago en Caja / Efectivo</span>
+                      <span className="asview-s-19">Mostrador Front Desk</span>
                     </div>
                   </label>
 
@@ -746,9 +746,9 @@ export function AdminSettingsView() {
                       }
                     />
                     <div className="asv-method-icon-box">💳</div>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0f172a' }}>Tarjeta Débito / Crédito Wompi</span>
-                      <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Pasarela Segura Web</span>
+                    <div className="asview-s-17">
+                      <span className="asview-s-18">Tarjeta Débito / Crédito Wompi</span>
+                      <span className="asview-s-19">Pasarela Segura Web</span>
                     </div>
                   </label>
                 </div>
@@ -767,22 +767,22 @@ export function AdminSettingsView() {
                     <h3>Configuración Operativa del Kiosco & Autoservicio</h3>
                     <p>Tiempos de inactividad, propinas y opciones de experiencia del cliente</p>
                   </div>
-                  <span style={{ fontSize: '11px', fontWeight: 800, color: '#0f766e', background: '#f0fdfa', padding: '4px 10px', borderRadius: '8px', border: '1px solid #ccfbf1' }}>
+                  <span className="asview-s-20">
                     Kiosco Serviplus
                   </span>
                 </div>
 
                 {/* Toggles de Kiosco */}
-                <div className="asv-grid-2" style={{ marginBottom: '20px' }}>
+                <div className="asv-grid-2 asview-s-21">
                   {/* Propina Voluntaria */}
                   <div className="asv-switch-box">
                     <div className="asv-switch-content">
-                      <div className="asv-switch-icon" style={{ background: '#ecfdf5', color: '#059669' }}>
+                      <div className="asv-switch-icon asview-s-22">
                         <DollarSign size={18} />
                       </div>
                       <div>
-                        <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', display: 'block' }}>Permitir Propina Voluntaria</span>
-                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Sugerir opción de propina (10%) en pantalla final</span>
+                        <span className="asview-s-23">Permitir Propina Voluntaria</span>
+                        <span className="asview-s-24">Sugerir opción de propina (10%) en pantalla final</span>
                       </div>
                     </div>
                     <label className="asv-switch-ui">
@@ -803,12 +803,12 @@ export function AdminSettingsView() {
                   {/* Retorno Automático por Inactividad */}
                   <div className="asv-switch-box">
                     <div className="asv-switch-content">
-                      <div className="asv-switch-icon" style={{ background: '#fef3c7', color: '#d97706' }}>
+                      <div className="asv-switch-icon asview-s-25">
                         <Clock size={18} />
                       </div>
                       <div>
-                        <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', display: 'block' }}>Temporizador de Inactividad</span>
-                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Reiniciar kiosco al abandonar pedido</span>
+                        <span className="asview-s-23">Temporizador de Inactividad</span>
+                        <span className="asview-s-24">Reiniciar kiosco al abandonar pedido</span>
                       </div>
                     </div>
                     <label className="asv-switch-ui">
@@ -897,7 +897,7 @@ export function AdminSettingsView() {
                   </div>
                 </div>
 
-                <div className="asv-grid-3" style={{ marginTop: '16px' }}>
+                <div className="asv-grid-3 asview-s-26">
                   {/* Correo Cliente Kiosco por Defecto */}
                   <div className="asv-field-group">
                     <label>Correo Electrónico por Defecto</label>
@@ -938,11 +938,10 @@ export function AdminSettingsView() {
                   <div className="asv-field-group">
                     <label>Zona Horaria Servidor</label>
                     <input
-                      className="asv-input"
+                      className="asv-input asview-s-27"
                       type="text"
                       readOnly
                       value="America/Bogota (UTC-5)"
-                      style={{ background: '#f1f5f9', color: '#64748b', cursor: 'not-allowed' }}
                     />
                   </div>
                 </div>
@@ -962,7 +961,7 @@ export function AdminSettingsView() {
                     <h3>WhatsApp Cloud API (Meta Oficial)</h3>
                     <p>Envío de comprobantes y recibos digitales directo a WhatsApp de los clientes</p>
                   </div>
-                  <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0' }}>
+                  <span className="asview-s-28">
                     🟢 Conectado (+57 301 8800358)
                   </span>
                 </div>
@@ -998,7 +997,7 @@ export function AdminSettingsView() {
                   </div>
                 </div>
 
-                <div className="asv-field-group" style={{ marginTop: '14px' }}>
+                <div className="asv-field-group asview-s-29">
                   <label>Token de Acceso Permanente Meta Graph API</label>
                   <input
                     className="asv-input mono"
@@ -1087,7 +1086,7 @@ export function AdminSettingsView() {
                   </div>
                 </div>
 
-                <div className="asv-field-group" style={{ marginTop: '14px' }}>
+                <div className="asv-field-group asview-s-29">
                   <label>Plantilla de Mensaje SMS</label>
                   <input
                     className="asv-input"
@@ -1100,7 +1099,7 @@ export function AdminSettingsView() {
                       }))
                     }
                   />
-                  <span style={{ fontSize: '11px', color: '#94a3b8' }}>Variables disponibles: {'{restaurant}'}, {'{url}'}</span>
+                  <span className="asview-s-30">Variables disponibles: {'{restaurant}'}, {'{url}'}</span>
                 </div>
               </div>
             </>
@@ -1177,7 +1176,7 @@ export function AdminSettingsView() {
                 </div>
               </div>
 
-              <div className="asv-field-group" style={{ marginTop: '14px' }}>
+              <div className="asv-field-group asview-s-29">
                 <label>Dirección del Establecimiento</label>
                 <input
                   className="asv-input"
@@ -1192,7 +1191,7 @@ export function AdminSettingsView() {
                 />
               </div>
 
-              <div className="asv-field-group" style={{ marginTop: '14px' }}>
+              <div className="asv-field-group asview-s-29">
                 <label>Resolución DIAN</label>
                 <input
                   className="asv-input"
@@ -1207,7 +1206,7 @@ export function AdminSettingsView() {
                 />
               </div>
 
-              <div className="asv-field-group" style={{ marginTop: '14px' }}>
+              <div className="asv-field-group asview-s-29">
                 <label>Pie de Página del Ticket / Comprobante</label>
                 <input
                   className="asv-input"
@@ -1236,7 +1235,7 @@ export function AdminSettingsView() {
                     <h3>Configuración de Impresoras (Caja, Cocina & Bar)</h3>
                     <p>Asigna cada impresora física instalada en Windows a su estación correspondiente</p>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div className="asview-s-9">
                     <button
                       className="asv-preset-btn secondary"
                       type="button"
@@ -1268,16 +1267,16 @@ export function AdminSettingsView() {
                 </div>
 
                 {/* Estación 1: Caja / Recibos */}
-                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '1.1rem' }}>🧾</span>
+                <div className="asview-s-31">
+                  <div className="asview-s-32">
+                    <div className="asview-s-33">
+                      <span className="asview-s-34">🧾</span>
                       <div>
-                        <span style={{ fontSize: '0.86rem', fontWeight: 800, color: '#0f172a', display: 'block' }}>Impresora 1: Recibos & Caja (Front Desk)</span>
-                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Imprime las facturas, comprobantes de pago y cierres de turno</span>
+                        <span className="asview-s-35">Impresora 1: Recibos & Caja (Front Desk)</span>
+                        <span className="asview-s-24">Imprime las facturas, comprobantes de pago y cierres de turno</span>
                       </div>
                     </div>
-                    <span style={{ fontSize: '10px', fontWeight: 800, background: '#ecfdf5', color: '#047857', padding: '2px 8px', borderRadius: '6px', border: '1px solid #a7f3d0' }}>
+                    <span className="asview-s-36">
                       Principal
                     </span>
                   </div>
@@ -1325,16 +1324,16 @@ export function AdminSettingsView() {
                 </div>
 
                 {/* Estación 2: Cocina (Kitchen Station) */}
-                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '1.1rem' }}>👨‍🍳</span>
+                <div className="asview-s-31">
+                  <div className="asview-s-32">
+                    <div className="asview-s-33">
+                      <span className="asview-s-34">👨‍🍳</span>
                       <div>
-                        <span style={{ fontSize: '0.86rem', fontWeight: 800, color: '#0f172a', display: 'block' }}>Impresora 2: Comanda de Cocina (Kitchen)</span>
-                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Imprime los pedidos para preparación con modificadores y notas</span>
+                        <span className="asview-s-35">Impresora 2: Comanda de Cocina (Kitchen)</span>
+                        <span className="asview-s-24">Imprime los pedidos para preparación con modificadores y notas</span>
                       </div>
                     </div>
-                    <span style={{ fontSize: '10px', fontWeight: 800, background: '#fef3c7', color: '#d97706', padding: '2px 8px', borderRadius: '6px', border: '1px solid #fde68a' }}>
+                    <span className="asview-s-37">
                       Cocina
                     </span>
                   </div>
@@ -1383,16 +1382,16 @@ export function AdminSettingsView() {
                 </div>
 
                 {/* Estación 3: Bar / Bebidas / Postres */}
-                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '1.1rem' }}>🍹</span>
+                <div className="asview-s-38">
+                  <div className="asview-s-32">
+                    <div className="asview-s-33">
+                      <span className="asview-s-34">🍹</span>
                       <div>
-                        <span style={{ fontSize: '0.86rem', fontWeight: 800, color: '#0f172a', display: 'block' }}>Impresora 3: Bar & Bebidas (Opcional)</span>
-                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Envía tickets de jugos, bebidas y postres a barra</span>
+                        <span className="asview-s-35">Impresora 3: Bar & Bebidas (Opcional)</span>
+                        <span className="asview-s-24">Envía tickets de jugos, bebidas y postres a barra</span>
                       </div>
                     </div>
-                    <span style={{ fontSize: '10px', fontWeight: 800, background: '#f1f5f9', color: '#64748b', padding: '2px 8px', borderRadius: '6px' }}>
+                    <span className="asview-s-39">
                       Barra
                     </span>
                   </div>
@@ -1434,12 +1433,12 @@ export function AdminSettingsView() {
                   </div>
                 </div>
 
-                <div className="asv-grid-2" style={{ marginBottom: '16px' }}>
+                <div className="asv-grid-2 asview-s-40">
                   {/* Auto-imprimir Recibo de Venta */}
                   <div className="asv-switch-box">
                     <div>
-                      <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', display: 'block' }}>Auto-imprimir Recibo de Venta</span>
-                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Imprime ticket inmediatamente al completar el cobro</span>
+                      <span className="asview-s-23">Auto-imprimir Recibo de Venta</span>
+                      <span className="asview-s-24">Imprime ticket inmediatamente al completar el cobro</span>
                     </div>
                     <label className="asv-switch-ui">
                       <input
@@ -1459,8 +1458,8 @@ export function AdminSettingsView() {
                   {/* Auto-imprimir Comanda Cocina */}
                   <div className="asv-switch-box">
                     <div>
-                      <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', display: 'block' }}>Auto-imprimir Comanda Cocina</span>
-                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Envía la comanda a cocina inmediatamente</span>
+                      <span className="asview-s-23">Auto-imprimir Comanda Cocina</span>
+                      <span className="asview-s-24">Envía la comanda a cocina inmediatamente</span>
                     </div>
                     <label className="asv-switch-ui">
                       <input
@@ -1480,8 +1479,8 @@ export function AdminSettingsView() {
                   {/* Auto-imprimir Cierre Z */}
                   <div className="asv-switch-box">
                     <div>
-                      <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', display: 'block' }}>Auto-imprimir Cierre Z / Turno</span>
-                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Emite el balance de caja al cerrar turno</span>
+                      <span className="asview-s-23">Auto-imprimir Cierre Z / Turno</span>
+                      <span className="asview-s-24">Emite el balance de caja al cerrar turno</span>
                     </div>
                     <label className="asv-switch-ui">
                       <input
@@ -1501,8 +1500,8 @@ export function AdminSettingsView() {
                   {/* Código QR de Recibo Digital */}
                   <div className="asv-switch-box">
                     <div>
-                      <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', display: 'block' }}>Código QR de Recibo Digital</span>
-                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Imprime código QR nativo para ver la factura en el móvil</span>
+                      <span className="asview-s-23">Código QR de Recibo Digital</span>
+                      <span className="asview-s-24">Imprime código QR nativo para ver la factura en el móvil</span>
                     </div>
                     <label className="asv-switch-ui">
                       <input
@@ -1522,8 +1521,8 @@ export function AdminSettingsView() {
                   {/* Abrir Cajón en Efectivo */}
                   <div className="asv-switch-box">
                     <div>
-                      <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', display: 'block' }}>Abrir Cajón en Efectivo</span>
-                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Envía pulso RJ11 a la gaveta de dinero</span>
+                      <span className="asview-s-23">Abrir Cajón en Efectivo</span>
+                      <span className="asview-s-24">Envía pulso RJ11 a la gaveta de dinero</span>
                     </div>
                     <label className="asv-switch-ui">
                       <input
@@ -1543,8 +1542,8 @@ export function AdminSettingsView() {
                   {/* Corte Automático de Papel */}
                   <div className="asv-switch-box">
                     <div>
-                      <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', display: 'block' }}>Corte Automático (Auto-Cut)</span>
-                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Ejecuta corte de guillotina al terminar</span>
+                      <span className="asview-s-23">Corte Automático (Auto-Cut)</span>
+                      <span className="asview-s-24">Ejecuta corte de guillotina al terminar</span>
                     </div>
                     <label className="asv-switch-ui">
                       <input
@@ -1608,7 +1607,7 @@ export function AdminSettingsView() {
                     <h3>Control de Productos Agotados (86'd)</h3>
                     <p>Desactiva platillos sin existencias para que no se puedan pedir en Kiosco ni Punto de Venta</p>
                   </div>
-                  <div className="asv-input-wrapper" style={{ width: '220px' }}>
+                  <div className="asv-input-wrapper asview-s-41">
                     <input
                       className="asv-input"
                       type="text"
@@ -1620,14 +1619,14 @@ export function AdminSettingsView() {
                 </div>
 
                 {loadingStock ? (
-                  <p style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>Cargando catálogo de productos...</p>
+                  <p className="asview-s-42">Cargando catálogo de productos...</p>
                 ) : (
                   <div className="asv-stock-grid">
                     {filteredStock.map((prod) => (
                       <div key={prod.id} className={`asv-stock-item ${!prod.isActive ? 'is-86' : ''}`}>
                         <div>
-                          <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0f172a' }}>{prod.name}</div>
-                          <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{prod.categoryName} • {formatCOP(prod.price)}</div>
+                          <div className="asview-s-43">{prod.name}</div>
+                          <div className="asview-s-24">{prod.categoryName} • {formatCOP(prod.price)}</div>
                         </div>
                         <button
                           className={`asv-stock-toggle-btn ${prod.isActive ? 'available' : 'out'}`}
@@ -1654,7 +1653,7 @@ export function AdminSettingsView() {
           ========================================================== */}
       <footer className="asv-footer" data-purpose="footer-actions">
         <div className="asv-footer-status">
-          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }}></span>
+          <span className="asview-s-44"></span>
           <span>Conexión establecida con Wompi Gateway • Sistema UPAYSOLUTIONS S.A.S.</span>
         </div>
 

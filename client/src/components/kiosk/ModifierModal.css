@@ -1407,3 +1407,46 @@
     grid-template-columns: 1fr;
   }
 }
+/* === Extracted Static Component Styles (mmod-s-*) === */
+.mmod-s-1 {
+  font-size: 16px;
+}
+
+.mmod-s-2 {
+  font-size: 18px;
+  color: #10b981;
+}
+
+.mmod-s-3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mmod-s-4 {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+}
+
+.mmod-s-5 {
+  font-size: 1.2rem;
+}
+
+.mmod-s-6 {
+  font-size: 0.95rem;
+}
+
+.mmod-s-7 {
+  font-size: 1.05rem;
+}
+
+.mmod-s-8 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mmod-s-9 {
+  color: #ffbc0d;
+}

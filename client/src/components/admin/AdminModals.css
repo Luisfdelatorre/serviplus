@@ -685,3 +685,455 @@ input:checked+.toggle-slider:before {
     grid-column: span 1;
   }
 }
+/* === Extracted Static Component Styles (pavail-s-*) === */
+.pavail-s-1 {
+  max-width: 850px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.pavail-s-2 {
+  padding-bottom: 16px;
+}
+
+.pavail-s-3 {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.pavail-s-4 {
+  margin: 0 24px 12px 24px;
+  background: #0284c7;
+}
+
+.pavail-s-5 {
+  padding: 0 24px 12px 24px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.pavail-s-6 {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+}
+
+.pavail-s-7 {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+}
+
+.pavail-s-8 {
+  width: 100%;
+  padding: 10px 12px 10px 38px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.pavail-s-9 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: #334155;
+  border: none;
+  border-radius: 8px;
+  color: #f8fafc;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.pavail-s-10 {
+  padding: 0 24px 12px 24px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.pavail-s-11 {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 24px 20px 24px;
+}
+
+.pavail-s-12 {
+  text-align: center;
+  padding: 40px;
+  color: #94a3b8;
+}
+
+.pavail-s-13 {
+  margin: 0 auto 12px auto;
+  display: block;
+}
+
+.pavail-s-14 {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+}
+
+.pavail-s-15 {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.pavail-s-16 {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+
+.pavail-s-17 {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* === Extracted Static Component Styles (asmod-s-*) === */
+.asmod-s-1 {
+  margin-top: 16px;
+}
+
+.asmod-s-2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #334155;
+  border: none;
+  border-radius: 6px;
+  color: #f8fafc;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.asmod-s-3 {
+  margin-bottom: 14px;
+}
+
+.asmod-s-4 {
+  width: 100%;
+  padding: 10px 12px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.asmod-s-5 {
+  text-align: center;
+  padding: 30px;
+  color: #94a3b8;
+}
+
+.asmod-s-6 {
+  margin: 0 auto 8px auto;
+  display: block;
+}
+
+.asmod-s-7 {
+  max-height: 380px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.asmod-s-8 {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.asmod-s-9 {
+  display: flex;
+  gap: 8px;
+}
+
+.asmod-s-10 {
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.asmod-s-11 {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+}
+
+.asmod-s-12 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.asmod-s-13 {
+  font-weight: 800;
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+
+.asmod-s-14 {
+  color: #da291c;
+}
+
+.asmod-s-15 {
+  font-size: 0.8rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.asmod-s-16 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.asmod-s-17 {
+  padding: 6px 12px;
+}
+
+.asmod-s-18 {
+  background: #f8fafc;
+  padding: 14px 18px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.asmod-s-19 {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.asmod-s-20 {
+  margin: 2px 0 0 0;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.asmod-s-21 {
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+}
+
+.asmod-s-22 {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1.5px solid #cbd5e1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  width: 100%;
+  background: #fff;
+}
+
+.asmod-s-23 {
+  background: #ffffff;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.asmod-s-24 {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.asmod-s-25 {
+  font-size: 0.74rem;
+  color: #64748b;
+}
+
+.asmod-s-26 {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+/* Dynamic classes for ProductAvailabilityModal & AdminSettingsModal */
+.admin-header-badge.has-inactive { background: #ef4444; }
+.admin-header-badge.all-active { background: #10b981; }
+.pavail-count-inactive { color: #f87171; }
+.pavail-count-active { color: #4ade80; }
+
+.pavail-cat-pill {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: none;
+  background: #1e293b;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+  font-weight: 400;
+}
+.pavail-cat-pill.has-inactive {
+  color: #fca5a5;
+  font-weight: 600;
+}
+.pavail-cat-pill.active {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.pavail-product-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+  opacity: 1;
+}
+.pavail-product-card.inactive {
+  background: #3f1a1a;
+  border: 1px solid #ef4444;
+}
+.pavail-product-card.toggling {
+  opacity: 0.6;
+}
+
+.pavail-product-price {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #38bdf8;
+}
+.pavail-product-price.inactive {
+  color: #94a3b8;
+}
+
+.pavail-product-title {
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+  color: #f8fafc;
+}
+.pavail-product-title.inactive {
+  color: #fca5a5;
+}
+
+.pavail-toggle-btn {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  background: #065f46;
+  color: #fff;
+  transition: background 0.2s;
+}
+.pavail-toggle-btn.inactive {
+  background: #991b1b;
+}
+
+.asmod-stock-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+}
+.asmod-stock-card.inactive {
+  background: #3f1a1a;
+  border: 1px solid #ef4444;
+}
+
+.asmod-stock-price {
+  font-weight: 600;
+  color: #38bdf8;
+}
+.asmod-stock-price.inactive {
+  color: #94a3b8;
+}
+
+.asmod-stock-title {
+  margin: 4px 0 0 0;
+  font-size: 0.95rem;
+  color: #f8fafc;
+}
+.asmod-stock-title.inactive {
+  color: #fca5a5;
+}
+
+.asmod-stock-toggle-btn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  background: #065f46;
+  color: #fff;
+}
+.asmod-stock-toggle-btn.inactive {
+  background: #991b1b;
+}
+
+.asmod-printer-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.asmod-printer-icon-box.detected {
+  background: #ecfdf5;
+  color: #059669;
+}
+.asmod-printer-icon-box.missing {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.asmod-printer-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.asmod-printer-status-dot.detected { background: #10b981; }
+.asmod-printer-status-dot.missing { background: #f59e0b; }
