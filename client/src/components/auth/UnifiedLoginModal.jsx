@@ -175,7 +175,7 @@ export function UnifiedLoginModal({
         {/* Sesión Activa actual (solo si existe y estamos en modo terminal) */}
         {!isAdmin && sessionEmployee && (
           <div className="ulm-session-bar">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div className="ulm-session-user">
               <ShieldCheck size={18} />
               <span>
                 Sesión: <strong>{sessionEmployee.name || 'Cajero'}</strong> ({sessionEmployee.role || 'Cajero'})
@@ -223,7 +223,7 @@ export function UnifiedLoginModal({
               <span>
                 Usuario: <strong>{selectedEmp.firstName || selectedEmp.name}</strong>
                 {selectedEmp.securityLevel !== undefined && (
-                  <span style={{ fontSize: '0.74rem', color: '#64748b', marginLeft: '6px' }}>
+                  <span className="ulm-selected-level">
                     (Nivel: {selectedEmp.securityLevel})
                   </span>
                 )}

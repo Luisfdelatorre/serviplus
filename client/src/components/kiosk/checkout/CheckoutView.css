@@ -1457,3 +1457,103 @@
     box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
   }
 }
+
+.checkout-footer-mode-value {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.checkout-service-svg-icon {
+  width: 120px;
+  height: 120px;
+}
+
+.checkout-empty-cart-emoji {
+  font-size: 4rem;
+  margin-bottom: 16px;
+}
+
+.checkout-empty-cart-title {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #334155;
+}
+
+.checkout-empty-cart-sub {
+  font-size: 0.95rem;
+  margin-top: 6px;
+  color: #64748b;
+}
+
+/* SuccessStep dedicated classes */
+.checkout-qr-loading-box {
+  width: 160px;
+  height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #64748b;
+}
+
+.checkout-qr-loading-spin {
+  font-size: 1.8rem;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+.checkout-qr-loading-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.checkout-thermal-print-wrap {
+  margin-top: 14px;
+  width: 100%;
+  max-width: 340px;
+}
+
+.checkout-thermal-print-btn {
+  width: 100%;
+  padding: 14px 20px;
+  border-radius: 16px;
+  border: 2px solid #0f172a;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 8px 20px -4px rgba(15, 23, 42, 0.25);
+  transition: all 0.2s ease;
+}
+
+.checkout-thermal-print-btn.status-printing {
+  cursor: wait;
+}
+
+.checkout-thermal-print-btn.status-success {
+  border-color: #10b981;
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.checkout-thermal-print-btn.status-error {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.checkout-thermal-icon-spin {
+  font-size: 1.2rem;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+.checkout-thermal-icon {
+  font-size: 1.2rem;
+}

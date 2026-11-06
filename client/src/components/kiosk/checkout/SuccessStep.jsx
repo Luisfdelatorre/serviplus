@@ -162,9 +162,9 @@ export function SuccessStep({
                       className="checkout-receipt-qr-img"
                     />
                   ) : (
-                    <div style={{ width: '160px', height: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#64748b' }}>
-                      <span style={{ fontSize: '1.8rem', animation: 'spin 1s linear infinite', display: 'inline-block' }}>🔄</span>
-                      <span style={{ fontSize: '0.78rem', fontWeight: 700 }}>Generando QR local...</span>
+                    <div className="checkout-qr-loading-box">
+                      <span className="checkout-qr-loading-spin">🔄</span>
+                      <span className="checkout-qr-loading-label">Generando QR local...</span>
                     </div>
                   )}
                 </div>
@@ -263,55 +263,31 @@ export function SuccessStep({
         />
 
         {/* Botón de Impresión en Impresora Térmica Física */}
-        <div style={{ marginTop: '14px', width: '100%', maxWidth: '340px' }}>
+        <div className="checkout-thermal-print-wrap">
           <button
             type="button"
             onClick={handlePrintThermalTicket}
             disabled={thermalPrintStatus === 'printing'}
-            style={{
-              width: '100%',
-              padding: '14px 20px',
-              borderRadius: '16px',
-              border: thermalPrintStatus === 'success' ? '2px solid #10b981' : '2px solid #0f172a',
-              background: thermalPrintStatus === 'success'
-                ? '#ecfdf5'
-                : thermalPrintStatus === 'error'
-                  ? '#fef2f2'
-                  : '#0f172a',
-              color: thermalPrintStatus === 'success'
-                ? '#065f46'
-                : thermalPrintStatus === 'error'
-                  ? '#b91c1c'
-                  : '#ffffff',
-              fontSize: '1rem',
-              fontWeight: 800,
-              cursor: thermalPrintStatus === 'printing' ? 'wait' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '10px',
-              boxShadow: '0 8px 20px -4px rgba(15, 23, 42, 0.25)',
-              transition: 'all 0.2s ease'
-            }}
+            className={`checkout-thermal-print-btn status-${thermalPrintStatus || 'idle'}`}
           >
             {thermalPrintStatus === 'printing' ? (
               <>
-                <span style={{ fontSize: '1.2rem', animation: 'spin 1s linear infinite', display: 'inline-block' }}>🔄</span>
+                <span className="checkout-thermal-icon-spin">🔄</span>
                 <span>Imprimiendo en POS-58...</span>
               </>
             ) : thermalPrintStatus === 'success' ? (
               <>
-                <span style={{ fontSize: '1.2rem' }}>✓</span>
+                <span className="checkout-thermal-icon">✓</span>
                 <span>¡Ticket Impreso con Éxito!</span>
               </>
             ) : thermalPrintStatus === 'error' ? (
               <>
-                <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+                <span className="checkout-thermal-icon">⚠️</span>
                 <span>Reintentar Impresión ({thermalPrintError ? 'Error' : 'Reintentar'})</span>
               </>
             ) : (
               <>
-                <span style={{ fontSize: '1.25rem' }}>🖨️</span>
+                <span className="checkout-thermal-icon">🖨️</span>
                 <span>Imprimir Ticket Térmico</span>
               </>
             )}

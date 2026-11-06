@@ -19,6 +19,7 @@ import { useMenuStore } from '../../store/useMenuStore';
 import { formatRegularTime } from '../../utils/format';
 import { enterFullscreen, exitFullscreen } from '../../utils/fullscreen';
 import { sfx } from '../../utils/audio';
+import './KdsView.css';
 
 export function KdsTopBar({ prepCount, readyCount, totalPages }) {
   const [clock, setClock] = useState(formatRegularTime(new Date()));
@@ -84,35 +85,18 @@ export function KdsTopBar({ prepCount, readyCount, totalPages }) {
     <div className="kds-topbar">
       {/* Left: Menu & Clock & Resolution */}
       <div className="kds-topbar-left">
-        <button
-          className="kds-menu-btn"
-          title="Menú"
-          style={{ background: 'transparent', border: 'none', color: '#cbd5e1', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}
-        >
+        <button className="kds-menu-btn kds-menu-btn-clean" title="Menú">
           <Menu size={22} />
         </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Clock size={16} style={{ color: '#94a3b8' }} />
+        <div className="kds-clock-group">
+          <Clock size={16} className="kds-clock-icon" />
           <span className="kds-clock" id="kds-live-clock">{clock}</span>
         </div>
         <span
-          className="kds-topbar-res-pill"
+          className="kds-topbar-res-pill kds-topbar-res-pill-styled"
           title="Resolución de pantalla / televisor"
-          style={{
-            fontSize: '11px',
-            color: '#94a3b8',
-            background: 'rgba(255, 255, 255, 0.08)',
-            padding: '3px 8px',
-            borderRadius: '999px',
-            fontFamily: 'monospace',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            marginLeft: '4px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '5px'
-          }}
         >
-          <Tv size={13} style={{ color: '#38bdf8' }} />
+          <Tv size={13} className="kds-tv-icon" />
           <span>{screenRes}</span>
         </span>
       </div>
@@ -121,31 +105,28 @@ export function KdsTopBar({ prepCount, readyCount, totalPages }) {
       <div className="kds-topbar-center">
         <div className="kds-filter-capsule">
           <button
-            className={`kds-tab-pill ${kdsFilter === 'PREP' ? 'active' : ''}`}
+            className={`kds-tab-pill kds-tab-pill-flex ${kdsFilter === 'PREP' ? 'active' : ''}`}
             onClick={() => setKdsFilter('PREP')}
             title="En Preparación"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 14px' }}
           >
             <ChefHat size={18} />
-            <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>{prepCount}</span>
+            <span className="kds-tab-count">{prepCount}</span>
           </button>
           <button
-            className={`kds-tab-pill ${kdsFilter === 'READY' ? 'active' : ''}`}
+            className={`kds-tab-pill kds-tab-pill-flex ${kdsFilter === 'READY' ? 'active' : ''}`}
             onClick={() => setKdsFilter('READY')}
             title="Listas para Entrega"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 14px' }}
           >
             <CheckCheck size={18} />
-            <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>{readyCount}</span>
+            <span className="kds-tab-count">{readyCount}</span>
           </button>
         </div>
       </div>
 
       {/* Right: Icon-only Controls */}
       <div className="kds-topbar-right">
-        {/* Scale Pills */}
         <div className="kds-scale-pill-group" title="Tamaño de tarjetas de cocina (S, M, L)">
-          <span className="kds-scale-icon" style={{ display: 'flex', alignItems: 'center' }}>
+          <span className="kds-scale-icon kds-scale-icon-flex">
             <SlidersHorizontal size={14} />
           </span>
           <button
@@ -174,7 +155,6 @@ export function KdsTopBar({ prepCount, readyCount, totalPages }) {
           </button>
         </div>
 
-        {/* Auto-Ajuste Button (Zap Icon Only) */}
         <button
           type="button"
           className={`kds-icon-btn ${kdsAutoFit ? 'active-amber' : ''}`}
@@ -184,7 +164,6 @@ export function KdsTopBar({ prepCount, readyCount, totalPages }) {
           <Zap size={18} />
         </button>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="kds-pagination">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
@@ -199,7 +178,6 @@ export function KdsTopBar({ prepCount, readyCount, totalPages }) {
           </div>
         )}
 
-        {/* Mirror Mode (Cast Icon Only) */}
         <button
           type="button"
           className={`kds-icon-btn ${isMirrorMode ? 'active-emerald' : ''}`}
@@ -209,7 +187,6 @@ export function KdsTopBar({ prepCount, readyCount, totalPages }) {
           <Cast size={18} />
         </button>
 
-        {/* Dark / Light Mode Toggle (Moon / Sun Icon Only) */}
         <button
           type="button"
           className={`kds-icon-btn ${kdsTheme === 'dark' ? 'active-blue' : ''}`}
@@ -219,7 +196,6 @@ export function KdsTopBar({ prepCount, readyCount, totalPages }) {
           {kdsTheme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
         </button>
 
-        {/* Fullscreen Button (Maximize / Minimize Icon Only) */}
         <button
           type="button"
           className={`kds-icon-btn ${isFullscreen ? 'active-red' : ''}`}
@@ -229,14 +205,13 @@ export function KdsTopBar({ prepCount, readyCount, totalPages }) {
           {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
         </button>
 
-        {/* Hard Reload Button (Recarga Forzada Limpiando Caché) */}
         <button
           type="button"
           className={`kds-icon-btn ${isReloading ? 'active-amber' : ''}`}
           onClick={handleHardReload}
           title="Recarga Forzada (Hard Reload) • Actualizar base de datos y productos sin caché"
         >
-          <RotateCw size={17} style={{ animation: isReloading ? 'spin 0.75s linear infinite' : 'none' }} />
+          <RotateCw size={17} className={`kds-rotate-icon ${isReloading ? 'reloading' : ''}`} />
         </button>
       </div>
     </div>

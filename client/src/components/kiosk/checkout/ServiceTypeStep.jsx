@@ -17,7 +17,7 @@ export function ServiceTypeStep({ onSelectEatIn, onSelectTakeOut }) {
           <div className="checkout-service-card-top-tag">Salón / Mesa</div>
 
           <div className="checkout-service-svg-wrap">
-            <svg style={{ width: '120px', height: '120px' }} fill="none" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <svg className="checkout-service-svg-icon" fill="none" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
               <ellipse cx="50" cy="74" fill="#D8DADC" rx="42" ry="12"></ellipse>
               <ellipse cx="50" cy="72" fill="#ECEEF0" rx="40" ry="10"></ellipse>
               <path d="M22 65 C24 55, 66 50, 76 60 C80 64, 76 72, 70 73 C58 75, 26 73, 22 65 Z" fill="#E6A15C"></path>
@@ -49,7 +49,7 @@ export function ServiceTypeStep({ onSelectEatIn, onSelectTakeOut }) {
           <div className="checkout-service-card-top-tag">Empaque Especial</div>
 
           <div className="checkout-service-svg-wrap">
-            <svg style={{ width: '120px', height: '120px' }} fill="none" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <svg className="checkout-service-svg-icon" fill="none" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
               <ellipse cx="50" cy="80" fill="#D8DADC" rx="34" ry="7"></ellipse>
               <path d="M28 38 L32 78 L68 78 L72 38 Z" fill="#D19C65"></path>
               <path d="M48 38 L50 78 L68 78 L72 38 Z" fill="#C28B53"></path>

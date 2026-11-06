@@ -1,0 +1,154 @@
+/* ==========================================================================
+   KDS View, Card & TopBar Dedicated Styles (Zero Inline Styles - BEM .kds-*)
+   ========================================================================== */
+
+.kds-view-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Pixel Shift Orbit Steps (0..9) */
+.pixel-shift-orbit {
+  transition: transform 2.5s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+.pixel-shift-step-0 { transform: translate3d(0px, 0px, 0); }
+.pixel-shift-step-1 { transform: translate3d(1px, 0px, 0); }
+.pixel-shift-step-2 { transform: translate3d(2px, 1px, 0); }
+.pixel-shift-step-3 { transform: translate3d(1px, 2px, 0); }
+.pixel-shift-step-4 { transform: translate3d(0px, 2px, 0); }
+.pixel-shift-step-5 { transform: translate3d(-1px, 1px, 0); }
+.pixel-shift-step-6 { transform: translate3d(-2px, 0px, 0); }
+.pixel-shift-step-7 { transform: translate3d(-1px, -1px, 0); }
+.pixel-shift-step-8 { transform: translate3d(0px, -2px, 0); }
+.pixel-shift-step-9 { transform: translate3d(1px, -1px, 0); }
+
+/* Empty state */
+.kds-empty-state {
+  text-align: center;
+  padding: 90px 20px;
+  color: #64748b;
+  font-size: 1.25rem;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.kds-empty-emoji {
+  font-size: 2.5rem;
+}
+
+.kds-empty-subtext {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* Card internals */
+.kds-header-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.kds-header-right-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kds-revert-svg {
+  width: 13px;
+  height: 13px;
+}
+
+.kds-check-svg {
+  width: 16px;
+  height: 16px;
+}
+
+.kds-item-left-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.kds-item-mod-line {
+  font-size: 0.78rem;
+  color: #b45309;
+  font-weight: 700;
+  margin-top: 2px;
+  line-height: 1.2;
+}
+
+.kds-item-note-line {
+  font-size: 0.74rem;
+  color: #64748b;
+  font-style: italic;
+  margin-top: 2px;
+}
+
+/* TopBar internals */
+.kds-menu-btn-clean {
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+}
+
+.kds-clock-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kds-clock-icon {
+  color: #94a3b8;
+}
+
+.kds-topbar-res-pill-styled {
+  font-size: 11px;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-family: monospace;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-left: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.kds-tv-icon {
+  color: #38bdf8;
+}
+
+.kds-tab-pill-flex {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+}
+
+.kds-tab-count {
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.kds-scale-icon-flex {
+  display: flex;
+  align-items: center;
+}
+
+.kds-rotate-icon.reloading {
+  animation: spin 0.75s linear infinite;
+}

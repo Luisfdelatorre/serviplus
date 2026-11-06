@@ -2,14 +2,13 @@ import React, { useState } from 'react';
 import { useMenuStore } from '../../store/useMenuStore';
 import { useI18n } from '../../i18n';
 import { sfx } from '../../utils/audio';
-import { enterFullscreen } from '../../utils/fullscreen';
 import { Shield, RotateCw } from 'lucide-react';
+import './CommonComponents.css';
 
 export function Header() {
   const [isReloading, setIsReloading] = useState(false);
   const activeTab = useMenuStore((state) => state.activeTab);
   const setActiveTab = useMenuStore((state) => state.setActiveTab);
-  const setKioskFullscreen = useMenuStore((state) => state.setKioskFullscreen);
   const openAdminLogin = useMenuStore((state) => state.openAdminLogin);
   const { lang, setLang } = useI18n();
 
@@ -34,35 +33,19 @@ export function Header() {
   };
 
   return (
-    <header
-      className="main-header"
-      style={{
-        height: '56px',
-        background: '#ffffff',
-        borderBottom: '1px solid #e2e8f0',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 20px',
-        zIndex: 100
-      }}
-    >
+    <header className="main-header hdr-bar">
       {/* Brand Serviplus */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span style={{ fontSize: '1.35rem', fontWeight: 900, color: '#da291c', letterSpacing: '-0.5px' }}>
-          Serviplus
-        </span>
-
+      <div className="hdr-brand">
+        <span className="hdr-brand-title">Serviplus</span>
       </div>
 
       {/* Navigation Tabs */}
-      <nav style={{ display: 'flex', gap: '6px' }}>
+      <nav className="hdr-nav">
         {[
           { id: 'home', label: '🏠 Inicio' },
           { id: 'cashier', label: 'Caja' },
           { id: 'kds', label: 'KDS' },
-          { id: 'kiosk', label: 'Kiosk' },
-          // { id: 'turns', label: '📢 Monitor de Turnos' }
+          { id: 'kiosk', label: 'Kiosk' }
         ].map((t) => {
           const isActive = activeTab === t.id;
           return (
@@ -70,18 +53,7 @@ export function Header() {
               key={t.id}
               type="button"
               onClick={() => handleTabChange(t.id)}
-              style={{
-                padding: '7px 16px',
-                borderRadius: '9999px',
-                border: isActive ? '1.5px solid #fecaca' : '1px solid #e2e8f0',
-                background: isActive ? '#ffffff' : '#f8fafc',
-                color: isActive ? '#da291c' : '#475569',
-                fontWeight: 800,
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                boxShadow: isActive ? '0 1px 4px rgba(218, 41, 28, 0.12)' : 'none',
-                transition: 'all 0.15s ease'
-              }}
+              className={`hdr-tab-btn ${isActive ? 'active' : ''}`}
             >
               {t.label}
             </button>
@@ -90,102 +62,33 @@ export function Header() {
       </nav>
 
       {/* Language Switch & Status */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+      <div className="hdr-actions">
         {/* Toggle Idioma Segmentado */}
-        <div
-          style={{
-            display: 'flex',
-            background: '#f1f5f9',
-            padding: '2px',
-            borderRadius: '8px',
-            fontSize: '0.78rem',
-            fontWeight: 800
-          }}
-        >
+        <div className="hdr-lang-switch">
           <button
             type="button"
             onClick={() => { sfx.playTap(); setLang('es'); }}
-            style={{
-              padding: '3px 8px',
-              borderRadius: '6px',
-              border: 'none',
-              background: lang === 'es' ? '#ffffff' : 'transparent',
-              color: lang === 'es' ? '#0f172a' : '#64748b',
-              fontWeight: 800,
-              cursor: 'pointer',
-              boxShadow: lang === 'es' ? '0 1px 3px rgba(0, 0, 0, 0.08)' : 'none'
-            }}
+            className={`hdr-lang-btn ${lang === 'es' ? 'active' : ''}`}
           >
             ES
           </button>
           <button
             type="button"
             onClick={() => { sfx.playTap(); setLang('en'); }}
-            style={{
-              padding: '3px 8px',
-              borderRadius: '6px',
-              border: 'none',
-              background: lang === 'en' ? '#ffffff' : 'transparent',
-              color: lang === 'en' ? '#0f172a' : '#64748b',
-              fontWeight: 800,
-              cursor: 'pointer',
-              boxShadow: lang === 'en' ? '0 1px 3px rgba(0, 0, 0, 0.08)' : 'none'
-            }}
+            className={`hdr-lang-btn ${lang === 'en' ? 'active' : ''}`}
           >
             EN
           </button>
         </div>
 
-        {/* Botón Pantalla Completa 
-        <button
-          type="button"
-          onClick={() => {
-            sfx.playTap();
-            enterFullscreen();
-            if (activeTab === 'kiosk') {
-              setKioskFullscreen(true);
-            }
-          }}
-          title="Pantalla Completa Kiosk"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '5px',
-            background: '#f8fafc',
-            border: '1.5px solid #cbd5e1',
-            borderRadius: '8px',
-            padding: '4px 10px',
-            fontSize: '0.8rem',
-            fontWeight: 800,
-            color: '#1e293b',
-            cursor: 'pointer',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <span style={{ fontSize: '0.9rem' }}>⛶</span>
-          <span>Pantalla Completa</span>
-        </button>
-*/}
         {/* Botón Hard Reload */}
         <button
           type="button"
           onClick={handleHardReload}
           title="Recarga Forzada (Hard Reload) • Limpiar caché y recargar"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '32px',
-            height: '32px',
-            borderRadius: '9999px',
-            background: '#f8fafc',
-            border: '1.5px solid #cbd5e1',
-            color: '#475569',
-            cursor: 'pointer',
-            transition: 'all 0.15s ease'
-          }}
+          className="hdr-reload-btn"
         >
-          <RotateCw size={14} style={{ animation: isReloading ? 'spin 0.75s linear infinite' : 'none' }} />
+          <RotateCw size={14} className={`hdr-reload-icon ${isReloading ? 'reloading' : ''}`} />
         </button>
 
         {/* Botón Admin Aldelo */}
@@ -196,28 +99,15 @@ export function Header() {
             openAdminLogin();
           }}
           title="Panel de Administración (Acceso Gerencial Aldelo)"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            background: '#f8fafc',
-            border: '1.5px solid #cbd5e1',
-            borderRadius: '9999px',
-            padding: '5px 12px',
-            fontSize: '0.8rem',
-            fontWeight: 800,
-            color: '#334155',
-            cursor: 'pointer',
-            transition: 'all 0.15s ease'
-          }}
+          className="hdr-admin-btn"
         >
           <Shield size={15} color="#da291c" />
           <span>Admin</span>
         </button>
 
         {/* Status Dot */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#475569' }}>
-          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }}></span>
+        <div className="hdr-status">
+          <span className="hdr-status-dot" />
           <span>En línea</span>
         </div>
       </div>

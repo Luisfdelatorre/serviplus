@@ -408,3 +408,15 @@
 .ulm-shift-btn.out:hover {
   background-color: #ffe4e6;
 }
+
+.ulm-session-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ulm-selected-level {
+  font-size: 0.74rem;
+  color: #64748b;
+  margin-left: 6px;
+}

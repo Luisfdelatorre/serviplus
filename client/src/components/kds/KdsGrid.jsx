@@ -9,6 +9,7 @@ import { useI18n } from '../../i18n';
 import { enterFullscreen } from '../../utils/fullscreen';
 import { usePixelShift } from '../../utils/usePixelShift';
 import { ScreenResolutionBadge } from '../common/ScreenResolutionBadge';
+import './KdsView.css';
 
 export function KdsGrid() {
   const activeOrders = useKdsStore((state) => state.activeOrders);
@@ -21,7 +22,7 @@ export function KdsGrid() {
   const kdsAutoFit = useKdsStore((state) => state.kdsAutoFit);
   const kdsTheme = useKdsStore((state) => state.kdsTheme);
   const { t } = useI18n();
-  const { style: pixelShiftStyle } = usePixelShift();
+  const { shiftClass } = usePixelShift();
 
   // Garantizar que cada vez que se monte o recargue el KDS se obtenga la última versión fresca de productos y órdenes
   useEffect(() => {
@@ -48,11 +49,8 @@ export function KdsGrid() {
 
   // Asegurar Pantalla Completa siempre en el KDS
   useEffect(() => {
-    // 1. Intentar entrar a pantalla completa de inmediato
     enterFullscreen();
 
-    // 2. Si el navegador requiere interacción previa del usuario (política de seguridad de Chrome/Edge),
-    // el primer toque o clic en cualquier parte activará la pantalla completa nativa
     const handleFirstGesture = () => {
       enterFullscreen();
       window.removeEventListener('click', handleFirstGesture);
@@ -80,9 +78,6 @@ export function KdsGrid() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Filtrar órdenes válidas para el KDS de cocina:
-  // 1. Excluir órdenes anuladas (status === '3')
-  // 2. Solo mostrar órdenes que contengan platos enviados a cocina (isKitchenItem !== false)
   const validOrders = (activeOrders || [])
     .filter((o) => o.status !== '3')
     .filter((o) => {
@@ -90,7 +85,6 @@ export function KdsGrid() {
       return kitchenItems.length > 0;
     });
 
-  // 1. En preparación: pendientes ordenados de más viejos a más nuevos (FIFO cocina)
   const prepOrders = validOrders
     .filter((o) => getOrderKdsStatus(o) === 'PREPARING')
     .sort((a, b) => {
@@ -99,7 +93,6 @@ export function KdsGrid() {
       return tA - tB;
     });
 
-  // 2. Listas: SOLO órdenes de las últimas 10 horas (<= 600 min), ordenadas de MÁS NUEVAS a MÁS VIEJAS
   const MAX_READY_MINUTES = 10 * 60;
   const readyOrders = validOrders
     .filter((o) => {
@@ -115,7 +108,6 @@ export function KdsGrid() {
 
   const ordersToShow = kdsFilter === 'READY' ? readyOrders : prepOrders;
 
-  // Paginación adaptativa según tamaño de tarjeta, resolución y auto-ajuste
   const isUltraWide = windowWidth >= 1800;
   let pageSize = 8;
   if (kdsAutoFit) {
@@ -151,16 +143,8 @@ export function KdsGrid() {
 
   return (
     <div
-      className={`view-section active kds-theme-${kdsTheme}`}
+      className={`view-section active kds-view-root kds-theme-${kdsTheme} ${shiftClass}`}
       data-kds-theme={kdsTheme}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        width: '100%',
-        overflow: 'hidden',
-        ...pixelShiftStyle
-      }}
     >
       {/* Barra superior de cocina */}
       <KdsTopBar
@@ -175,22 +159,10 @@ export function KdsGrid() {
       {/* Contenedor principal de tarjetas con protección de pantalla */}
       <div className={`kds-container kds-theme-${kdsTheme}`}>
         {ordersToShow.length === 0 ? (
-          <div
-            style={{
-              textAlign: 'center',
-              padding: '90px 20px',
-              color: '#64748b',
-              fontSize: '1.25rem',
-              fontWeight: 700,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '12px'
-            }}
-          >
-            <span style={{ fontSize: '2.5rem' }}>👨‍🍳</span>
+          <div className="kds-empty-state">
+            <span className="kds-empty-emoji">👨‍🍳</span>
             <span>{kdsFilter === 'READY' ? t('kds_empty_ready') : t('kds_empty_prep')}</span>
-            <span style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: 500 }}>
+            <span className="kds-empty-subtext">
               Cocina al día • Esperando nuevos pedidos
             </span>
           </div>

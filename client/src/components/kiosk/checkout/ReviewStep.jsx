@@ -119,11 +119,11 @@ export function ReviewStep({
 
         {cart.length === 0 && (
           <div className="checkout-empty-cart">
-            <div style={{ fontSize: '4rem', marginBottom: '16px' }}>🥙</div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#334155' }}>
+            <div className="checkout-empty-cart-emoji">🥙</div>
+            <div className="checkout-empty-cart-title">
               Tu orden está vacía
             </div>
-            <p style={{ fontSize: '0.95rem', marginTop: '6px', color: '#64748b' }}>
+            <p className="checkout-empty-cart-sub">
               Agrega productos del menú para comenzar tu pedido.
             </p>
           </div>

@@ -68,7 +68,7 @@ export function TableSelectStep({
       <div className="checkout-footer-bar">
         <div>
           <div className="checkout-footer-total-lbl">MODALIDAD</div>
-          <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a' }}>
+          <div className="checkout-footer-mode-value">
             🍽️ Comer en Mesa {tableId ? `#${tableId}` : '(Por elegir)'}
           </div>
         </div>

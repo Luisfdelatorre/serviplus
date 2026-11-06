@@ -1,0 +1,40 @@
+/* ==========================================================================
+   Serviplus POS - Global Design Tokens (:root CSS Custom Properties)
+   ========================================================================== */
+
+:root {
+  /* Brand & Accent Colors */
+  --sp-brand-primary: #da291c;
+  --sp-brand-primary-soft: #fef2f2;
+  --sp-brand-primary-border: #fecaca;
+  --sp-brand-emerald: #10b981;
+  --sp-brand-emerald-dark: #047857;
+  --sp-brand-sky: #38bdf8;
+  --sp-brand-amber: #f59e0b;
+
+  /* Neutrals & Surfaces */
+  --sp-surface-white: #ffffff;
+  --sp-surface-50: #f8fafc;
+  --sp-surface-100: #f1f5f9;
+  --sp-surface-200: #e2e8f0;
+  --sp-surface-300: #cbd5e1;
+  --sp-surface-dark-800: #1e293b;
+  --sp-surface-dark-900: #0f172a;
+  --sp-surface-dark-950: #090d16;
+
+  /* Text Colors */
+  --sp-text-primary: #0f172a;
+  --sp-text-secondary: #334155;
+  --sp-text-muted: #64748b;
+  --sp-text-inverse: #f8fafc;
+
+  /* Radii & Shadows */
+  --sp-radius-sm: 6px;
+  --sp-radius-md: 8px;
+  --sp-radius-lg: 12px;
+  --sp-radius-xl: 16px;
+  --sp-radius-pill: 9999px;
+  --sp-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --sp-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.14);
+  --sp-shadow-brand: 0 1px 4px rgba(218, 41, 28, 0.12);
+}

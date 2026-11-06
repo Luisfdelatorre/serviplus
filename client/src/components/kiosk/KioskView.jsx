@@ -213,7 +213,7 @@ export function KioskView() {
             title={isKioskFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
             className="kiosk-status-fs-btn"
           >
-            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+            <span className="material-symbols-outlined kiosk-fs-icon">
               {isKioskFullscreen ? 'fullscreen_exit' : 'fullscreen'}
             </span>
           </button>
