@@ -1,4 +1,14 @@
 import React from 'react';
+import {
+  BadgeDollarSign,
+  X,
+  Utensils,
+  ShoppingBag,
+  Banknote,
+  CreditCard,
+  QrCode,
+  CheckCircle2
+} from 'lucide-react';
 import { formatCOP } from '../../utils/format';
 import { sfx } from '../../utils/audio';
 
@@ -16,119 +26,189 @@ export function SettlePaymentModal({
 
   const isModalTakeOut = Number(settlingOrder.orderType) === 2 || !settlingOrder.tableId;
   const totalCOP = Math.round(settlingOrder.total * 1000);
-  const tenderedVal = parseFloat(settleCashTendered) || 0;
+  const tenderedVal = parseFloat(String(settleCashTendered).replace(/\D/g, '')) || 0;
   const isEnoughCash = tenderedVal >= totalCOP;
+  const changeCOP = Math.max(0, tenderedVal - totalCOP);
 
   return (
-    <div className="cpos-s-110">
-      <div className="cpos-s-111">
-        <div className="cpos-s-112">
-          <div>
-            <div className="cpos-s-113">
-              💵 Completar Pago de Orden
+    <div className="cpos-spm-overlay" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="spm-modal-title"
+        className="cpos-spm-dialog"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal Header (Icon + Title + Close Button) */}
+        <div className="cpos-spm-header">
+          <div className="cpos-spm-header-left">
+            <div className="ui-icon-box ui-icon-box-md">
+              <BadgeDollarSign className="ui-icon-24" />
             </div>
-            <div className="cpos-s-114">
-              Turno #{settlingOrder.orderNumber || settlingOrder.id}
+            <div>
+              <h2 id="spm-modal-title" className="ui-heading-md cpos-spm-title">
+                Completar Pago de Orden
+              </h2>
+              <p className="ui-label-sm ui-text-muted cpos-spm-subtitle">
+                Turno #{settlingOrder.orderNumber || settlingOrder.id} • Comanda activa
+              </p>
             </div>
           </div>
+
+          {/* iOS Close Pill */}
           <button
             type="button"
-            onClick={onClose}
-            className="cpos-s-115"
+            title="Cerrar modal"
+            onClick={() => {
+              sfx.playTap();
+              onClose();
+            }}
+            className="ui-btn-icon-circle cpos-spm-close-btn"
           >
-            ✕
+            <X className="ui-icon-16" />
           </button>
         </div>
 
-        {/* BANNER ULTRA VISIBLE: PARA LLEVAR VS EN MESA */}
-        <div className={`cpos-settle-banner ${isModalTakeOut ? 'takeout' : 'dinein'}`}>
-          <span className={`cpos-settle-banner-title ${isModalTakeOut ? 'takeout' : 'dinein'}`}>
-            {isModalTakeOut ? '🥡 PEDIDO PARA LLEVAR' : `🍽️ PEDIDO EN MESA #${settlingOrder.tableId || 'S/M'}`}
-          </span>
-          <span className={`cpos-settle-banner-tag ${isModalTakeOut ? 'takeout' : 'dinein'}`}>
+        {/* Order Context Pill (Mesa / Salón o Para Llevar status) */}
+        <div className={`ui-context-pill ${isModalTakeOut ? 'is-takeout' : ''}`}>
+          <div className="ui-context-pill-left">
+            {isModalTakeOut ? (
+              <>
+                <ShoppingBag className="ui-context-pill-icon" />
+                <span>PEDIDO PARA LLEVAR</span>
+              </>
+            ) : (
+              <>
+                <Utensils className="ui-context-pill-icon" />
+                <span>PEDIDO EN MESA #{settlingOrder.tableId || 'S/M'}</span>
+              </>
+            )}
+          </div>
+          <span className={`ui-pill ui-pill-sm ui-pill-upper ui-pill-solid-blue ${isModalTakeOut ? 'is-takeout' : ''}`}>
             {isModalTakeOut ? 'LLEVAR' : 'SALÓN'}
           </span>
         </div>
 
-        {/* Cuadro destacado de monto */}
-        <div className="cpos-s-116">
-          <div className="cpos-s-117">Total a Cobrar</div>
-          <div className="cpos-s-118">
-            {formatCOP(settlingOrder.total)}
-          </div>
+        {/* Big Total Showcase (High Focus Area) */}
+        <div className="cpos-spm-total-box">
+          <span className="ui-label-xs ui-text-muted cpos-spm-total-label">Total a Cobrar</span>
+          <span className="ui-price-hero cpos-spm-total-val">{formatCOP(settlingOrder.total)}</span>
         </div>
 
-        {/* Selector de Método de Pago recibido en caja */}
-        <div className="cpos-s-119">
-          <div className="cpos-s-120">
-            Método de pago recibido:
+        {/* PAYMENT METHOD SELECTOR (Identical to POS Front Payment Styles) */}
+        <div className="cpos-spm-pay-section">
+          <div className="cpos-spm-pay-label-row">
+            <label className="ui-label-md cpos-spm-pay-label">Método de pago recibido:</label>
           </div>
-          <div className="cpos-s-121">
-            {[
-              { id: 'CASH', label: '💵 Efectivo' },
-              { id: 'CARD', label: '💳 Datáfono' },
-              { id: 'WOMPI_QR', label: '📱 QR' }
-            ].map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => setSettlePayMethod(m.id)}
-                className={`cpos-settle-pay-btn ${settlePayMethod === m.id ? 'active' : ''}`}
-              >
-                {m.label}
-              </button>
-            ))}
+
+          {/* Segmented 3-Way Tabs (Efectivo / Datáfono / QR) */}
+          <div className="cpos-pay-tabs-grid">
+            <button
+              type="button"
+              onClick={() => {
+                sfx.playTap();
+                setSettlePayMethod('CASH');
+              }}
+              className={`ui-pill-pay-tab ${settlePayMethod === 'CASH' ? 'is-active' : ''}`}
+            >
+              <Banknote className="cpos-pay-icon-cash" />
+              <span>Efectivo</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                sfx.playTap();
+                setSettlePayMethod('CARD');
+              }}
+              className={`ui-pill-pay-tab ${settlePayMethod === 'CARD' ? 'is-active' : ''}`}
+            >
+              <CreditCard className="cpos-pay-icon-card" />
+              <span>Datáfono</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                sfx.playTap();
+                setSettlePayMethod('WOMPI_QR');
+              }}
+              className={`ui-pill-pay-tab ${settlePayMethod === 'WOMPI_QR' ? 'is-active' : ''}`}
+            >
+              <QrCode className="cpos-pay-icon-qr" />
+              <span>QR</span>
+            </button>
           </div>
-        </div>
 
-        {/* Si es efectivo, cálculo de cambio con denominaciones */}
-        {settlePayMethod === 'CASH' && (
-          <div className="cpos-s-122">
-            <input
-              type="number"
-              placeholder="Monto entregado en COP"
-              value={settleCashTendered}
-              onChange={(e) => setSettleCashTendered(e.target.value)}
-              className="cpos-s-123"
-            />
-
-            <div className="cpos-s-75">
-              {[
-                { label: 'Exacto', val: totalCOP },
-                { label: '$20k', val: 20000 },
-                { label: '$50k', val: 50000 },
-                { label: '$100k', val: 100000 }
-              ].map((den) => (
-                <button
-                  key={den.label}
-                  type="button"
-                  onClick={() => { sfx.playTap(); setSettleCashTendered(String(den.val)); }}
-                  className="cpos-s-76"
-                >
-                  {den.label}
-                </button>
-              ))}
-            </div>
-
-            {tenderedVal > 0 && (
-              <div className={`cpos-settle-change-text ${isEnoughCash ? 'ok' : 'under'}`}>
-                {isEnoughCash
-                  ? `Cambio: $${Math.max(0, tenderedVal - totalCOP).toLocaleString('es-CO')}`
-                  : 'Monto menor al total'}
+          {settlePayMethod === 'CASH' && (
+            <>
+              {/* Tendered Amount Numeric Field */}
+              <div className="cpos-pay-tendered-wrap">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Monto entregado en COP"
+                  value={settleCashTendered}
+                  onChange={(e) => setSettleCashTendered(e.target.value)}
+                  className="cpos-spm-tendered-input ui-tabular"
+                />
               </div>
-            )}
-          </div>
-        )}
 
-        <button
-          type="button"
-          disabled={isSubmitting}
-          onClick={onConfirm}
-          className="cpos-s-124"
-        >
-          {isSubmitting ? 'Procesando...' : '✅ Confirmar Pago y Enviar a Cocina'}
-        </button>
+              {/* Quick Cash Denomination Chips */}
+              <div className="cpos-pay-denoms-grid">
+                {[
+                  { label: 'Exacto', val: totalCOP },
+                  { label: '$20k', val: 20000 },
+                  { label: '$50k', val: 50000 },
+                  { label: '$100k', val: 100000 }
+                ].map((den) => (
+                  <button
+                    key={den.label}
+                    type="button"
+                    onClick={() => {
+                      sfx.playTap();
+                      setSettleCashTendered(String(den.val));
+                    }}
+                    className="ui-pill-chip"
+                  >
+                    {den.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Change Amount Calculation (Cambio) */}
+              <div className="cpos-spm-change-row">
+                <span className="cpos-spm-change-label">Cambio:</span>
+                <span
+                  className={`cpos-spm-change-val ui-tabular ${
+                    tenderedVal > 0 && !isEnoughCash ? 'is-under' : ''
+                  }`}
+                >
+                  {tenderedVal > 0 && !isEnoughCash
+                    ? 'Monto menor al total'
+                    : `$${changeCOP.toLocaleString('es-CO')}`}
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Primary Action CTA Button: Confirmar Pago y Enviar a Cocina */}
+        <div className="cpos-spm-confirm-wrap">
+          <button
+            type="button"
+            disabled={isSubmitting || (settlePayMethod === 'CASH' && tenderedVal > 0 && !isEnoughCash)}
+            onClick={onConfirm}
+            className="ui-btn ui-btn-primary ui-btn-xl ui-btn-block cpos-spm-confirm-btn"
+          >
+            <CheckCircle2 className="ui-icon-20" />
+            <span>
+              {isSubmitting ? 'Procesando...' : 'Confirmar Pago y Enviar a Cocina'}
+            </span>
+          </button>
+        </div>
       </div>
     </div>
   );
 }
+

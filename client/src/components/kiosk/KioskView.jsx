@@ -187,39 +187,6 @@ export function KioskView() {
 
   return (
     <div className={`view-section active kiosk-view-viewport ${isKioskFullscreen ? 'is-fullscreen' : ''}`}>
-      {/* 1. TOP STATUS BAR (Barra superior para presencia en pantalla completa estilo quiosco) */}
-      <header className="kiosk-top-status-bar">
-        {/* Izquierda: Indicador y Pill de Terminal Activo */}
-        <div className="kiosk-status-left">
-          <span className="kiosk-status-dot-dim" />
-          <div className="kiosk-status-terminal-pill">
-            <span className="kiosk-status-dot-live" />
-            <span>Kiosco T-04 Activo</span>
-          </div>
-        </div>
-
-        {/* Derecha: Tiempo estimado de espera y reloj / controles */}
-        <div className="kiosk-status-right">
-          <div className="kiosk-status-wait-pill">
-            <span className="kiosk-status-wait-icon">⏱️</span>
-            <span>Espera aprox: {estimatedWaitMins} min</span>
-          </div>
-
-          <span className="kiosk-status-clock">{currentTime}</span>
-
-          <button
-            type="button"
-            onClick={handleToggleFullscreen}
-            title={isKioskFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
-            className="kiosk-status-fs-btn"
-          >
-            <span className="material-symbols-outlined kiosk-fs-icon">
-              {isKioskFullscreen ? 'fullscreen_exit' : 'fullscreen'}
-            </span>
-          </button>
-        </div>
-      </header>
-
       {/* 2. LAYOUT: SIDEBAR CATEGORÍAS + CATÁLOGO */}
       <div className="kiosk-layout-grid">
         {/* Columna 1: Categorías Verticales con Fotos Circulares */}

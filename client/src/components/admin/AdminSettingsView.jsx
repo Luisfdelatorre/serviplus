@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMenuStore } from '../../store/useMenuStore';
 import {
   getAdminConfig,
@@ -43,10 +44,11 @@ import {
   Sliders,
   ChevronLeft
 } from 'lucide-react';
+import { UpayLogo } from '../common/UpayLogo';
 import './AdminSettingsView.css';
 
 export function AdminSettingsView() {
-  const setActiveTab = useMenuStore((state) => state.setActiveTab);
+  const navigate = useNavigate();
   const currentAdmin = useMenuStore((state) => state.currentAdmin);
   const sessionEmployee = useMenuStore((state) => state.sessionEmployee);
 
@@ -368,7 +370,7 @@ export function AdminSettingsView() {
 
   const handleReturnHome = () => {
     try { sfx.playTap(); } catch (_) {}
-    setActiveTab('home');
+    navigate('/');
   };
 
   // Filtrado de stock
@@ -387,14 +389,12 @@ export function AdminSettingsView() {
         <div className="asv-brand-group">
           {/* Logo UPAYSOLUTIONS S.A.S. */}
           <div className="asv-brand-icon">
-            <svg className="asview-s-1" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
-            </svg>
+            <UpayLogo size={32} className="asv-brand-svg" />
           </div>
           <div>
             <div className="asv-title-row">
               <h1 className="asv-main-title">Panel de Administración • Serviplus</h1>
-              <span className="asv-version-badge">v2.4 Pro</span>
+              <span className="ui-pill ui-pill-xs ui-pill-emerald ui-pill-upper">v2.4 Pro</span>
             </div>
             <div className="asv-meta-row">
               <span className="asv-emp-indicator">
@@ -442,7 +442,7 @@ export function AdminSettingsView() {
           >
             <CreditCard size={16} />
             <span>Pasarela Wompi (Bancolombia QR)</span>
-            <span className="asv-pulse-dot"></span>
+            <span className="ui-dot ui-dot-pulse lg"></span>
           </button>
 
           {/* Pestaña: Operación Kiosco & POS */}

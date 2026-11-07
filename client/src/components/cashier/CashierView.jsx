@@ -1,8 +1,59 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  ChevronLeft,
+  Wifi,
+  Battery,
+  BatteryCharging,
+  Search,
+  Flame,
+  Sparkles,
+  SlidersHorizontal,
+  Receipt,
+  Minus,
+  Plus,
+  Trash2,
+  MessageSquare,
+  ChefHat,
+  CreditCard,
+  X,
+  Banknote,
+  QrCode,
+  CheckCircle2,
+  Boxes,
+  CheckCheck,
+  Maximize2,
+  Minimize2,
+  Zap,
+  Cast,
+  Sun,
+  Moon,
+  Scan,
+  RefreshCw,
+  Utensils,
+  Timer,
+  Wallet,
+  Eye,
+  Pencil,
+  Hourglass,
+  ShoppingBag,
+  ClipboardList
+} from 'lucide-react';
 import { useMenuStore } from '../../store/useMenuStore';
 import { useKdsStore } from '../../store/useKdsStore';
-import { fetchEmployees, createOrder, updateOrderStatus, fetchTables, fetchAdminProducts, toggleProductActive } from '../../api';
-import { formatCOP, getElapsedMinutes, formatRegularTime } from '../../utils/format';
+import {
+  fetchEmployees,
+  fetchActiveOrders,
+  createOrder,
+  updateOrderStatus,
+  fetchTables,
+  fetchAdminProducts,
+  toggleProductActive,
+  fetchCurrentCashShift
+} from '../../api';
+import { formatCOP, getElapsedMinutes } from '../../utils/format';
+import { getProductImageUrl } from '../../utils/productImages';
+import { enterFullscreen, exitFullscreen } from '../../utils/fullscreen';
 import { sfx } from '../../utils/audio';
 import { ModifierModal } from '../kiosk/ModifierModal';
 import { CashShiftModal } from './CashShiftModal';
@@ -10,9 +61,89 @@ import { SettlePaymentModal } from './SettlePaymentModal';
 import { ProductAvailabilityModal } from '../admin/ProductAvailabilityModal';
 import './CashierView.css';
 
+const STITCH_PRODUCT_IMAGES = {
+  kebab_pollo:
+    'https://lh3.googleusercontent.com/aida/AEtjO1XuSF12CFK0ixz15Amj3Y6E87KbXkcYos1uICHylp5WH1rtZcvF4KXUZVgUpbyAoNWiwRsUlTN6nd9_5oarqs54UKH4ujTEpXMcvVHHRusWISoZgEG4WQMJJNwVc4EN4C7NnZbDE5AGpoxX5kT5rv1d6PssMzCjDefzsUxote1FVmLkUwb-TJkEy7YJOqDMTDeICBezpFzuBuYgkah5tnokVtI1_S-pALnKEQL5NZCNXeU12jqw',
+  kebab_carne:
+    'https://lh3.googleusercontent.com/aida/AEtjO1UWcSS8HNLoTpqJnsnS7CzrzpiUcxa4guArG8RiWjuiuh5GqcKaVE39ndD4S91TabWS1cqDig_W7SqxlAwVrUVsH2YT60bEzU85kK-CC6HpSdSCark6-WGgCePIjhEak7c_aHwRj6Gw6sxJlO6Jvv-BigitJOD5wm9PhZQfooH5_a99b5CJEugxWwuhE5HsNa_JAOTFyoFo3notuvWDHWrxHSaPHOnC-Jp349Mez9P-9jBMimHD',
+  kebab_mixto:
+    'https://lh3.googleusercontent.com/aida/AEtjO1WgTAcCldeP4r_pwN6TGZmob-Qef8I3MFYNVszB0REQZ-H-sBtXcVmuHfltIZEyu87EPtzfDiv71iUDvqk5ZxD3vJozET33HZzT7xktdfCaj1F06gkrMR1HjV97XTiBes06iBExhnKxIsSX78E75col4q93AEuPFyt6vOP5-4a3cvtjL3VG8_zPJkDHZZL9MzVYgUVBe_zs5bU55BVW_ew8HrVqsdatzYp8aIIFRlc8eYODhrl4',
+  kebab_especial:
+    'https://lh3.googleusercontent.com/aida/AEtjO1VlDkPPpxkQuPH4yN7op1zCKRoGw3qyuRxTjm6xcTJL3ImfInapDvD-Hfm0POgXf8VvUkxoc6jHbqt8P6NYl71LBGZXnEMfoF3CQbicVb0hFpqiO7WhqXC0SgF_4ErhhXByyc5w88uXKaALXDreZTaDnoIO5_2MoIyz7O9Uj6n-y9l1uAs8Rbriz_FNCrACtBbF8z8gVmO0qDHZa19tTnvMqNWVlJt0qxpGUfPq2Gk1MOe1X4xumG-dfA',
+  hamburguesa:
+    'https://lh3.googleusercontent.com/aida/AEtjO1U8R-QmJhBG6F8Ge0EIgZJpq7dga68iLppOzGb_ruT12VdLG8lYJJLEitlYUraC3MDkb75EV0uQqbTl3CF0th48O565GaFX4eHh-AujA8soKAlbsfraKMysQ8QTc3jrGteQGicf4Y05vnaM5LfkqoTsz3UUWk-aQghiq_x4f75SZbmkrHlh85om2aq8O_EAvpGVSTUqdXfKW1jAIMLRyIQ5UguXVAXJztX2Sh7ZuXTr3G045P9y',
+  shawarma:
+    'https://lh3.googleusercontent.com/aida/AEtjO1Wh_8m1_LyqR92Rzx2srYjVMwbPTVspyURxD3_M2bz_gwr7J__Z9v4FnN35rOYpFi2XBR7v6u9e_7fg_HEBsF7XgsWR97DOZ4Ml1Skz9sR_KPLf1rg3z_mv4Vj74I0ZAxUN1OoIkcpuzbXvH0MDCzcP4ID5arGNaR4m6rRCM-wYv0iBjhM756CPaSk8DwZzlSSXVc4o6c3NMsMn5KWZ7KpxfrejcxJpgPBbaHOGi4B6ID2j'
+};
+
+function getPosProductImage(item = {}) {
+  if (item.image) return item.image;
+  if (item.imageUrl) return item.imageUrl;
+
+  const n = (item.name || '').toLowerCase();
+  const c = (item.categoryName || '').toLowerCase();
+
+  if (n.includes('hamburguesa') || n.includes('burger')) return STITCH_PRODUCT_IMAGES.hamburguesa;
+  if (n.includes('shawarma') && n.includes('mixto')) return STITCH_PRODUCT_IMAGES.kebab_mixto;
+  if (n.includes('shawarma') || c.includes('shawarma')) return STITCH_PRODUCT_IMAGES.shawarma;
+  if (n.includes('especial') && n.includes('carne')) return STITCH_PRODUCT_IMAGES.kebab_especial;
+  if (n.includes('especial') && n.includes('pollo')) return STITCH_PRODUCT_IMAGES.kebab_pollo;
+  if (n.includes('especial')) return STITCH_PRODUCT_IMAGES.kebab_especial;
+  if (n.includes('mixto')) return STITCH_PRODUCT_IMAGES.kebab_mixto;
+  if (n.includes('carne') || n.includes('ranchero')) return STITCH_PRODUCT_IMAGES.kebab_carne;
+  if (n.includes('pollo') || n.includes('kebab') || c.includes('kebab')) return STITCH_PRODUCT_IMAGES.kebab_pollo;
+
+  return getProductImageUrl(item, item.categoryName);
+}
+
 export function CashierView() {
+  const navigate = useNavigate();
   const categories = useMenuStore((state) => state.categories);
+  const sessionEmployee = useMenuStore((state) => state.sessionEmployee);
+  const isFullscreen = useMenuStore((state) => state.isFullscreen);
+  const setFullscreen = useMenuStore((state) => state.setFullscreen);
   const activeOrders = useKdsStore((state) => state.activeOrders);
+  const setActiveOrders = useKdsStore((state) => state.setActiveOrders);
+  const kdsTheme = useKdsStore((state) => state.kdsTheme);
+  const toggleKdsTheme = useKdsStore((state) => state.toggleKdsTheme);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSyncOrders = async () => {
+    sfx.playTap();
+    setIsSyncing(true);
+    try {
+      const [orders, prods, shiftRes] = await Promise.all([
+        fetchActiveOrders().catch(() => null),
+        fetchAdminProducts().catch(() => null),
+        fetchCurrentCashShift().catch(() => null)
+      ]);
+      if (Array.isArray(orders)) setActiveOrders(orders);
+      if (Array.isArray(prods)) setAdminProducts(prods);
+      if (shiftRes && shiftRes.shift) setCashShift(shiftRes);
+    } finally {
+      setTimeout(() => setIsSyncing(false), 350);
+    }
+  };
+
+  const handleToggleFullscreen = () => {
+    sfx.playTap();
+    const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+    if (!isFs) {
+      enterFullscreen();
+      setFullscreen(true);
+    } else {
+      exitFullscreen();
+      setFullscreen(false);
+    }
+  };
+
+  // Reloj, fecha y telemetría de dispositivo (iOS App Shell)
+  const [timeString, setTimeString] = useState('');
+  const [dateString, setDateString] = useState('');
+  const [batteryLevel, setBatteryLevel] = useState(100);
+  const [isCharging, setIsCharging] = useState(true);
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const [cashShift, setCashShift] = useState({ isOpen: true, shift: { id: 3 } });
 
   // Modales de Turno de Caja y Agotados
   const [showCashShiftModal, setShowCashShiftModal] = useState(false);
@@ -22,6 +153,9 @@ export function CashierView() {
   const [isStockJiggleMode, setIsStockJiggleMode] = useState(false);
   const [adminProducts, setAdminProducts] = useState([]);
   const [togglingItemId, setTogglingItemId] = useState(null);
+  const [holdingItemId, setHoldingItemId] = useState(null);
+  const longPressTimerRef = useRef(null);
+  const longPressTriggeredRef = useRef(false);
 
   // Estados de Personal y Servicio
   const [employees, setEmployees] = useState([]);
@@ -33,8 +167,9 @@ export function CashierView() {
   const [selectedTable, setSelectedTable] = useState(1);
   const [customerInfo, setCustomerInfo] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
+  const [showTableSelectorPopover, setShowTableSelectorPopover] = useState(false);
 
-  // Pestaña principal: 'order' (Rapid Order) o 'pending_payments' (Órdenes por Cobrar)
+  // Pestaña principal: 'order' (Terminal de Pedidos) o 'pending_payments' (Órdenes por Cobrar)
   const [activeView, setActiveView] = useState('order');
 
   // Filtro de servicio en lista de órdenes por cobrar ('ALL' | 'TAKE_OUT' | 'DINE_IN')
@@ -43,6 +178,14 @@ export function CashierView() {
   // Categoría activa y búsqueda rápida
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [search, setSearch] = useState('');
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const searchInputRef = useRef(null);
+
+  useEffect(() => {
+    if (isSearchExpanded && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [isSearchExpanded]);
 
   // Carrito de la comanda
   const [cart, setCart] = useState([]);
@@ -60,6 +203,60 @@ export function CashierView() {
   const [settlingOrder, setSettlingOrder] = useState(null);
   const [settlePayMethod, setSettlePayMethod] = useState('CASH');
   const [settleCashTendered, setSettleCashTendered] = useState('');
+
+  // Reloj nativo estilo iOS
+  useEffect(() => {
+    const updateClock = () => {
+      const now = new Date();
+      const time = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const rawDate = now.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+      const capDate = rawDate.charAt(0).toUpperCase() + rawDate.slice(1);
+      setTimeString(time);
+      setDateString(capDate);
+    };
+    updateClock();
+    const timer = setInterval(updateClock, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Telemetría de batería y conectividad
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && 'getBattery' in navigator) {
+      navigator
+        .getBattery()
+        .then((battery) => {
+          setBatteryLevel(Math.round(battery.level * 100));
+          setIsCharging(Boolean(battery.charging));
+          const updateBattery = () => {
+            setBatteryLevel(Math.round(battery.level * 100));
+            setIsCharging(Boolean(battery.charging));
+          };
+          battery.addEventListener('levelchange', updateBattery);
+          battery.addEventListener('chargingchange', updateBattery);
+        })
+        .catch(() => { });
+    }
+
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Cargar turno de caja actual
+  useEffect(() => {
+    fetchCurrentCashShift()
+      .then((res) => {
+        if (res && res.shift) {
+          setCashShift(res);
+        }
+      })
+      .catch(() => { });
+  }, [showCashShiftModal]);
 
   // Cargar lista de empleados y mesas
   useEffect(() => {
@@ -105,7 +302,6 @@ export function CashierView() {
       }))
     );
 
-    // Integrar productos desactivados que no vienen en el getMenu() normal para que aparezcan en caja
     const existingIds = new Set(itemsFromCats.map((i) => i.id));
     adminProducts.forEach((ap) => {
       if (!existingIds.has(ap.id)) {
@@ -154,7 +350,12 @@ export function CashierView() {
   const filteredItems = useMemo(() => {
     return allItems.filter((i) => {
       const matchCat = selectedCategory === 'ALL' || i.categoryName === selectedCategory;
-      const matchSearch = !search.trim() || i.name.toLowerCase().includes(search.toLowerCase());
+      const q = search.trim().toLowerCase();
+      const matchSearch =
+        !q ||
+        i.name.toLowerCase().includes(q) ||
+        String(i.id || '').toLowerCase().includes(q) ||
+        (i.categoryName || '').toLowerCase().includes(q);
       return matchCat && matchSearch;
     });
   }, [allItems, selectedCategory, search]);
@@ -183,18 +384,61 @@ export function CashierView() {
     });
   }, [pendingPaymentOrders, serviceFilter]);
 
+  // Gestos de Long-Press (Hold por ~1.2 segundos estilo iOS para activar modo Agotados)
+  const cancelCardHold = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    setHoldingItemId(null);
+  };
+
+  const handleCardPointerDown = (item, e) => {
+    if (e.button && e.button !== 0) return;
+    cancelCardHold();
+    longPressTriggeredRef.current = false;
+    if (isStockJiggleMode) return;
+
+    setHoldingItemId(item.id);
+    longPressTimerRef.current = setTimeout(() => {
+      longPressTriggeredRef.current = true;
+      setHoldingItemId(null);
+      sfx.playTap();
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try {
+          navigator.vibrate(40);
+        } catch (_) { }
+      }
+      setIsStockJiggleMode(true);
+      loadStockStatus();
+    }, 1200);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
+    };
+  }, []);
+
   // Agregar producto al hacer clic en tarjeta (o toggle si está en modo jiggle)
   const handleItemClick = (item) => {
-    // Si estamos en modo de edición de stock (estilo iOS), hacer toggle directo
+    if (longPressTriggeredRef.current) {
+      longPressTriggeredRef.current = false;
+      return;
+    }
+
     if (isStockJiggleMode) {
       handleToggleStockDirect(item);
       return;
     }
 
-    // Si el producto está agotado y no estamos en modo edición, bloquear y avisar
     if (item.isActive === false) {
       sfx.playWarning();
-      alert(`⚠️ "${item.name}" está marcado como AGOTADO (86'd).\nActiva el "Modo Agotados (iOS)" arriba para volver a habilitarlo.`);
+      alert(
+        `⚠️ "${item.name}" está marcado como AGOTADO (86'd).\nMantén presionada cualquier tarjeta por 1 segundo o activa "Agotados" arriba para volver a habilitarlo.`
+      );
       return;
     }
 
@@ -226,6 +470,8 @@ export function CashierView() {
           cartItemId: `${item.id}-${Date.now()}-${Math.random()}`,
           id: item.id,
           name: item.name,
+          categoryName: item.categoryName || '',
+          image: item.image || item.imageUrl || '',
           price: Number(item.price) || 0,
           basePrice: Number(item.price) || 0,
           quantity: 1,
@@ -244,8 +490,13 @@ export function CashierView() {
         cartItemId: `${configuredItem.id}-${Date.now()}-${Math.random()}`,
         id: configuredItem.id,
         name: configuredItem.name,
+        categoryName: configuredItem.categoryName || modifyingItem?.categoryName || '',
+        image: configuredItem.image || configuredItem.imageUrl || modifyingItem?.image || '',
         price: Number(configuredItem.price) || 0,
-        basePrice: Number(configuredItem.basePrice !== undefined ? configuredItem.basePrice : configuredItem.price) || 0,
+        basePrice:
+          Number(
+            configuredItem.basePrice !== undefined ? configuredItem.basePrice : configuredItem.price
+          ) || 0,
         quantity: configuredItem.quantity || 1,
         modifiers: configuredItem.modifiers || [],
         notes: configuredItem.notes || ''
@@ -271,6 +522,7 @@ export function CashierView() {
 
   // Totales
   const total = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const totalCartItems = cart.reduce((sum, i) => sum + i.quantity, 0);
   const totalCOPVal = Math.round(total * 1000);
   const cashNum = parseFloat(cashTendered) || 0;
   const changeCOP = Math.max(0, cashNum - totalCOPVal);
@@ -288,7 +540,7 @@ export function CashierView() {
         tableId: orderType === 1 ? selectedTable : null,
         notes: (orderType === 3 ? `[DOMICILIO: ${customerInfo}] ` : '') + (orderNotes || ''),
         paymentMethod: 'CASH',
-        isPaid: false, // Orden pendiente de pago
+        isPaid: false,
         items: cart.map((i) => ({
           id: i.id,
           name: i.name,
@@ -306,7 +558,14 @@ export function CashierView() {
       setOrderNotes('');
       setCustomerInfo('');
       setShowPaymentDrawer(false);
-      alert(`¡Comanda enviada a Cocina!\nOrden #${res.orderNumber || res.id} (${orderType === 1 ? `Mesa #${selectedTable}` : orderType === 2 ? 'PARA LLEVAR' : 'DOMICILIO'})`);
+      alert(
+        `¡Comanda enviada a Cocina!\nOrden #${res.orderNumber || res.id} (${orderType === 1
+          ? `Mesa #${selectedTable}`
+          : orderType === 2
+            ? 'PARA LLEVAR'
+            : 'DOMICILIO'
+        })`
+      );
     } catch (err) {
       alert('Error enviando orden: ' + err.message);
     } finally {
@@ -327,7 +586,7 @@ export function CashierView() {
         tableId: orderType === 1 ? selectedTable : null,
         notes: (orderType === 3 ? `[DOMICILIO: ${customerInfo}] ` : '') + (orderNotes || ''),
         paymentMethod,
-        isPaid: true, // Orden cobrada y cerrada
+        isPaid: true,
         items: cart.map((i) => ({
           id: i.id,
           name: i.name,
@@ -346,7 +605,14 @@ export function CashierView() {
       setOrderNotes('');
       setCustomerInfo('');
       setShowPaymentDrawer(false);
-      alert(`¡Venta cobrada e impresa con éxito!\nOrden #${res.orderNumber || res.id} (${orderType === 1 ? `Mesa #${selectedTable}` : orderType === 2 ? 'PARA LLEVAR' : 'DOMICILIO'}) - ${formatCOP(total)}`);
+      alert(
+        `¡Venta cobrada e impresa con éxito!\nOrden #${res.orderNumber || res.id} (${orderType === 1
+          ? `Mesa #${selectedTable}`
+          : orderType === 2
+            ? 'PARA LLEVAR'
+            : 'DOMICILIO'
+        }) - ${formatCOP(total)}`
+      );
     } catch (err) {
       alert('Error al registrar cobro: ' + err.message);
     } finally {
@@ -364,7 +630,10 @@ export function CashierView() {
       await updateOrderStatus(settlingOrder.id, '2');
       sfx.playReadyChime();
       const isTakeOut = Number(settlingOrder.orderType) === 2 || !settlingOrder.tableId;
-      alert(`¡Pago completado con éxito!\nOrden #${settlingOrder.orderNumber || settlingOrder.id} (${isTakeOut ? 'PARA LLEVAR' : `Mesa #${settlingOrder.tableId}`}) PAGADA y enviada a cocina.`);
+      alert(
+        `¡Pago completado con éxito!\nOrden #${settlingOrder.orderNumber || settlingOrder.id} (${isTakeOut ? 'PARA LLEVAR' : `Mesa #${settlingOrder.tableId}`
+        }) PAGADA y enviada a cocina.`
+      );
       setSettlingOrder(null);
       setSettleCashTendered('');
     } catch (e) {
@@ -391,7 +660,11 @@ export function CashierView() {
   const handleLoadPendingOrderToTicket = (order) => {
     sfx.playTap();
     if (cart.length > 0) {
-      if (!confirm('El ticket actual tiene productos. ¿Deseas reemplazarlos con la orden #' + order.id + '?')) {
+      if (
+        !confirm(
+          'El ticket actual tiene productos. ¿Deseas reemplazarlos con la orden #' + order.id + '?'
+        )
+      ) {
         return;
       }
     }
@@ -402,6 +675,8 @@ export function CashierView() {
         cartItemId: `${i.id}-${Date.now()}-${Math.random()}`,
         id: i.id,
         name: i.name,
+        categoryName: i.categoryName || '',
+        image: i.image || i.imageUrl || '',
         price: Number(i.price) || 0,
         basePrice: Number(i.basePrice || i.price) || 0,
         quantity: i.quantity || 1,
@@ -412,528 +687,734 @@ export function CashierView() {
     setActiveView('order');
   };
 
+  const cashierInitial = (
+    sessionEmployee?.name ||
+    employees.find((e) => e.id === currentCashier)?.name ||
+    'A'
+  )
+    .charAt(0)
+    .toUpperCase();
+
+  const shiftNumber = cashShift?.shift?.id || 3;
+
   return (
-    <div className="cpos-s-1">
-      
+    <div className="cpos-shell-root">
       {/* ============================================================== */}
-      {/* 1. BARRA SUPERIOR DE RAPID ORDER (ESTILO ALDELO POS)           */}
+      {/* TOP APP SHELL (Navigation & Categories Header)                 */}
       {/* ============================================================== */}
-      <div
-        className="cpos-s-2"
-      >
-        {/* Lado Izquierdo: Selector de Cajero y Pestañas de Vista */}
-        <div className="cpos-s-3">
-          {/* Selector de Cajero */}
-          <div className="cpos-s-4">
-            <span className="cpos-s-5">👤 Cajero:</span>
-            <select
-              value={currentCashier}
-              onChange={(e) => setCurrentCashier(Number(e.target.value))}
-              className="cpos-s-6"
-            >
-              {employees.map((emp) => (
-                <option key={emp.id} value={emp.id}>{emp.name}</option>
-              ))}
-              {employees.length === 0 && <option value={1}>Cajero Principal</option>}
-            </select>
-          </div>
-
-          <div className="cpos-s-7" />
-
-          {/* Selector de Vista: Nueva Comanda vs Órdenes por Cobrar */}
-          <div className="cpos-s-8">
-            <button
-              type="button"
-              onClick={() => { sfx.playTap(); setActiveView('order'); }}
-              className={`cpos-view-tab order ${activeView === 'order' ? 'active' : ''}`}
-            >
-              <span>⚡ Rapid Order</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => { sfx.playTap(); setActiveView('pending_payments'); }}
-              className={`cpos-view-tab pending ${activeView === 'pending_payments' ? 'active' : ''}`}
-            >
-              <span>💳 Por Cobrar ({pendingPaymentOrders.length})</span>
-              {pendingPaymentOrders.length > 0 && (
-                <span className={`cpos-view-badge ${activeView === 'pending_payments' ? 'active' : ''}`}>
-                  {pendingPaymentOrders.length}
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Lado Central: Selector de Tipo de Servicio (Order Type) */}
-        {activeView === 'order' && (
-          <div className="cpos-s-9">
-            <span className="cpos-s-10">Servicio:</span>
-            <div className="cpos-s-11">
-              {[
-                { id: 1, label: '🍽️ Mesa' },
-                { id: 2, label: '🥡 Para Llevar' },
-                { id: 3, label: '🛵 Domicilio' }
-              ].map((t) => {
-                const isSelected = orderType === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => { sfx.playTap(); setOrderType(t.id); }}
-                    className={`cpos-service-type-btn type-${t.id} ${isSelected ? 'selected' : ''}`}
-                  >
-                    {t.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Selector de Mesa si es Dine In */}
-            {orderType === 1 && (
-              <div className="cpos-s-12">
-                <span className="cpos-s-13">Mesa #:</span>
-                <input
-                  type="number"
-                  min="1"
-                  max="99"
-                  value={selectedTable}
-                  onChange={(e) => setSelectedTable(Number(e.target.value) || 1)}
-                  className="cpos-s-14"
-                />
-              </div>
-            )}
-
-            {/* Input de Cliente/Teléfono si es Domicilio */}
-            {orderType === 3 && (
-              <input
-                type="text"
-                placeholder="Cliente / Tel / Dirección"
-                value={customerInfo}
-                onChange={(e) => setCustomerInfo(e.target.value)}
-                className="cpos-s-15"
-              />
-            )}
-          </div>
-        )}
-
-        {/* Lado Derecho: Estado, Turno de Caja, Agotados y Limpiar */}
-        <div className="cpos-s-9">
-          <button
-            type="button"
-            onClick={() => { sfx.playTap(); setShowCashShiftModal(true); }}
-            className="cpos-s-16"
-            title="Apertura, Arqueo en Vivo y Cierre Z"
-          >
-            <span>💵 Turno Caja</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              sfx.playTap();
-              const nextMode = !isStockJiggleMode;
-              setIsStockJiggleMode(nextMode);
-              if (nextMode) loadStockStatus();
-            }}
-            className={`cpos-jiggle-toggle-btn ${isStockJiggleMode ? 'active' : ''}`}
-            title="Activar/desactivar modo edición estilo iOS para cambiar disponibilidad de platos en vivo"
-          >
-            {isStockJiggleMode ? (
-              <span>✅ Listo (Salir Modo iOS)</span>
-            ) : (
-              <span>📱 Agotados (Modo iOS)</span>
-            )}
-          </button>
-
-          {cart.length > 0 && activeView === 'order' && (
+      <header className="cpos-top-header">
+        {/* Top Action Row (Sin barra simulada de iOS de hora/wifi/batería) */}
+        <div className="cpos-status-bar">
+          <div className="cpos-status-left">
             <button
               type="button"
               onClick={() => {
-                if (confirm('¿Limpiar comanda actual?')) {
-                  sfx.playTap();
-                  setCart([]);
-                }
+                sfx.playTap();
+                navigate('/');
               }}
-              className="cpos-s-17"
+              className="ui-btn-back-link"
             >
-              🗑️ Limpiar Ticket
+              <ChevronLeft className="ui-icon-16" />
+              <span>Volver al Inicio</span>
             </button>
-          )}
-        </div>
-      </div>
 
-      {/* ============================================================== */}
-      {/* 2. CONTENIDO PRINCIPAL: VISTA RAPID ORDER O POR COBRAR          */}
-      {/* ============================================================== */}
-      {activeView === 'order' ? (
-        <div className="cpos-s-18">
-          
-          {/* ========================================================== */}
-          {/* COLUMNA IZQUIERDA: SELECTOR DE CATEGORÍAS + CATÁLOGO       */}
-          {/* ========================================================== */}
-          <div className="cpos-s-19">
-            
-            {/* BARRA SUPERIOR DE CATEGORÍAS RÁPIDAS + BUSCADOR */}
-            <div
-              className="cpos-s-20"
+            <span className="cpos-status-divider">|</span>
+
+            <button
+              type="button"
+              onClick={() => {
+                sfx.playTap();
+                setShowCashShiftModal(true);
+              }}
+              className={`ui-pill ui-pill-xs ui-pill-emerald ui-pill-interactive ${isOnline ? 'online' : 'offline'}`}
+              title="Clic para abrir Arqueo y Turno de Caja"
             >
-              {/* Buscador Rápido de Producto */}
-              <div className="cpos-s-21">
-                <input
-                  type="text"
-                  placeholder="🔍 Buscar platillo..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="cpos-s-22"
-                />
-                {search && (
-                  <button
-                    onClick={() => setSearch('')}
-                    className="cpos-s-23"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-
-              {/* Botones de Categorías Horizontales Scrollables */}
-              <div
-                className="cpos-s-24"
-              >
-                <button
-                  type="button"
-                  onClick={() => { sfx.playTap(); setSelectedCategory('ALL'); }}
-                  className={`cpos-cat-filter-btn ${selectedCategory === 'ALL' ? 'selected' : ''}`}
-                >
-                  🔥 TODOS ({allItems.length})
-                </button>
-
-                {categories.map((cat) => {
-                  const isCatSelected = selectedCategory === cat.name;
-                  const count = (cat.items || []).length;
-                  return (
-                    <button
-                      key={cat.id || cat.name}
-                      type="button"
-                      onClick={() => { sfx.playTap(); setSelectedCategory(cat.name); }}
-                      className={`cpos-cat-filter-btn ${isCatSelected ? 'selected' : ''}`}
-                    >
-                      {cat.name} ({count})
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* GRID DE PRODUCTOS ESTILO RAPID ORDER */}
-            <div className="cpos-s-25">
-              {/* Banner informativo cuando el modo iOS está activo */}
-              {isStockJiggleMode && (
-                <div
-                  className="cpos-s-26"
-                >
-                  <div className="cpos-s-9">
-                    <span className="cpos-s-27">📱</span>
-                    <div>
-                      <div className="cpos-s-28">Modo Edición de Stock Activo (Estilo iOS)</div>
-                      <div className="cpos-s-29">
-                        Toca directamente cualquier tarjeta o su botón para marcarlo como <strong>Disponible 🟢</strong> o <strong>Agotado 🔴</strong>.
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => { sfx.playTap(); setIsStockJiggleMode(false); }}
-                    className="cpos-s-30"
-                  >
-                    ✅ Listo (Terminar)
-                  </button>
-                </div>
-              )}
-
-              <div
-                className="cpos-s-31"
-              >
-                {filteredItems.map((item, idx) => {
-                  const hasModifiers = Boolean(item.modifiers && item.modifiers.length > 0);
-                  const inCartQty = cart
-                    .filter((c) => c.id === item.id)
-                    .reduce((sum, c) => sum + c.quantity, 0);
-                  const isItemInactive = item.isActive === false;
-                  const isToggling = togglingItemId === item.id;
-
-                  return (
-                    <div
-                      key={item.id}
-                      onClick={() => handleItemClick(item)}
-                      className={[
-                        'cpos-item-card',
-                        isItemInactive ? 'inactive' : 'active',
-                        isStockJiggleMode ? (idx % 2 === 0 ? 'jiggle-even' : 'jiggle-odd') : '',
-                        inCartQty > 0 && !isItemInactive ? 'in-cart' : '',
-                        isToggling ? 'toggling' : ''
-                      ].filter(Boolean).join(' ')}
-                    >
-                      {/* Botón / Badge estilo iOS de Disponibilidad */}
-                      {isStockJiggleMode ? (
-                        <button
-                          type="button"
-                          onClick={(e) => handleToggleStockDirect(item, e)}
-                          title="Clic para cambiar disponibilidad"
-                          className={`cpos-item-jiggle-badge ${isItemInactive ? 'inactive' : 'active'}`}
-                        >
-                          {isItemInactive ? '🔴 Agotado' : '🟢 Activo'}
-                        </button>
-                      ) : (
-                        isItemInactive && (
-                          <div
-                            className="cpos-s-32"
-                          >
-                            AGOTADO (86)
-                          </div>
-                        )
-                      )}
-
-                      {/* Badge de cantidad si está en el carrito */}
-                      {!isStockJiggleMode && inCartQty > 0 && (
-                        <div
-                          className="cpos-s-33"
-                        >
-                          {inCartQty}
-                        </div>
-                      )}
-
-                      {/* Info de Producto */}
-                      <div>
-                        <div className={`cpos-item-cat-label ${isItemInactive && isStockJiggleMode ? 'jiggle-inactive' : ''}`}>
-                          {item.categoryName}
-                        </div>
-                        <div
-                          className={`cpos-item-name ${isItemInactive ? (isStockJiggleMode ? 'jiggle-inactive' : 'inactive') : 'active'}`}
-                        >
-                          {item.name}
-                        </div>
-                      </div>
-
-                      {/* Footer de Tarjeta con Precio y Badge de Modificadores */}
-                      <div className="cpos-s-34">
-                        <span className={`cpos-item-price ${isItemInactive ? 'inactive' : 'active'}`}>
-                          {formatCOP(item.price)}
-                        </span>
-
-                        <div className="cpos-s-35">
-                          {hasModifiers ? (
-                            <span
-                              title="Tiene modificadores configurables"
-                              className="cpos-s-36"
-                            >
-                              ✨ Mods
-                            </span>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                sfx.playTap();
-                                setModifyingItem(item);
-                              }}
-                              title="Personalizar notas"
-                              className="cpos-s-37"
-                            >
-                              ⚙️
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {filteredItems.length === 0 && (
-                  <div className="cpos-s-38">
-                    <div className="cpos-s-39">🔍</div>
-                    <div className="cpos-s-40">No se encontraron platillos</div>
-                    <div className="cpos-s-41">Prueba con otro término de búsqueda o selecciona otra categoría.</div>
-                  </div>
-                )}
-              </div>
-            </div>
+              <span className={`ui-dot ui-dot-pulse ${isOnline ? 'online' : 'offline'}`} />
+              <span>
+                Turno #{shiftNumber} {isOnline ? 'En línea' : 'Sin conexión'}
+              </span>
+            </button>
           </div>
 
-          {/* ========================================================== */}
-          {/* COLUMNA DERECHA: TICKET DE COMANDA / GUEST CHECK ALDELO    */}
-          {/* ========================================================== */}
-          <div
-            className="cpos-s-42"
-          >
-            {/* Header del Ticket con identificación de MESA vs PARA LLEVAR */}
-            <div
-              className={`cpos-ticket-header type-${orderType}`}
-            >
-              <div>
-                <div className="cpos-s-43">
-                  <span>{orderType === 1 ? '🍽️' : orderType === 2 ? '🥡' : '🛵'}</span>
-                  <span>{orderType === 1 ? `Comanda Mesa #${selectedTable}` : orderType === 2 ? 'Comanda PARA LLEVAR' : 'Comanda DOMICILIO'}</span>
-                </div>
-                <div className="cpos-s-44">
-                  {orderType === 1 ? 'Servicio en salón / mesa' : orderType === 2 ? 'Entrega en mostrador para llevar' : customerInfo || 'Entrega a domicilio'}
-                </div>
-              </div>
-
-              <span
-                className="cpos-s-45"
+          <div className="cpos-status-right">
+            {/* Controles rápidos de vista y Quick Actions con iconografía estilo KDS */}
+            <div className="cpos-status-tools">
+              <button
+                type="button"
+                onClick={() => {
+                  sfx.playTap();
+                  setActiveView(activeView === 'order' ? 'pending_payments' : 'order');
+                }}
+                className={`ui-pill-tool ${activeView === 'pending_payments' ? 'active' : ''
+                  }`}
+                title="Ver órdenes pendientes por cobrar"
               >
-                {cart.reduce((s, i) => s + i.quantity, 0)} ítems
-              </span>
-            </div>
+                <CreditCard className="ui-icon-14" />
+                <span>
+                  {activeView === 'pending_payments'
+                    ? 'Menú'
+                    : `Por Cobrar (${pendingPaymentOrders.length})`}
+                </span>
+              </button>
 
-            {/* Lista detallada de productos en comanda */}
-            <div className="cpos-s-46">
-              {cart.map((item) => {
-                const itemTotal = item.price * item.quantity;
+              {/* Quick Action: Modo Rápido / Rayo (Amber Accent) */}
+              <button
+                type="button"
+                title={
+                  isStockJiggleMode
+                    ? 'Salir de Modo Rápido / Agotados Express'
+                    : 'Acción Rápida / Modo Express (Agotados)'
+                }
+                onClick={() => {
+                  sfx.playTap();
+                  const nextMode = !isStockJiggleMode;
+                  setIsStockJiggleMode(nextMode);
+                  if (nextMode) loadStockStatus();
+                }}
+                className={`ui-qa-btn ui-qa-amber ${isStockJiggleMode ? 'is-active' : ''}`}
+              >
+                <Zap className="ui-icon-14 ui-qa-fill-amber" />
+              </button>
+
+              {/* Quick Action: Transmisión / KDS Cast (Emerald Accent) */}
+              <button
+                type="button"
+                title={
+                  cart.length > 0
+                    ? 'Enviar / Transmitir Comanda Actual a Cocina'
+                    : 'Transmitir / Cambiar Vista KDS y Cobros'
+                }
+                onClick={() => {
+                  if (cart.length > 0 && !isSubmitting) {
+                    handleSendToKitchenPending();
+                  } else {
+                    sfx.playTap();
+                    setActiveView(activeView === 'order' ? 'pending_payments' : 'order');
+                  }
+                }}
+                className={`ui-qa-btn ui-qa-emerald ${cart.length > 0 ? 'is-active' : ''}`}
+              >
+                <Cast className="ui-icon-14" />
+              </button>
+
+              {/* Quick Action: Brillo / Pantalla */}
+              <button
+                type="button"
+                title="Modo de Brillo"
+                onClick={() => toggleKdsTheme()}
+                className={`ui-qa-btn ui-qa-surface ${kdsTheme === 'dark' ? 'is-active' : ''}`}
+              >
+                {kdsTheme === 'dark' ? (
+                  <Moon className="ui-icon-14" />
+                ) : (
+                  <Sun className="ui-icon-14" />
+                )}
+              </button>
+
+              {/* Quick Action: Pantalla Completa / Enfoque (Rose Accent) */}
+              <button
+                type="button"
+                title={isFullscreen ? 'Salir de Modo Pantalla Completa' : 'Modo Pantalla Completa'}
+                aria-label={isFullscreen ? 'Salir de pantalla completa' : 'Modo Pantalla Completa'}
+                onClick={handleToggleFullscreen}
+                className={`ui-qa-btn ui-qa-rose ${isFullscreen ? 'is-active' : ''}`}
+              >
+                <Scan className="ui-icon-14" />
+              </button>
+
+              {/* Quick Action: Sincronizar / Refrescar */}
+              <button
+                type="button"
+                title="Sincronizar Pedidos"
+                onClick={handleSyncOrders}
+                className={`ui-qa-btn ui-qa-surface ${isSyncing ? 'is-active' : ''}`}
+              >
+                <RefreshCw className={`ui-icon-14 ${isSyncing ? 'ui-spin' : ''}`} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Subheader with Expandable Search & Categories bar */}
+        <div className="cpos-subheader">
+          {/* Search Input (Collapsed Icon -> Expandable iOS Search Bar on Click) */}
+          <div
+            className={`cpos-search-wrap ${
+              isSearchExpanded || Boolean(search) ? 'is-expanded' : 'is-collapsed'
+            }`}
+          >
+            {!(isSearchExpanded || Boolean(search)) ? (
+              <button
+                type="button"
+                onClick={() => {
+                  sfx.playTap();
+                  setIsSearchExpanded(true);
+                  setTimeout(() => searchInputRef.current?.focus(), 20);
+                }}
+                className="cpos-search-trigger-btn"
+                title="Buscar platillo o código"
+                aria-label="Abrir buscador de platillos"
+              >
+                <Search className="cpos-search-trigger-icon" />
+              </button>
+            ) : (
+              <>
+                <Search className="cpos-search-icon" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Buscar platillo o código..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onBlur={() => {
+                    if (!search.trim()) {
+                      setIsSearchExpanded(false);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setSearch('');
+                      setIsSearchExpanded(false);
+                      e.currentTarget.blur();
+                    }
+                  }}
+                  className="cpos-search-input"
+                />
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    sfx.playTap();
+                    if (search) {
+                      setSearch('');
+                      searchInputRef.current?.focus();
+                    } else {
+                      setIsSearchExpanded(false);
+                    }
+                  }}
+                  className="cpos-search-clear"
+                  title={search ? 'Limpiar búsqueda' : 'Cerrar buscador'}
+                  aria-label={search ? 'Limpiar búsqueda' : 'Cerrar buscador'}
+                >
+                  ✕
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Categories Pills (Segmented Filter Style) */}
+          <div className="cpos-cats-bar">
+            <button
+              type="button"
+              onClick={() => {
+                sfx.playTap();
+                setSelectedCategory('ALL');
+                if (activeView !== 'order') setActiveView('order');
+              }}
+              className={`ui-pill-cat ${selectedCategory === 'ALL' ? 'is-active' : ''}`}
+            >
+              <Flame className="cpos-flame-icon" />
+              <span>TODOS ({allItems.length})</span>
+            </button>
+
+            {categories.map((cat) => {
+              const isCatSelected = selectedCategory === cat.name;
+              const count = (cat.items || []).length;
+              return (
+                <button
+                  key={cat.id || cat.name}
+                  type="button"
+                  onClick={() => {
+                    sfx.playTap();
+                    setSelectedCategory(cat.name);
+                    if (activeView !== 'order') setActiveView('order');
+                  }}
+                  className={`ui-pill-cat ${isCatSelected ? 'is-active' : ''}`}
+                >
+                  <span>
+                    {cat.name} ({count})
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* User & Table Chip */}
+          <div className="cpos-user-chip-container">
+            <button
+              type="button"
+              onClick={() => {
+                sfx.playTap();
+                setShowTableSelectorPopover((prev) => !prev);
+              }}
+              className="ui-pill ui-pill-md ui-pill-surface ui-pill-interactive"
+              title="Clic para cambiar Mesa o Tipo de Servicio"
+            >
+              <div className="ui-avatar-sm">{cashierInitial}</div>
+              <span className="ui-label-md ui-text-surface">
+                {orderType === 1
+                  ? `Mesa #${selectedTable}`
+                  : orderType === 2
+                    ? 'Para Llevar'
+                    : 'Domicilio'}
+              </span>
+            </button>
+
+            {showTableSelectorPopover && (
+              <div className="cpos-service-popover">
+                <div className="cpos-service-popover-title">Tipo de Servicio</div>
+                <div className="cpos-service-popover-tabs">
+                  {[
+                    { id: 1, label: 'Mesa' },
+                    { id: 2, label: 'Llevar' },
+                    { id: 3, label: 'Domicilio' }
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => {
+                        sfx.playTap();
+                        setOrderType(t.id);
+                      }}
+                      className={`cpos-service-popover-tab ${orderType === t.id ? 'active' : ''}`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+
+                {orderType === 1 && (
+                  <div className="cpos-service-popover-field">
+                    <label className="cpos-service-popover-label">Número de Mesa:</label>
+                    <div className="cpos-table-quick-grid">
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
+                        <button
+                          key={num}
+                          type="button"
+                          onClick={() => {
+                            sfx.playTap();
+                            setSelectedTable(num);
+                            setShowTableSelectorPopover(false);
+                          }}
+                          className={`cpos-table-quick-btn ${selectedTable === num ? 'active' : ''
+                            }`}
+                        >
+                          #{num}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {orderType === 3 && (
+                  <div className="cpos-service-popover-field">
+                    <label className="cpos-service-popover-label">Cliente / Dirección:</label>
+                    <input
+                      type="text"
+                      placeholder="Nombre, Tel, Dirección"
+                      value={customerInfo}
+                      onChange={(e) => setCustomerInfo(e.target.value)}
+                      className="cpos-service-popover-input"
+                    />
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setShowTableSelectorPopover(false)}
+                  className="cpos-service-popover-close"
+                >
+                  Listo
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* ============================================================== */}
+      {/* WORKSPACE BODY: 2 Columns Split (Catalog & Active Ticket)      */}
+      {/* ============================================================== */}
+      {activeView === 'order' ? (
+        <div className="cpos-workspace">
+          {/* LEFT COLUMN (60-70%): Product Catalog Grid with Images */}
+          <main className="cpos-catalog-main">
+            {/* REDESIGNED: Banner Modo Edición de Stock Activo (Clean Light iOS Card Design) */}
+            {isStockJiggleMode && (
+              <div className="cpos-stock-banner">
+                {/* Ambient subtle glow in the background */}
+                <div className="cpos-stock-banner-glow" />
+
+                {/* Left status info with Lucide iconography */}
+                <div className="cpos-stock-banner-left">
+                  <div className="ui-icon-box ui-icon-box-lg">
+                    <Boxes className="ui-icon-20" />
+                  </div>
+                  <div>
+                    <div className="cpos-stock-banner-title-row">
+                      <h2 className="ui-title-md cpos-stock-banner-title">Modo Edición de Stock</h2>
+                      <span className="ui-pill ui-pill-xs ui-pill-emerald ui-pill-upper">
+                        <span className="ui-dot ui-dot-pulse" />
+                        <span>Activo</span>
+                      </span>
+                    </div>
+                    <p className="ui-label-sm ui-text-muted cpos-stock-banner-desc">
+                      Toca el badge de cualquier platillo para alternar entre{' '}
+                      <span className="cpos-stock-text-active">Activo</span> o{' '}
+                      <span className="cpos-stock-text-soldout">Agotado</span> en tiempo real.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Right action button: "Listo (Terminar)" Redesigned with iOS Pill & Lucide icon */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    sfx.playTap();
+                    setIsStockJiggleMode(false);
+                  }}
+                  className="ui-btn ui-btn-primary ui-btn-sm cpos-stock-banner-btn"
+                >
+                  <CheckCheck className="ui-icon-16" />
+                  <span>Listo (Terminar)</span>
+                </button>
+              </div>
+            )}
+
+            <div className="cpos-catalog-grid">
+              {filteredItems.map((item, idx) => {
+                const hasModifiers = Boolean(item.modifiers && item.modifiers.length > 0);
+                const inCartQty = cart
+                  .filter((c) => c.id === item.id)
+                  .reduce((sum, c) => sum + c.quantity, 0);
+                const isItemInactive = item.isActive === false;
+                const isToggling = togglingItemId === item.id;
+                const isSelected = inCartQty > 0 && !isItemInactive;
+                const imgSrc = getPosProductImage(item);
+
                 return (
                   <div
-                    key={item.cartItemId}
-                    className="cpos-s-47"
+                    key={item.id}
+                    onClick={() => handleItemClick(item)}
+                    onPointerDown={(e) => handleCardPointerDown(item, e)}
+                    onPointerUp={cancelCardHold}
+                    onPointerLeave={cancelCardHold}
+                    onPointerCancel={cancelCardHold}
+                    onTouchMove={cancelCardHold}
+                    onContextMenu={(e) => e.preventDefault()}
+                    className={[
+                      'cpos-prod-card',
+                      isSelected ? 'is-selected' : '',
+                      isItemInactive ? 'is-inactive' : '',
+                      holdingItemId === item.id ? 'is-holding' : '',
+                      isStockJiggleMode ? (idx % 2 === 0 ? 'jiggle-even' : 'jiggle-odd') : '',
+                      isToggling ? 'is-toggling' : ''
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
                   >
-                    <div className="cpos-s-48">
-                      <div className="cpos-s-49">
-                        <span className="cpos-s-50">
-                          {item.name}
-                        </span>
-                        <span className="cpos-s-51">
-                          {formatCOP(item.price)}
-                        </span>
-                      </div>
+                    {/* Botón / Badge estilo iOS de Disponibilidad */}
+                    {isStockJiggleMode ? (
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleStockDirect(item, e)}
+                        title="Clic para cambiar disponibilidad"
+                        className={`ui-badge-jiggle ${isItemInactive ? 'inactive' : 'active'
+                          }`}
+                      >
+                        <span className="ui-dot white" />
+                        <span>{isItemInactive ? 'Agotado' : 'Activo'}</span>
+                      </button>
+                    ) : (
+                      isItemInactive && (
+                        <div className="ui-badge-soldout">AGOTADO (86)</div>
+                      )
+                    )}
 
-                      {/* Controles de Cantidad */}
-                      <div className="cpos-s-35">
-                        <button
-                          type="button"
-                          onClick={() => updateQty(item.cartItemId, -1)}
-                          className="cpos-s-52"
-                        >
-                          -
-                        </button>
-                        <span className="cpos-s-53">
-                          {item.quantity}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => updateQty(item.cartItemId, 1)}
-                          className="cpos-s-54"
-                        >
-                          +
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeItem(item.cartItemId)}
-                          className="cpos-s-55"
-                          title="Eliminar ítem"
-                        >
-                          🗑️
-                        </button>
-                      </div>
+                    {/* Active Badge Counter when in cart */}
+                    {!isStockJiggleMode && isSelected && (
+                      <div className="ui-badge-qty">{inCartQty}</div>
+                    )}
+
+                    {/* Product Image Header */}
+                    <div className="cpos-prod-media">
+                      <img
+                        src={imgSrc}
+                        alt={item.name}
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = getProductImageUrl(item, item.categoryName);
+                        }}
+                        className="cpos-prod-img"
+                      />
+                      <span
+                        className={`ui-tag-glass ${isSelected ? 'is-selected' : ''}`}
+                      >
+                        {item.categoryName}
+                      </span>
                     </div>
 
-                    {/* Modificadores indentados */}
-                    {item.modifiers && item.modifiers.length > 0 && (
-                      <div className="cpos-s-56">
-                        {item.modifiers.map((m) => (
-                          <div key={m.id || m.name} className="cpos-s-57">
-                            + {m.name} {m.price > 0 ? `(${formatCOP(m.price)})` : ''}
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    {/* Product Body */}
+                    <div className="cpos-prod-body">
+                      <h3 className={`cpos-prod-title ${isSelected ? 'is-selected' : ''}`}>
+                        {item.name}
+                      </h3>
 
-                    {/* Notas de preparación */}
-                    {item.notes && (
-                      <div className="cpos-s-58">
-                        📝 {item.notes}
-                      </div>
-                    )}
+                      <div className="cpos-prod-footer">
+                        <span
+                          className={`cpos-prod-price ${isSelected ? 'is-selected' : ''}`}
+                        >
+                          {formatCOP(item.price)}
+                        </span>
 
-                    <div className="cpos-s-59">
-                      Subtotal: {formatCOP(itemTotal)}
+                        {hasModifiers ? (
+                          <span className="ui-pill ui-pill-xs ui-pill-amber">
+                            <Sparkles className="cpos-prod-mods-icon" />
+                            <span>Mods</span>
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            aria-label="Ajustes de platillo"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              sfx.playTap();
+                              setModifyingItem(item);
+                            }}
+                            className={`ui-btn-circle-sm ${isSelected ? 'is-selected' : ''
+                              }`}
+                          >
+                            <SlidersHorizontal className="ui-icon-14" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
               })}
 
-              {cart.length === 0 && (
-                <div className="cpos-s-60">
-                  <div className="cpos-s-61">🍽️</div>
-                  Ticket vacío.<br />Selecciona platillos del menú para comenzar la orden.
+              {filteredItems.length === 0 && (
+                <div className="cpos-catalog-empty">
+                  <div className="cpos-catalog-empty-icon">🔍</div>
+                  <div className="cpos-catalog-empty-title">No se encontraron platillos</div>
+                  <div className="cpos-catalog-empty-sub">
+                    Prueba con otro término de búsqueda o selecciona otra categoría.
+                  </div>
                 </div>
               )}
             </div>
+          </main>
 
-            {/* Input para notas generales de la comanda */}
-            {cart.length > 0 && (
-              <div className="cpos-s-62">
+          {/* RIGHT COLUMN (30-40%): Command & Order Ticket Panel (iOS Inset Sheet with Thumbnail) */}
+          <aside className="cpos-ticket-aside">
+            {/* Order Header & Items */}
+            <div className="cpos-ticket-top-section">
+
+
+              {/* Order Items List with Miniature Food Thumbnail */}
+              <div className="cpos-ticket-items-scroll">
+                {cart.map((item) => {
+                  const itemTotal = item.price * item.quantity;
+                  const thumbSrc = getPosProductImage(item);
+
+                  return (
+                    <div key={item.cartItemId} className="cpos-ticket-item-card">
+                      <div className="cpos-ticket-item-row">
+                        {/* Item Thumbnail */}
+                        <img
+                          src={thumbSrc}
+                          alt={`Miniatura ${item.name}`}
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = getProductImageUrl(item, item.categoryName);
+                          }}
+                          className="cpos-ticket-item-thumb"
+                        />
+
+                        <div className="cpos-ticket-item-info">
+                          <h4 className="cpos-ticket-item-name ui-truncate">{item.name}</h4>
+                          <span className="cpos-ticket-item-price ui-tabular">
+                            {formatCOP(item.price)}
+                          </span>
+                        </div>
+
+                        {/* Quantity Stepper (iOS Style Pill) */}
+                        <div className="ui-qty-stepper">
+                          <button
+                            type="button"
+                            aria-label="Disminuir"
+                            onClick={() => updateQty(item.cartItemId, -1)}
+                            className="ui-qty-btn minus"
+                          >
+                            <Minus className="ui-icon-14" />
+                          </button>
+                          <span className="ui-qty-num ui-tabular">{item.quantity}</span>
+                          <button
+                            type="button"
+                            aria-label="Aumentar"
+                            onClick={() => updateQty(item.cartItemId, 1)}
+                            className="ui-qty-btn plus"
+                          >
+                            <Plus className="ui-icon-14" />
+                          </button>
+                        </div>
+
+                        {/* Delete action */}
+                        <button
+                          type="button"
+                          aria-label="Eliminar platillo"
+                          onClick={() => removeItem(item.cartItemId)}
+                          className="ui-btn-delete-icon"
+                        >
+                          <Trash2 className="ui-icon-16" />
+                        </button>
+                      </div>
+
+                      {/* Modifiers & preparation notes if present */}
+                      {item.modifiers && item.modifiers.length > 0 && (
+                        <div className="cpos-ticket-item-mods">
+                          {item.modifiers.map((m) => (
+                            <div key={m.id || m.name} className="cpos-ticket-item-mod-line">
+                              + {m.name} {m.price > 0 ? `(${formatCOP(m.price)})` : ''}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {item.notes && <div className="cpos-ticket-item-note-line">📝 {item.notes}</div>}
+
+                      {/* Item subtotal line 
+                      <div className="cpos-ticket-item-subrow">
+                        <span className="cpos-ticket-item-sublabel">Subtotal ítem</span>
+                        <span className="cpos-ticket-item-subval">
+                          {formatCOP(itemTotal)}
+                        </span>
+                      </div>*/}
+                    </div>
+                  );
+                })}
+
+                {cart.length === 0 && (
+                  <div className="ui-empty-dashed">
+                    <p className="cpos-ticket-empty-title">Sin platillos en la comanda</p>
+                    <p className="cpos-ticket-empty-sub">
+                      Selecciona productos del catálogo para agregarlos a la cuenta.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Kitchen Note Field */}
+              <div className="cpos-kitchen-note-group">
+                <label className="cpos-kitchen-note-label">
+                  <MessageSquare className="ui-icon-14" />
+                  <span>Observación general para cocina:</span>
+                </label>
                 <input
                   type="text"
-                  placeholder="Observación general para cocina..."
+                  placeholder="Ej: Sin cebolla, término medio..."
                   value={orderNotes}
                   onChange={(e) => setOrderNotes(e.target.value)}
-                  className="cpos-s-63"
+                  className="cpos-kitchen-note-input"
                 />
               </div>
-            )}
+            </div>
 
-            {/* FOOTER DEL TICKET: TOTALES Y ACCIONES DE ALDELO RAPID ORDER */}
-            <div className="cpos-s-64">
-              <div className="cpos-s-65">
-                <span className="cpos-s-66">TOTAL:</span>
-                <span className="cpos-s-67">{formatCOP(total)}</span>
+            {/* Order Total & Primary Settlement Actions (The 10% Accent Power Area) */}
+            <div className="cpos-ticket-bottom-section">
+              {/* Summary Math */}
+              <div className="cpos-summary-math">
+                <div className="cpos-summary-line">
+                  <span>Subtotal</span>
+                  <span className="cpos-summary-num ui-tabular">{formatCOP(total)}</span>
+                </div>
+                <div className="cpos-summary-line">
+                  <span>Impuestos (0%)</span>
+                  <span className="cpos-summary-num ui-tabular">$0</span>
+                </div>
+                <div className="cpos-summary-total-row">
+                  <span className="cpos-summary-total-label">TOTAL</span>
+                  <span className="ui-pill ui-pill-sm ui-pill-neutral">
+                    {totalCartItems} {totalCartItems === 1 ? 'ítem' : 'ítems'}
+                  </span>
+                  <span className="cpos-summary-total-val ui-tabular">{formatCOP(total)}</span>
+                </div>
               </div>
 
-              {/* MODO DESPLEGADO DE PAGO DIRECTO */}
+              {/* PAYMENT METHODS & CASH CALCULATOR SECTION (MÉTODO DE PAGO INTEGRADO) */}
               {showPaymentDrawer ? (
-                <div className="cpos-s-68">
-                  <div className="cpos-s-69">
-                    <span className="cpos-s-70">Método de Pago:</span>
+                <div className="cpos-pay-integrated">
+                  {/* Payment Mode Selector Header */}
+                  <div className="cpos-pay-header">
+                    <span className="cpos-pay-header-title">Método de Pago:</span>
                     <button
                       type="button"
                       onClick={() => setShowPaymentDrawer(false)}
-                      className="cpos-s-71"
+                      className="ui-btn-text-cancel"
                     >
-                      ✕ Cancelar
+                      <X className="ui-icon-12" />
+                      <span>Cancelar</span>
                     </button>
                   </div>
 
-                  {/* Selector de Método de Pago */}
-                  <div className="cpos-s-72">
-                    {[
-                      { id: 'CASH', label: '💵 Efectivo' },
-                      { id: 'CARD', label: '💳 Datáfono' },
-                      { id: 'WOMPI_QR', label: '📱 QR' }
-                    ].map((m) => (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => { sfx.playTap(); setPaymentMethod(m.id); }}
-                        className={`cpos-drawer-pay-btn ${paymentMethod === m.id ? 'active' : ''}`}
-                      >
-                        {m.label}
-                      </button>
-                    ))}
+                  {/* Segmented Payment Tabs (Efectivo / Datáfono / QR) */}
+                  <div className="cpos-pay-tabs-grid">
+                    {/* Tab 1: Efectivo */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sfx.playTap();
+                        setPaymentMethod('CASH');
+                      }}
+                      className={`ui-pill-pay-tab ${paymentMethod === 'CASH' ? 'is-active' : ''}`}
+                    >
+                      <Banknote className="cpos-pay-icon-cash" />
+                      <span>Efectivo</span>
+                    </button>
+
+                    {/* Tab 2: Datáfono */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sfx.playTap();
+                        setPaymentMethod('CARD');
+                      }}
+                      className={`ui-pill-pay-tab ${paymentMethod === 'CARD' ? 'is-active' : ''}`}
+                    >
+                      <CreditCard className="cpos-pay-icon-card" />
+                      <span>Datáfono</span>
+                    </button>
+
+                    {/* Tab 3: QR / Transferencia */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sfx.playTap();
+                        setPaymentMethod('WOMPI_QR');
+                      }}
+                      className={`ui-pill-pay-tab ${paymentMethod === 'WOMPI_QR' ? 'is-active' : ''
+                        }`}
+                    >
+                      <QrCode className="cpos-pay-icon-qr" />
+                      <span>QR</span>
+                    </button>
                   </div>
 
-                  {/* Cálculo de cambio para Efectivo con denominaciones rápidas */}
                   {paymentMethod === 'CASH' && (
-                    <div className="cpos-s-73">
-                      <input
-                        type="number"
-                        placeholder="Monto entregado en COP"
-                        value={cashTendered}
-                        onChange={(e) => setCashTendered(e.target.value)}
-                        className="cpos-s-74"
-                      />
+                    <>
+                      {/* Tendered Amount Display */}
+                      <div className="cpos-pay-tendered-wrap">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="Monto entregado"
+                          value={cashTendered}
+                          onChange={(e) => setCashTendered(e.target.value)}
+                          className="cpos-pay-tendered-input ui-tabular"
+                        />
+                      </div>
 
-                      {/* Denominaciones rápidas en Colombia */}
-                      <div className="cpos-s-75">
+                      {/* Quick Cash Denomination Chips */}
+                      <div className="cpos-pay-denoms-grid">
                         {[
                           { label: 'Exacto', val: totalCOPVal },
                           { label: '$20k', val: 20000 },
@@ -943,207 +1424,281 @@ export function CashierView() {
                           <button
                             key={den.label}
                             type="button"
-                            onClick={() => { sfx.playTap(); setCashTendered(String(den.val)); }}
-                            className="cpos-s-76"
+                            onClick={() => {
+                              sfx.playTap();
+                              setCashTendered(String(den.val));
+                            }}
+                            className="ui-pill-chip"
                           >
                             {den.label}
                           </button>
                         ))}
                       </div>
 
-                      {cashNum > 0 && (
-                        <div
-                          className={`cpos-drawer-change-text ${changeCOP >= 0 && cashNum >= totalCOPVal ? 'ok' : 'under'}`}
+                      {/* Change Calculation (Cambio) */}
+                      <div className="cpos-pay-change-row">
+                        <span className="cpos-pay-change-label">Cambio:</span>
+                        <span
+                          className={`cpos-pay-change-val ui-tabular ${cashNum > 0 && cashNum < totalCOPVal ? 'is-under' : ''
+                            }`}
                         >
-                          {cashNum >= totalCOPVal
-                            ? `Cambio: $${changeCOP.toLocaleString('es-CO')}`
-                            : 'Monto menor al total'}
-                        </div>
-                      )}
-                    </div>
+                          {cashNum > 0 && cashNum < totalCOPVal
+                            ? 'Monto menor al total'
+                            : `$${changeCOP.toLocaleString('es-CO')}`}
+                        </span>
+                      </div>
+                    </>
                   )}
 
+                  {/* Final Confirm Settlement Button */}
                   <button
                     type="button"
-                    disabled={isSubmitting || (paymentMethod === 'CASH' && cashNum > 0 && cashNum < totalCOPVal)}
+                    data-component-id="button-primary"
+                    data-component-type="button"
+                    data-component-variant="primary"
+                    disabled={
+                      isSubmitting ||
+                      (paymentMethod === 'CASH' && cashNum > 0 && cashNum < totalCOPVal)
+                    }
                     onClick={handleSettleImmediateOrder}
-                    className="cpos-s-77"
+                    className="ui-btn ui-btn-primary ui-btn-md ui-btn-block cpos-pay-confirm-btn"
                   >
-                    {isSubmitting ? 'Registrando...' : '✅ Confirmar Cobro y Cerrar'}
+                    <CheckCircle2 className="ui-icon-20" />
+                    <span>{isSubmitting ? 'Registrando...' : 'Confirmar Cobro y Cerrar'}</span>
                   </button>
                 </div>
               ) : (
-                /* BOTONES DE ACCIÓN PRINCIPALES ESTILO ALDELO */
-                <div className="cpos-s-78">
-                  {/* Botón 1: Enviar a Cocina (Pendiente / Orden Abierta) */}
+                <div className="cpos-settlement-grid">
+                  {/* Button 1: Enviar a Cocina (Secondary Action / Cuenta Pendiente) */}
                   <button
                     type="button"
                     disabled={cart.length === 0 || isSubmitting}
                     onClick={handleSendToKitchenPending}
-                    className={`cpos-action-btn send-kitchen ${cart.length > 0 ? 'enabled' : 'disabled'}`}
+                    className="ui-btn-stack ui-btn-stack-secondary"
                   >
-                    <span>👨‍🍳 Enviar a Cocina</span>
-                    <span className="cpos-s-79">Cuenta Pendiente</span>
+                    <div className="ui-btn-stack-row">
+                      <ChefHat className="ui-icon-16" />
+                      <span className="ui-btn-stack-title">Enviar a Cocina</span>
+                    </div>
+                    <span className="ui-btn-stack-sub">Cuenta Pendiente</span>
                   </button>
 
-                  {/* Botón 2: Cobrar Inmediato (Pagada / Cerrada) */}
+                  {/* Button 2: Cobrar Inmediato (10% Accent Primary Hero) */}
                   <button
                     type="button"
+                    data-component-id="button-primary"
+                    data-component-type="button"
+                    data-component-variant="primary"
                     disabled={cart.length === 0 || isSubmitting}
                     onClick={() => {
                       sfx.playTap();
                       setShowPaymentDrawer(true);
                       setCashTendered(String(totalCOPVal));
                     }}
-                    className={`cpos-action-btn pay-now ${cart.length > 0 ? 'enabled' : 'disabled'}`}
+                    className="ui-btn-stack ui-btn-stack-primary"
                   >
-                    <span>💵 Cobrar Inmediato</span>
-                    <span className="cpos-s-79">Cerrar Venta</span>
+                    <div className="ui-btn-stack-row">
+                      <CreditCard className="ui-icon-16" />
+                      <span className="ui-btn-stack-title">Cobrar Inmediato</span>
+                    </div>
+                    <span className="ui-btn-stack-sub">Cerrar Venta</span>
                   </button>
                 </div>
               )}
             </div>
-          </div>
+          </aside>
         </div>
       ) : (
         /* ============================================================== */
         /* 3. VISTA DE ÓRDENES QUE NECESITAN COMPLETAR PAGO               */
-        /* (Con clara distinción visual: PARA LLEVAR vs MESA)             */
         /* ============================================================== */
-        <div className="cpos-s-80">
-          <div className="cpos-s-81">
-            
-            {/* Header y Filtros Rápidos (Todos / Para Llevar / En Mesa) */}
-            <div className="cpos-s-82">
+        <div className="cpos-po-viewport">
+          <div className="cpos-po-container">
+            {/* Title Section & Segmented Filter Bar */}
+            <div className="cpos-po-header-bar">
               <div>
-                <h2 className="cpos-s-83">
-                  💳 Órdenes Pendientes de Pago ({pendingPaymentOrders.length})
-                </h2>
-                <div className="cpos-s-84">
-                  Verifica si el cliente ordenó <strong>Para Llevar</strong> o para consumir en <strong>Mesa</strong> antes de cobrar.
+                <div className="cpos-po-header-title-row">
+                  <div className="ui-icon-box ui-icon-box-sm">
+                    <CreditCard className="ui-icon-20" />
+                  </div>
+                  <h1 className="ui-heading-lg cpos-po-header-title">
+                    Órdenes Pendientes de Pago{' '}
+                    <span className="ui-text-accent">({pendingPaymentOrders.length})</span>
+                  </h1>
                 </div>
               </div>
 
-              {/* Pestañas de Filtro: Todos / Para Llevar / En Mesa */}
-              <div className="cpos-s-85">
+              {/* iOS Segmented Control Capsule (Todas / Para Llevar / En Mesa) */}
+              <div className="ui-capsule cpos-po-filter-capsule">
                 <button
                   type="button"
-                  onClick={() => { sfx.playTap(); setServiceFilter('ALL'); }}
-                  className={`cpos-pending-filter-tab all ${serviceFilter === 'ALL' ? 'active' : ''}`}
+                  onClick={() => {
+                    sfx.playTap();
+                    setServiceFilter('ALL');
+                  }}
+                  className={`ui-capsule-btn cpos-po-filter-btn ${serviceFilter === 'ALL' ? 'is-active' : ''}`}
                 >
-                  📋 Todas ({pendingPaymentOrders.length})
+                  <ClipboardList className="ui-icon-16 ui-text-accent" />
+                  <span>Todas ({pendingPaymentOrders.length})</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => { sfx.playTap(); setServiceFilter('TAKE_OUT'); }}
-                  className={`cpos-pending-filter-tab takeout ${serviceFilter === 'TAKE_OUT' ? 'active' : ''}`}
+                  onClick={() => {
+                    sfx.playTap();
+                    setServiceFilter('TAKE_OUT');
+                  }}
+                  className={`ui-capsule-btn cpos-po-filter-btn ${serviceFilter === 'TAKE_OUT' ? 'is-active' : ''
+                    }`}
                 >
-                  🥡 Para Llevar ({takeOutCount})
+                  <ShoppingBag className="ui-icon-16" />
+                  <span>Para Llevar ({takeOutCount})</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => { sfx.playTap(); setServiceFilter('DINE_IN'); }}
-                  className={`cpos-pending-filter-tab dinein ${serviceFilter === 'DINE_IN' ? 'active' : ''}`}
+                  onClick={() => {
+                    sfx.playTap();
+                    setServiceFilter('DINE_IN');
+                  }}
+                  className={`ui-capsule-btn cpos-po-filter-btn ${serviceFilter === 'DINE_IN' ? 'is-active' : ''
+                    }`}
                 >
-                  🍽️ En Mesa ({dineInCount})
+                  <Utensils className="ui-icon-16 cpos-po-filter-icon-mesa" />
+                  <span>En Mesa ({dineInCount})</span>
                 </button>
               </div>
             </div>
 
-            {/* Lista de Órdenes */}
             {displayedPendingOrders.length === 0 ? (
-              <div className="cpos-s-86">
-                <div className="cpos-s-87">✅</div>
-                <div className="cpos-s-88">
+              <div className="ui-empty-card">
+                <div className="ui-empty-glow" />
+
+                <div className="ui-empty-icon-wrap">
+                  {serviceFilter === 'TAKE_OUT' ? (
+                    <ShoppingBag className="ui-icon-32" />
+                  ) : serviceFilter === 'DINE_IN' ? (
+                    <Utensils className="ui-icon-32" />
+                  ) : (
+                    <CheckCircle2 className="ui-icon-32" />
+                  )}
+                  <span className="ui-empty-check-badge">
+                    <CheckCheck className="ui-icon-14" />
+                  </span>
+                </div>
+
+                <span className="ui-pill ui-pill-sm ui-pill-emerald ui-pill-upper">
+                  <span className="ui-dot ui-dot-pulse" />
+                  <span>Caja al día</span>
+                </span>
+
+                <h2 className="ui-heading-md">
                   {serviceFilter === 'ALL'
                     ? '¡No hay órdenes pendientes de pago!'
                     : serviceFilter === 'TAKE_OUT'
-                    ? 'No hay órdenes Para Llevar pendientes'
-                    : 'No hay órdenes en Mesa pendientes'}
-                </div>
-                <div className="cpos-s-89">
+                      ? 'No hay órdenes Para Llevar pendientes'
+                      : 'No hay órdenes en Mesa pendientes'}
+                </h2>
+
+                <p className="ui-body-md ui-text-muted ui-empty-desc">
                   Todos los pedidos han sido pagados y están en preparación.
+                </p>
+
+                <div className="ui-empty-actions">
+                  {serviceFilter !== 'ALL' && pendingPaymentOrders.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sfx.playTap();
+                        setServiceFilter('ALL');
+                      }}
+                      className="ui-btn ui-btn-secondary ui-btn-md"
+                    >
+                      <ClipboardList className="ui-icon-16" />
+                      <span>Ver todas ({pendingPaymentOrders.length})</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sfx.playTap();
+                      setActiveView('order');
+                    }}
+                    className="ui-btn ui-btn-primary ui-btn-md"
+                  >
+                    <Plus className="ui-icon-16" />
+                    <span>Nueva Comanda</span>
+                  </button>
                 </div>
               </div>
             ) : (
-              <div className="cpos-s-90">
+              /* PENDING ORDERS GRID (iOS Cards with Crisp Shadows & Borders) */
+              <div className="cpos-po-grid">
                 {displayedPendingOrders.map((order) => {
                   const elapsed = getElapsedMinutes(order.createdAt);
                   const isTakeOut = Number(order.orderType) === 2 || !order.tableId;
 
                   return (
-                    <div
-                      key={order.id}
-                      className={`cpos-pending-order-card ${isTakeOut ? 'takeout' : 'dinein'}`}
-                    >
-                      {/* Cabecera de la orden */}
+                    <div key={order.id} className="cpos-po-card">
                       <div>
-                        {/* 1. DISTINCIÓN CLARA Y VISIBLE: PARA LLEVAR VS MESA */}
-                        <div className="cpos-s-91">
+                        {/* Card Top Bar: Table Badge & Timer */}
+                        <div className="cpos-po-topbar">
                           {isTakeOut ? (
-                            <span
-                              className="cpos-s-92"
-                            >
-                              <span className="cpos-s-93">🥡</span>
+                            <span className="ui-pill ui-pill-md ui-pill-amber">
+                              <ShoppingBag className="ui-icon-16" />
                               <span>PARA LLEVAR</span>
                             </span>
                           ) : (
-                            <span
-                              className="cpos-s-94"
-                            >
-                              <span className="cpos-s-93">🍽️</span>
+                            <span className="ui-pill ui-pill-md ui-pill-blue">
+                              <Utensils className="ui-icon-16" />
                               <span>MESA #{order.tableId || 'S/M'}</span>
                             </span>
                           )}
 
-                          <span className="cpos-s-95">
-                            ⏱️ {elapsed} min
-                          </span>
-                        </div>
-
-                        {/* Turno gigante para rápida identificación del cliente */}
-                        <div className="cpos-s-96">
-                          <div className="cpos-s-97">
-                            <span className="cpos-s-98">
-                              Turno #{order.orderNumber || order.id}
-                            </span>
-                            <span
-                              className={`cpos-pending-service-tag ${isTakeOut ? 'takeout' : 'dinein'}`}
-                            >
-                              {isTakeOut ? '• Para Llevar' : `• Mesa ${order.tableId}`}
-                            </span>
+                          <div className="ui-pill ui-pill-sm ui-pill-neutral">
+                            <Timer className="cpos-po-timer-icon" />
+                            <span>{elapsed} min</span>
                           </div>
+                        </div>
 
-                          <span
-                            className="cpos-s-99"
-                          >
-                            ⏳ POR COBRAR
+                        {/* Order Identity & Status Tag */}
+                        <div className="cpos-po-identity-row">
+                          <h2 className="ui-heading-lg cpos-po-turn-title">
+                            Turno #{order.orderNumber || order.id}
+                          </h2>
+
+                          <span className="ui-pill ui-pill-xs ui-pill-rose ui-pill-upper">
+                            <Hourglass className="cpos-po-hourglass-icon" />
+                            <span>POR COBRAR</span>
                           </span>
                         </div>
 
-                        {/* Lista de platillos */}
-                        <div className="cpos-s-100">
+                        {/* Order Line Items List */}
+                        <div className="cpos-po-items-box">
                           {(order.items || []).map((it, idx) => (
-                            <div key={idx} className="cpos-s-101">
-                              <span>
-                                <strong>{it.quantity || 1}x</strong> {it.name}
+                            <div key={idx} className="cpos-po-item-row">
+                              <span className="cpos-po-item-name">
+                                <strong className="cpos-po-item-qty">{it.quantity || 1}x</strong>{' '}
+                                {it.name}
                               </span>
-                              <span className="cpos-s-102">{formatCOP(it.price * (it.quantity || 1))}</span>
+                              <span className="cpos-po-item-price ui-tabular">
+                                {formatCOP(it.price * (it.quantity || 1))}
+                              </span>
                             </div>
                           ))}
                         </div>
 
-                        {/* Total a cobrar */}
-                        <div className="cpos-s-103">
-                          <span className="cpos-s-104">Total a Cobrar:</span>
-                          <span className="cpos-s-105">{formatCOP(order.total)}</span>
+                        {/* Total Amount Line */}
+                        <div className="cpos-po-total-row">
+                          <span className="ui-title-md cpos-po-total-label">Total a Cobrar:</span>
+                          <span className="ui-price-lg cpos-po-total-val">{formatCOP(order.total)}</span>
                         </div>
                       </div>
 
-                      {/* Botones de acción rápida para completar pago */}
-                      <div className="cpos-s-106">
+                      {/* PERFECTLY ALIGNED ACTION TOOLBAR (Grid-based 3-action row) */}
+                      <div className="cpos-po-actions">
+                        {/* Button 1: Completar Pago (Main Hero Button - 6 cols) */}
                         <button
                           type="button"
                           onClick={() => {
@@ -1151,26 +1706,31 @@ export function CashierView() {
                             setSettlingOrder(order);
                             setSettleCashTendered(String(Math.round(order.total * 1000)));
                           }}
-                          className="cpos-s-107"
+                          className="ui-btn ui-btn-primary ui-btn-lg cpos-po-btn-pay"
                         >
-                          <span>💵 Completar Pago</span>
+                          <Wallet className="ui-icon-16" />
+                          <span className="ui-truncate cpos-po-btn-pay-text">Completar</span>
                         </button>
 
+                        {/* Button 2: Editar (Secondary - 4 cols) */}
                         <button
                           type="button"
+                          title="Editar pedido en el terminal"
                           onClick={() => handleLoadPendingOrderToTicket(order)}
-                          className="cpos-s-108"
+                          className="ui-btn ui-btn-secondary ui-btn-lg cpos-po-btn-load"
                         >
-                          👁️ Cargar
+                          <Pencil className="ui-icon-14 ui-text-muted" />
+                          <span>Editar</span>
                         </button>
 
+                        {/* Button 3: Anular / Eliminar (Destructive - 2 cols) */}
                         <button
                           type="button"
+                          title="Cancelar comanda"
                           onClick={() => handleVoidOrder(order.id)}
-                          className="cpos-s-109"
-                          title="Anular orden"
+                          className="ui-btn ui-btn-danger-soft ui-btn-lg cpos-po-btn-void"
                         >
-                          ✕
+                          <Trash2 className="ui-icon-16" />
                         </button>
                       </div>
                     </div>
@@ -1183,7 +1743,7 @@ export function CashierView() {
       )}
 
       {/* ============================================================== */}
-      {/* 4. MODAL DE MODIFICADORES (REUTILIZANDO MODIFIERMODAL KIOSK)     */}
+      {/* 4. MODAL DE MODIFICADORES                                       */}
       {/* ============================================================== */}
       {modifyingItem && (
         <ModifierModal
@@ -1224,7 +1784,6 @@ export function CashierView() {
         isOpen={showStockModal}
         onClose={() => setShowStockModal(false)}
       />
-
     </div>
   );
 }

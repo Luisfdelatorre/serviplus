@@ -83,7 +83,7 @@ export function SuccessStep({
         {/* Tarjeta 1: Estado del Pedido y Turno */}
         <div className="checkout-status-card">
           <div className="checkout-status-top-bar">
-            <div className="checkout-success-pill">
+            <div className="ui-row-inline">
               <span className="success-check-icon">✓</span>
               <span className="success-check-text">¡Pago Exitoso!</span>
             </div>
@@ -262,37 +262,7 @@ export function SuccessStep({
           reference={createdReceiptCode || 'SP-1793691288288'}
         />
 
-        {/* Botón de Impresión en Impresora Térmica Física */}
-        <div className="checkout-thermal-print-wrap">
-          <button
-            type="button"
-            onClick={handlePrintThermalTicket}
-            disabled={thermalPrintStatus === 'printing'}
-            className={`checkout-thermal-print-btn status-${thermalPrintStatus || 'idle'}`}
-          >
-            {thermalPrintStatus === 'printing' ? (
-              <>
-                <span className="checkout-thermal-icon-spin">🔄</span>
-                <span>Imprimiendo en POS-58...</span>
-              </>
-            ) : thermalPrintStatus === 'success' ? (
-              <>
-                <span className="checkout-thermal-icon">✓</span>
-                <span>¡Ticket Impreso con Éxito!</span>
-              </>
-            ) : thermalPrintStatus === 'error' ? (
-              <>
-                <span className="checkout-thermal-icon">⚠️</span>
-                <span>Reintentar Impresión ({thermalPrintError ? 'Error' : 'Reintentar'})</span>
-              </>
-            ) : (
-              <>
-                <span className="checkout-thermal-icon">🖨️</span>
-                <span>Imprimir Ticket Térmico</span>
-              </>
-            )}
-          </button>
-        </div>
+
       </div>
     </div>
   );

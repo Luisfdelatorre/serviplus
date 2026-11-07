@@ -223,12 +223,12 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
         {/* Barra Superior */}
         <div className="admin-settings-header">
           <div className="admin-settings-title-group">
-            <div className="admin-header-badge">
+            <div className="ui-icon-box-xl ui-icon-box-gold">
               <Settings size={22} />
             </div>
             <div>
               <h2>Panel de Administración • Serviplus</h2>
-              <div className="admin-user-pill">
+              <div className="ui-pill ui-pill-xs ui-pill-neutral">
                 <ShieldCheck size={14} />
                 <span>{currentAdmin?.name || 'Administrador'} (Nivel Aldelo: {currentAdmin?.securityLevel || 1})</span>
               </div>
@@ -876,7 +876,7 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                         </div>
                         <div className="asmod-s-15">
                           <span
-                            className={`asmod-printer-status-dot ${installedPrinters.some(p => p.toLowerCase() === (config.printer?.printerName || 'POS-58').toLowerCase()) ? 'detected' : 'missing'}`}
+                            className={`ui-dot lg ${installedPrinters.some(p => p.toLowerCase() === (config.printer?.printerName || 'POS-58').toLowerCase()) ? 'online' : 'amber'}`}
                           />
                           {installedPrinters.some(p => p.toLowerCase() === (config.printer?.printerName || 'POS-58').toLowerCase())
                             ? 'Detectada en el sistema (Spooler de Windows Listo)'

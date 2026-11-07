@@ -13,6 +13,7 @@ import {
   LogOut,
   ArrowRight
 } from 'lucide-react';
+import { UpayLogo } from '../common/UpayLogo';
 import './UnifiedLoginModal.css';
 
 /**
@@ -154,8 +155,8 @@ export function UnifiedLoginModal({
         {/* Header Modal */}
         <div className="ulm-header">
           <div className="ulm-brand-box">
-            <div className={`ulm-icon-badge ${isAdmin ? 'admin' : 'teal'}`}>
-              {icon || (isAdmin ? <Shield size={24} /> : <Lock size={22} />)}
+            <div className="ui-icon-box-xl">
+              {icon || <UpayLogo size={26} className="ulm-brand-svg" />}
             </div>
             <div className="ulm-title-group">
               <h3>{title || defaultTitle}</h3>
@@ -199,15 +200,15 @@ export function UnifiedLoginModal({
               <span className="ulm-users-label">
                 {isAdmin ? 'Selecciona tu usuario de gerencia:' : 'Selecciona tu usuario:'}
               </span>
-              <div className="ulm-chips-scroll">
+              <div className="ui-chips-scroll">
                 {employeesList.slice(0, 6).map((emp) => (
                   <button
                     key={emp.id}
                     type="button"
-                    className="ulm-user-chip"
+                    className="ui-user-chip"
                     onClick={() => handleSelectEmployee(emp)}
                   >
-                    <span className="ulm-chip-avatar">
+                    <span className="ui-user-chip-avatar">
                       {(emp.firstName || emp.name || 'E').charAt(0).toUpperCase()}
                     </span>
                     <span>{emp.firstName || emp.name}</span>
@@ -217,9 +218,9 @@ export function UnifiedLoginModal({
             </div>
           )}
 
-          {/* Badge de usuario seleccionado */}
+          {/* Banner de usuario seleccionado */}
           {selectedEmp && (
-            <div className="ulm-selected-badge">
+            <div className="ui-selected-banner">
               <span>
                 Usuario: <strong>{selectedEmp.firstName || selectedEmp.name}</strong>
                 {selectedEmp.securityLevel !== undefined && (
@@ -236,11 +237,11 @@ export function UnifiedLoginModal({
 
           {/* Caja con indicador de PIN */}
           <div className="ulm-pin-box">
-            <div className="ulm-pin-dots">
+            <div className="ui-pin-dots">
               {Array.from({ length: Math.max(4, pin.length) }).map((_, idx) => (
                 <span
                   key={idx}
-                  className={`ulm-pin-dot ${idx < pin.length ? 'filled' : ''}`}
+                  className={`ui-pin-dot ${idx < pin.length ? 'filled' : ''}`}
                 />
               ))}
             </div>

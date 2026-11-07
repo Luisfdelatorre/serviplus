@@ -142,13 +142,13 @@ export function CashShiftModal({ isOpen, onClose }) {
         {/* Header */}
         <div className="admin-settings-header cshift-s-2">
           <div className="admin-settings-title-group">
-            <div className={`admin-header-badge ${isShiftOpen ? 'shift-open' : 'shift-closed'}`}>
+            <div className={`ui-icon-box-xl ${isShiftOpen ? 'ui-icon-box-emerald' : 'ui-icon-box-amber'}`}>
               <DollarSign size={22} color="#fff" />
             </div>
             <div>
               <h2>Control de Caja (Turnos y Arqueo Z)</h2>
               <div className="cshift-s-3">
-                <span className={`cshift-status-pill ${isShiftOpen ? 'open' : 'closed'}`}>
+                <span className={`ui-pill ui-pill-xs ui-pill-dark-status ${isShiftOpen ? 'open' : 'closed'}`}>
                   {isShiftOpen ? <Unlock size={12} /> : <Lock size={12} />}
                   {isShiftOpen ? `Turno #${currentShift.shiftNumber} ABIERTO` : 'CAJA CERRADA'}
                 </span>

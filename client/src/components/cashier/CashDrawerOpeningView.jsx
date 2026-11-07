@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useMenuStore } from '../../store/useMenuStore';
 import { openCashShift, fetchEmployees, fetchCurrentCashShift, printCashShiftSlip, openCashDrawer, fetchPublicConfig } from '../../api';
 import { socket } from '../../socket';
 import { sfx } from '../../utils/audio';
 import { formatCurrency } from '../../utils/format';
 import { getDenominationsForCurrency } from '../../config/currencyDenominations';
+import { UpayLogo } from '../common/UpayLogo';
 import './CashDrawerOpening.css';
 
 export function CashDrawerOpeningView() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const setActiveTab = useMenuStore((state) => state.setActiveTab);
   const openAdminLogin = useMenuStore((state) => state.openAdminLogin);
   const sessionEmployee = useMenuStore((state) => state.sessionEmployee);
@@ -193,6 +198,8 @@ export function CashDrawerOpeningView() {
         notes: shiftNotes
       });
 
+      queryClient.invalidateQueries({ queryKey: ['cash-shift', 'current'] });
+
       try { sfx.playSuccess(); } catch (_) { }
       setRegisteredTotal(totalCash);
       setShowSuccessModal(true);
@@ -207,7 +214,7 @@ export function CashDrawerOpeningView() {
   const handleGoToPos = () => {
     try { sfx.playTap(); } catch (_) { }
     setShowSuccessModal(false);
-    setActiveTab('cashier');
+    navigate('/front');
   };
 
   return (
@@ -216,7 +223,7 @@ export function CashDrawerOpeningView() {
       <header className="cdo-header">
         <div className="cdo-brand-group">
           <div className="cdo-brand-logo">
-            U
+            <UpayLogo size={22} className="cdo-brand-svg" />
           </div>
           <div>
             <div className="cdo-brand-title">
@@ -226,21 +233,21 @@ export function CashDrawerOpeningView() {
             <p className="cdo-brand-sub">S.A.S. • SMART RETAIL TECH</p>
           </div>
 
-          <div className={`cdo-online-pill ${isSocketConnected ? '' : 'offline'}`}>
-            <span className={`cdo-ping-dot ${isSocketConnected ? '' : 'offline'}`}>
+          <div className={`ui-pill ui-pill-xs ui-pill-emerald ${isSocketConnected ? '' : 'offline'}`}>
+            <span className={`ui-dot-ping ${isSocketConnected ? '' : 'offline'}`}>
               <span className="ring"></span>
               <span className="dot"></span>
             </span>
             <span>{isSocketConnected ? 'En línea' : 'Desconectado'}</span>
           </div>
 
-          <div className="cdo-station-badge">
+          <div className="ui-station-badge">
             <span><strong>POS 01</strong></span>
             <span>•</span>
             <span><strong>{sessionEmployee?.name || ''}</strong></span>
             <span>•</span>
-            <span className={`cdo-kiosk-pill ${isSocketConnected ? 'online' : 'offline'}`}>
-              <span className={`cdo-kiosk-dot ${isSocketConnected ? 'online' : 'offline'}`}></span>
+            <span className={`ui-pill ui-pill-xs ui-pill-emerald ${isSocketConnected ? 'online' : 'offline'}`}>
+              <span className={`ui-dot ${isSocketConnected ? 'online' : 'offline'}`}></span>
               {isSocketConnected ? 'Kiosk online' : 'Servidor Desconectado'}
             </span>
           </div>
@@ -248,14 +255,14 @@ export function CashDrawerOpeningView() {
 
         <div className="cdo-header-actions">
           <button
-            className="cdo-action-btn"
+            className="ui-btn ui-btn-secondary ui-btn-sm cdo-action-btn"
             type="button"
             onClick={() => {
               try { sfx.playTap(); } catch (_) { }
-              setActiveTab('home');
+              navigate('/');
             }}
           >
-            <svg className="cdo-icon-sm" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <svg className="ui-icon-16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path d="M10 19l-7-7m0 0l7-7m-7 7h18" strokeLinecap="round" strokeLinejoin="round"></path>
             </svg>
             <span>Regresar al Hub</span>
@@ -270,7 +277,7 @@ export function CashDrawerOpeningView() {
         <div className="cdo-title-bar">
           <div className="cdo-title-left">
             <div className="cdo-title-icon">
-              <svg className="cdo-icon-lg" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <svg className="ui-icon-24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" strokeLinecap="round" strokeLinejoin="round"></path>
               </svg>
             </div>
@@ -279,7 +286,7 @@ export function CashDrawerOpeningView() {
             </div>
           </div>
 
-          <div className="cdo-date-pill">
+          <div className="ui-pill ui-pill-sm ui-pill-surface">
             <span className="cdo-date-label">Fecha de Arqueo:</span>
             <span className="cdo-mono cdo-date-val">
               {dateTimeString || ''}
@@ -318,7 +325,7 @@ export function CashDrawerOpeningView() {
                       onClick={() => handleSelectRow(row.id)}
                     >
                       <div className="cdo-row-info">
-                        <span className={`cdo-row-pill denom-${row.id}`}></span>
+                        <span className={`ui-denom-bar denom-${row.id}`}></span>
                         <div>
                           <div className="cdo-row-name">{row.label}</div>
                           <div className="cdo-row-sub">{row.type}</div>
@@ -366,7 +373,7 @@ export function CashDrawerOpeningView() {
             {/* Subtotal Cash Banner */}
             <div className="cdo-subtotal-banner">
               <div className="label">
-                <span className="cdo-summary-dot"></span>
+                <span className="ui-dot lg teal"></span>
                 <span>Piezas Contadas: <strong className="cdo-summary-highlight">{totalPieces}</strong></span>
               </div>
               <span className="amount cdo-mono">
@@ -452,7 +459,7 @@ export function CashDrawerOpeningView() {
 
               {/* Print Slip Option */}
               <button
-                className="cdo-print-slip-btn"
+                className="ui-btn ui-btn-secondary ui-btn-sm ui-btn-block cdo-print-slip-btn"
                 type="button"
                 onClick={async () => {
                   try { sfx.playTap(); } catch (_) { }
@@ -469,7 +476,7 @@ export function CashDrawerOpeningView() {
                   }
                 }}
               >
-                <svg className="cdo-icon-teal" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <svg className="ui-icon-16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" strokeLinecap="round" strokeLinejoin="round"></path>
                 </svg>
                 <span>Imprimir Comprobante de Arqueo</span>
@@ -477,12 +484,12 @@ export function CashDrawerOpeningView() {
 
               {/* Primary Submit Button */}
               <button
-                className="cdo-submit-btn"
+                className="ui-btn ui-btn-primary ui-btn-md ui-btn-block cdo-submit-btn"
                 type="button"
                 disabled={submitting}
                 onClick={handleSubmitOpening}
               >
-                <svg className="cdo-icon-md" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <svg className="ui-icon-20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                   <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" strokeLinecap="round" strokeLinejoin="round"></path>
                 </svg>
                 <span>{submitting ? 'Aperturando Turno...' : 'Confirmar y Abrir Turno de Caja'}</span>
@@ -498,7 +505,7 @@ export function CashDrawerOpeningView() {
         <div className="cdo-modal-overlay">
           <div className="cdo-modal-card">
             <div className="cdo-modal-icon-wrap">
-              <svg className="cdo-icon-xl" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <svg className="ui-icon-32" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round"></path>
               </svg>
             </div>
@@ -509,7 +516,7 @@ export function CashDrawerOpeningView() {
               El arqueo inicial de <strong className="cdo-summary-highlight">{formatCurrency(registeredTotal, currency)}</strong> ha quedado registrado. Se ha emitido la orden y la gaveta está habilitada para facturar.
             </p>
             <button
-              className="cdo-modal-btn"
+              className="ui-btn ui-btn-primary ui-btn-lg ui-btn-block cdo-modal-btn"
               type="button"
               onClick={handleGoToPos}
             >

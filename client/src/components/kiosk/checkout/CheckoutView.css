@@ -65,33 +65,6 @@
   gap: 10px;
 }
 
-.checkout-step-pill {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 18px;
-  border-radius: 9999px;
-  background: #f8fafc;
-  border: 1.5px solid #e2e8f0;
-  color: #64748b;
-  font-weight: 800;
-  font-size: 0.92rem;
-  transition: all 0.15s ease;
-}
-
-.checkout-step-pill.active {
-  background: #fffdf0;
-  border: 2px solid #f59e0b;
-  color: #b45309;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
-}
-
-.checkout-step-pill.completed {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
-  color: #15803d;
-}
-
 .checkout-step-sep {
   color: #cbd5e1;
   font-weight: 900;
@@ -179,15 +152,6 @@
   font-weight: 600;
 }
 
-.checkout-badge-pill {
-  background: #ffbc0d;
-  color: #000000;
-  padding: 6px 16px;
-  border-radius: 9999px;
-  font-size: 0.92rem;
-  font-weight: 900;
-}
-
 .checkout-clear-btn {
   background: transparent;
   border: none;
@@ -262,13 +226,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-}
-
-.checkout-mod-pill {
-  background: #fffdf0;
-  border: 1px solid #fde68a;
-  padding: 3px 10px;
-  border-radius: 8px;
 }
 
 .checkout-item-notes {
@@ -465,18 +422,6 @@
   max-width: 650px;
 }
 
-.checkout-service-badge {
-  display: inline-block;
-  background: #fef3c7;
-  color: #b45309;
-  padding: 6px 16px;
-  border-radius: 9999px;
-  font-size: 0.88rem;
-  font-weight: 900;
-  margin-bottom: 12px;
-  border: 1px solid #fde68a;
-}
-
 .checkout-service-title {
   font-size: 2.6rem;
   font-weight: 900;
@@ -574,26 +519,6 @@
 /* =========================================================================
    STEP 3: TABLE SELECTION (30 TABLES GRID)
    ========================================================================= */
-.checkout-table-selected-badge {
-  background: #dcfce7;
-  color: #15803d;
-  padding: 6px 16px;
-  border-radius: 9999px;
-  font-weight: 900;
-  font-size: 0.95rem;
-  border: 1px solid #86efac;
-}
-
-.checkout-table-empty-badge {
-  background: #fef2f2;
-  color: #b91c1c;
-  padding: 6px 16px;
-  border-radius: 9999px;
-  font-weight: 800;
-  font-size: 0.92rem;
-  border: 1px solid #fecaca;
-}
-
 .checkout-tables-center-scroll {
   flex: 1;
   overflow-y: auto;
@@ -699,21 +624,6 @@
   box-shadow: 0 8px 24px rgba(245, 158, 11, 0.16);
 }
 
-.checkout-payment-card-badge {
-  background: #f1f5f9;
-  color: #475569;
-  font-size: 0.74rem;
-  font-weight: 800;
-  padding: 3px 10px;
-  border-radius: 9999px;
-  margin-top: 6px;
-}
-
-.checkout-payment-card.selected .checkout-payment-card-badge {
-  background: #fde68a;
-  color: #92400e;
-}
-
 .checkout-payment-detail-center {
   margin-bottom: 20px;
 }
@@ -803,12 +713,6 @@
   margin-bottom: 12px;
 }
 
-.checkout-success-pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .success-check-icon {
   width: 26px;
   height: 26px;
@@ -826,16 +730,6 @@
   font-size: 1.25rem;
   font-weight: 900;
   color: #0f172a;
-}
-
-.checkout-status-badge {
-  background: #ecfdf5;
-  color: #059669;
-  font-size: 0.78rem;
-  font-weight: 800;
-  padding: 4px 12px;
-  border-radius: 9999px;
-  border: 1px solid #a7f3d0;
 }
 
 .checkout-turn-display-wrap {
@@ -919,16 +813,6 @@
   font-weight: 900;
   color: #0f172a;
   margin: 0;
-}
-
-.checkout-channel-badge {
-  background: #ecfdf5;
-  color: #059669;
-  font-size: 0.74rem;
-  font-weight: 900;
-  padding: 3px 10px;
-  border-radius: 9999px;
-  border: 1px solid #a7f3d0;
 }
 
 .checkout-channel-tabs-bar {
@@ -1760,4 +1644,524 @@
 
 .pay-s-31 {
   margin-top: 24px;
+}
+
+/* =========================================================================
+   UPAYSOLUTIONS KIOSCO - STEPPER HEADER & PASO 4: SELECCIÓN DE PAGO
+   ========================================================================= */
+
+.kchk-top-header {
+  height: auto;
+  padding: 14px 24px;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid #E5E5EA;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.kchk-header-inner {
+  max-width: 1152px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.kchk-stepper-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.kchk-step-chevron {
+  width: 14px;
+  height: 14px;
+  color: #AEAEB2;
+  flex-shrink: 0;
+}
+
+.kchk-dismiss-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  background-color: #F2F2F7;
+  border: 1px solid #E5E5EA;
+  color: #636366;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: all 150ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.kchk-dismiss-btn:hover {
+  background-color: #E5E5EA;
+  color: #1C1C1E;
+  border-color: #E5E5EA;
+}
+
+.kchk-dismiss-btn:active {
+  transform: scale(0.9);
+}
+
+.kchk-dismiss-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* --- PAYMENT STEP (STEP 4) SHELL --- */
+.kpay-page-shell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background-color: #F8F9FA;
+  color: #1C1C1E;
+  font-family: 'Inter', sans-serif;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.kpay-main-container {
+  padding: 16px 24px;
+  max-width: 1024px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+  box-sizing: border-box;
+}
+
+/* Destination & Total Banner */
+.kpay-dest-banner {
+  background-color: #FFFFFF;
+  border: 1px solid #E5E5EA;
+  border-radius: 16px;
+  padding: 14px 20px;
+  box-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.kpay-dest-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.kpay-dest-emoji {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.kpay-dest-overline {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8E8E93;
+}
+
+.kpay-dest-value {
+  display: block;
+  color: #1C1C1E;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.kpay-dest-right {
+  text-align: right;
+}
+
+.kpay-dest-total {
+  display: block;
+  font-size: 28px;
+  font-weight: 900;
+  color: #00875A;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+/* Section Heading */
+.kpay-section-heading {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 900;
+  color: #1C1C1E;
+  letter-spacing: -0.02em;
+}
+
+/* 3 Payment Tiles Grid */
+.kpay-tiles-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 640px) {
+  .kpay-tiles-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.kpay-method-tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  background-color: #FFFFFF;
+  border: 1px solid #E5E5EA;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.02);
+  cursor: pointer;
+  text-align: left;
+  transition: all 150ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.kpay-method-tile:hover {
+  background-color: #F8FAFC;
+}
+
+.kpay-method-tile.is-selected {
+  background-color: #FEFDF7;
+  border: 2px solid #1C1C1E;
+  box-shadow: 0 2px 12px -2px rgba(0, 0, 0, 0.05);
+}
+
+.kpay-tile-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.kpay-tile-icon-box.tone-purple {
+  background-color: #FAF5FF;
+  color: #9333EA;
+  border: 1px solid rgba(233, 213, 255, 0.6);
+}
+
+.kpay-tile-icon-box.tone-emerald {
+  background-color: #ECFDF5;
+  color: #059669;
+  border: 1px solid rgba(167, 243, 208, 0.6);
+}
+
+.kpay-tile-icon-box.tone-blue {
+  background-color: #EFF6FF;
+  color: #2563EB;
+  border: 1px solid rgba(191, 219, 254, 0.6);
+}
+
+.kpay-tile-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.kpay-tile-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #1C1C1E;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+
+/* Main Display Card */
+.kpay-display-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E5E5EA;
+  border-radius: 24px;
+  padding: 24px 32px;
+  box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+}
+
+.kpay-qr-outer-card {
+  padding: 16px;
+  background-color: #FFFFFF;
+  border-radius: 16px;
+  border: 1px solid #E5E5EA;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.kpay-qr-canvas {
+  width: 268px;
+  height: 268px;
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  padding: 8px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.kpay-qr-svg,
+.kpay-qr-img {
+  width: 100%;
+  height: 100%;
+  color: #000000;
+  object-fit: contain;
+  display: block;
+}
+
+.kpay-bancolombia-stamp {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+.kpay-stamp-bar {
+  height: 6px;
+  border-radius: 9999px;
+}
+
+.kpay-stamp-bar.bar-black {
+  width: 32px;
+  background-color: #000000;
+  margin-bottom: 4px;
+}
+
+.kpay-stamp-bar.bar-amber {
+  width: 32px;
+  background-color: #FBBF24;
+}
+
+.kpay-stamp-bar.bar-rose {
+  width: 20px;
+  background-color: #F43F5E;
+  align-self: flex-start;
+  margin-top: 2px;
+  margin-left: 2px;
+}
+
+.kpay-qr-caption {
+  margin: 4px 0 0 0;
+  font-size: 9px;
+  color: #8E8E93;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  letter-spacing: -0.03em;
+}
+
+.kpay-qr-info-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kpay-qr-headline-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.kpay-qr-headline {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+  color: #1C1C1E;
+  letter-spacing: -0.02em;
+}
+
+.kpay-qr-meta-line {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #8E8E93;
+}
+
+.kpay-meta-total {
+  color: #1C1C1E;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.kpay-meta-ref {
+  color: #636366;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.kpay-qr-error-note {
+  margin: 2px 0 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #DC2626;
+}
+
+.kpay-autodetect-banner {
+  width: 100%;
+  max-width: 576px;
+  background-color: #EBFBF4;
+  border: 1px solid #C6F2DF;
+  border-radius: 16px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  box-sizing: border-box;
+}
+
+.kpay-autodetect-bolt {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.kpay-autodetect-text {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #00875A;
+  line-height: 1.35;
+}
+
+.kpay-frontdesk-card {
+  padding: 36px 28px;
+}
+
+.kpay-frontdesk-icon-circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kpay-frontdesk-icon-circle.tone-emerald {
+  background-color: #ECFDF5;
+  color: #059669;
+  border: 1px solid #A7F3D0;
+}
+
+.kpay-frontdesk-icon-circle.tone-blue {
+  background-color: #EFF6FF;
+  color: #2563EB;
+  border: 1px solid #BFDBFE;
+}
+
+.kpay-frontdesk-desc {
+  margin: 0;
+  max-width: 520px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #636366;
+}
+
+.kpay-confirm-action-btn {
+  width: 100%;
+  max-width: 576px;
+  padding: 12px 24px;
+  border-radius: 9999px;
+  border: 1px solid #E5E5EA;
+  background-color: #F2F2F7;
+  color: #1C1C1E;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 150ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.kpay-confirm-action-btn:hover:not(:disabled) {
+  background-color: #E5E5EA;
+}
+
+.kpay-confirm-action-btn.is-primary {
+  background-color: #00875A;
+  border-color: #00875A;
+  color: #FFFFFF;
+  font-size: 15px;
+  padding: 14px 28px;
+  box-shadow: 0 4px 16px rgba(0, 135, 90, 0.28);
+}
+
+.kpay-confirm-action-btn.is-primary:hover:not(:disabled) {
+  background-color: #00704A;
+}
+
+.kpay-confirm-action-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Bottom Footer */
+.kpay-bottom-footer {
+  background-color: #FFFFFF;
+  border-top: 1px solid #E5E5EA;
+  padding: 12px 24px;
+  flex-shrink: 0;
+}
+
+.kpay-footer-inner {
+  max-width: 1024px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: #8E8E93;
+}
+
+.kpay-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kpay-footer-brand {
+  font-weight: 700;
+  color: #1C1C1E;
+}
+
+.kpay-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #00875A;
+  font-weight: 600;
 }

@@ -33,11 +33,11 @@ export function TableSelectStep({
         </div>
 
         {tableId ? (
-          <span className="checkout-table-selected-badge">
+          <span className="ui-pill ui-pill-md ui-pill-emerald">
             ✓ Mesa #{tableId} Seleccionada
           </span>
         ) : (
-          <span className="checkout-table-empty-badge">
+          <span className="ui-pill ui-pill-md ui-pill-rose">
             ⚠️ Selecciona tu mesa para continuar
           </span>
         )}

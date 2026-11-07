@@ -1,9 +1,63 @@
 /* ==========================================================================
-   Serviplus POS - Global Design Tokens (:root CSS Custom Properties)
+   UPAYSOLUTIONS / Serviplus POS - Global Design Tokens (:root CSS Variables)
    ========================================================================== */
 
 :root {
-  /* Brand & Accent Colors */
+  /* iOS / UPaySolutions Core Palette (60-30-10 Architecture) */
+  --ios-accent: #00A86B;
+  --ios-accent-hover: #008F5B;
+  --ios-accent-active: #007A4D;
+  --ios-accent-container: #E3F8EE;
+  --ios-accent-soft: #D8F3DC;
+  --ios-on-accent-container: #005234;
+  --ios-accent-border: rgba(0, 168, 107, 0.25);
+  --ios-accent-shadow: 0 4px 14px rgba(0, 168, 107, 0.3);
+  --ios-accent-shadow-lg: 0 8px 25px -4px rgba(0, 168, 107, 0.45);
+
+  /* iOS Surfaces & Outlines */
+  --ios-surface: #FFFFFF;
+  --ios-surface-variant: #F2F2F7;
+  --ios-surface-elevated: #EBEBF0;
+  --ios-surface-hover: #EAEAEE;
+  --ios-on-surface: #1C1C1E;
+  --ios-on-surface-variant: #636366;
+  --ios-outline: #E5E5EA;
+  --ios-outline-subtle: rgba(229, 229, 234, 0.65);
+
+  /* Semantic Status Palettes (Blue / Amber / Rose) */
+  --ios-blue: #2563eb;
+  --ios-blue-dark: #1d4ed8;
+  --ios-blue-text: #1e3a8a;
+  --ios-blue-soft: #eff6ff;
+  --ios-blue-border: rgba(191, 219, 254, 0.85);
+
+  --ios-amber: #d97706;
+  --ios-amber-dark: #b45309;
+  --ios-amber-text: #78350f;
+  --ios-amber-soft: #fffbeb;
+  --ios-amber-border: rgba(253, 230, 138, 0.85);
+
+  --ios-rose: #e11d48;
+  --ios-rose-bright: #f43f5e;
+  --ios-rose-soft: #fff1f2;
+  --ios-rose-hover: #ffe4e6;
+  --ios-rose-border: #fecdd3;
+
+  /* Typography Families */
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Outfit', 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Standard Border Radii & Motion */
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+  --ease-ios: cubic-bezier(0.25, 1, 0.5, 1);
+
+  /* Legacy / Kiosk Brand & Accent Tokens */
   --sp-brand-primary: #da291c;
   --sp-brand-primary-soft: #fef2f2;
   --sp-brand-primary-border: #fecaca;
@@ -12,7 +66,7 @@
   --sp-brand-sky: #38bdf8;
   --sp-brand-amber: #f59e0b;
 
-  /* Neutrals & Surfaces */
+  /* Legacy Neutrals & Surfaces */
   --sp-surface-white: #ffffff;
   --sp-surface-50: #f8fafc;
   --sp-surface-100: #f1f5f9;
@@ -22,13 +76,13 @@
   --sp-surface-dark-900: #0f172a;
   --sp-surface-dark-950: #090d16;
 
-  /* Text Colors */
+  /* Legacy Text Colors */
   --sp-text-primary: #0f172a;
   --sp-text-secondary: #334155;
   --sp-text-muted: #64748b;
   --sp-text-inverse: #f8fafc;
 
-  /* Radii & Shadows */
+  /* Legacy Radii & Shadows */
   --sp-radius-sm: 6px;
   --sp-radius-md: 8px;
   --sp-radius-lg: 12px;
@@ -38,4 +92,3 @@
   --sp-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.14);
   --sp-shadow-brand: 0 1px 4px rgba(218, 41, 28, 0.12);
 }
-

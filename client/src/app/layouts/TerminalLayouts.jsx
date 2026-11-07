@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { Outlet } from 'react-router-dom';
 import { socket } from '../../socket';
 import './TerminalLayouts.css';
 
@@ -66,7 +67,10 @@ export function TerminalShell({ terminal, variantClass = '', children }) {
 
   return (
     <TerminalErrorBoundary terminal={terminal}>
-      <div className={`terminal-layout ${variantClass}`}>{children}</div>
+      <div className={`terminal-layout ${variantClass}`}>
+        <div className="ios-status-bar-shield" aria-hidden="true" />
+        {children || <Outlet />}
+      </div>
     </TerminalErrorBoundary>
   );
 }

@@ -20,7 +20,7 @@
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  padding: 32px 24px 28px 24px;
+  padding: calc(32px + env(safe-area-inset-top, 0px) + var(--ios-top-safe-extra, 0px)) 24px 28px 24px;
   box-sizing: border-box;
 }
 
@@ -93,33 +93,6 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-/* Pill de Marca Superior */
-.attract-brand-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1.5px solid #d4c5ab;
-  border-radius: 9999px;
-  padding: 6px 18px;
-  margin-bottom: 14px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.attract-brand-icon {
-  font-size: 1rem;
-}
-
-.attract-brand-text {
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: #344e41;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
 }
 
 /* Headline Principal TAP TO START */

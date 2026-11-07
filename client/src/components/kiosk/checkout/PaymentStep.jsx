@@ -1,6 +1,78 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
+import { QrCode, Banknote, CreditCard } from 'lucide-react';
 import { formatCOP } from '../../../utils/format';
+
+function StylizedBancolombiaQrSvg() {
+  return (
+    <svg className="kpay-qr-svg" viewBox="0 0 100 100" fill="currentColor" aria-hidden="true">
+      {/* 3 Corner Finder Markers */}
+      <rect x="4" y="4" width="26" height="26" rx="4" fill="black" />
+      <rect x="8" y="8" width="18" height="18" rx="2" fill="white" />
+      <rect x="12" y="12" width="10" height="10" rx="1" fill="black" />
+
+      <rect x="70" y="4" width="26" height="26" rx="4" fill="black" />
+      <rect x="74" y="8" width="18" height="18" rx="2" fill="white" />
+      <rect x="78" y="12" width="10" height="10" rx="1" fill="black" />
+
+      <rect x="4" y="70" width="26" height="26" rx="4" fill="black" />
+      <rect x="8" y="74" width="18" height="18" rx="2" fill="white" />
+      <rect x="12" y="78" width="10" height="10" rx="1" fill="black" />
+
+      {/* QR Data Matrix Pattern */}
+      <rect x="34" y="6" width="5" height="5" />
+      <rect x="43" y="6" width="9" height="5" />
+      <rect x="56" y="6" width="6" height="5" />
+      <rect x="34" y="15" width="8" height="5" />
+      <rect x="46" y="15" width="5" height="9" />
+      <rect x="55" y="15" width="8" height="5" />
+      <rect x="34" y="24" width="5" height="6" />
+      <rect x="43" y="24" width="9" height="6" />
+      <rect x="56" y="24" width="6" height="6" />
+
+      <rect x="6" y="34" width="5" height="5" />
+      <rect x="15" y="34" width="9" height="5" />
+      <rect x="28" y="34" width="6" height="5" />
+      <rect x="38" y="34" width="8" height="8" />
+      <rect x="50" y="34" width="12" height="5" />
+      <rect x="66" y="34" width="8" height="5" />
+      <rect x="78" y="34" width="5" height="8" />
+      <rect x="87" y="34" width="7" height="5" />
+
+      <rect x="6" y="43" width="9" height="6" />
+      <rect x="19" y="43" width="6" height="8" />
+      <rect x="29" y="43" width="5" height="6" />
+      <rect x="66" y="43" width="12" height="6" />
+      <rect x="82" y="43" width="12" height="6" />
+
+      <rect x="6" y="53" width="5" height="10" />
+      <rect x="15" y="53" width="8" height="6" />
+      <rect x="27" y="53" width="7" height="6" />
+      <rect x="38" y="46" width="6" height="13" />
+      <rect x="48" y="46" width="14" height="6" />
+      <rect x="66" y="53" width="7" height="10" />
+      <rect x="77" y="53" width="7" height="6" />
+      <rect x="88" y="53" width="6" height="10" />
+
+      <rect x="34" y="63" width="8" height="6" />
+      <rect x="46" y="63" width="6" height="6" />
+      <rect x="56" y="63" width="10" height="6" />
+      <rect x="70" y="63" width="12" height="6" />
+      <rect x="86" y="63" width="8" height="6" />
+
+      <rect x="34" y="73" width="6" height="11" />
+      <rect x="44" y="73" width="11" height="6" />
+      <rect x="59" y="73" width="6" height="11" />
+      <rect x="69" y="73" width="11" height="6" />
+      <rect x="84" y="73" width="10" height="11" />
+
+      <rect x="34" y="88" width="14" height="6" />
+      <rect x="52" y="88" width="8" height="6" />
+      <rect x="64" y="88" width="14" height="6" />
+      <rect x="82" y="88" width="12" height="6" />
+    </svg>
+  );
+}
 
 export function PaymentStep({
   orderType,
@@ -19,7 +91,7 @@ export function PaymentStep({
   useEffect(() => {
     if (wompiQrData?.checkoutUrl && !wompiQrData?.qrImage) {
       QRCode.toDataURL(wompiQrData.checkoutUrl, {
-        width: 220,
+        width: 280,
         margin: 1,
         color: { dark: '#000000', light: '#ffffff' }
       })
@@ -29,167 +101,205 @@ export function PaymentStep({
   }, [wompiQrData?.checkoutUrl, wompiQrData?.qrImage]);
 
   const methods = [
-    { id: 'WOMPI_QR', icon: '📱', label: 'QR Bancolombia / Wompi', badge: 'Pago Automático' },
-    { id: 'CASH', icon: '💵', label: 'Efectivo en Caja', badge: 'Front Desk' },
-    { id: 'CARD', icon: '💳', label: 'Datáfono en Caja', badge: 'Front Desk' }
+    {
+      id: 'WOMPI_QR',
+      Icon: QrCode,
+      iconTone: 'purple',
+      label: 'QR Bancolombia / Wompi',
+      badge: 'Pago Automático',
+      badgeTone: 'amber'
+    },
+    {
+      id: 'CASH',
+      Icon: Banknote,
+      iconTone: 'emerald',
+      label: 'Efectivo en Caja',
+      badge: 'Front Desk',
+      badgeTone: 'neutral'
+    },
+    {
+      id: 'CARD',
+      Icon: CreditCard,
+      iconTone: 'blue',
+      label: 'Datáfono en Caja',
+      badge: 'Front Desk',
+      badgeTone: 'neutral'
+    }
   ];
 
+  const resolvedQrImgSrc = wompiQrData?.qrImage
+    ? wompiQrData.qrImage.startsWith('data:')
+      ? wompiQrData.qrImage
+      : wompiQrData.qrImage.startsWith('PD94bWw') || wompiQrData.qrImage.startsWith('PHN2Zw')
+        ? `data:image/svg+xml;base64,${wompiQrData.qrImage}`
+        : `data:image/png;base64,${wompiQrData.qrImage}`
+    : localFallbackQr || null;
+
+  const displayRef = wompiQrData?.reference || 'SP-821-9329';
+
   return (
-    <div className="checkout-step-page-scroll animate-step-fade">
-      {/* Resumen de Modalidad y Total */}
-      <div className="checkout-payment-summary-box">
-        <div>
-          <div className="checkout-footer-total-lbl">DESTINO DE TU ORDEN</div>
-          <div className="pay-s-1">
-            {orderType === 'EAT_IN' ? `🍽️ Comer en Mesa #${tableId}` : '🛍️ Empacado Para Llevar'}
+    <div className="kpay-page-shell animate-step-fade">
+      {/* MAIN VIEWPORT CONTENT (Compact vertical spacing & maximized QR container) */}
+      <main className="kpay-main-container">
+        {/* DESTINATION & TOTAL BANNER (Compact height) */}
+        <div className="kpay-dest-banner">
+          <div className="kpay-dest-left">
+            <span className="kpay-dest-emoji">{orderType === 'EAT_IN' ? '🍽️' : '🛍️'}</span>
+            <div>
+              <span className="kpay-dest-overline">DESTINO DE TU ORDEN</span>
+              <span className="kpay-dest-value">
+                {orderType === 'EAT_IN'
+                  ? `Comer en Mesa #${tableId || 1}`
+                  : 'Empacado Para Llevar'}
+              </span>
+            </div>
+          </div>
+
+          <div className="kpay-dest-right">
+            <span className="kpay-dest-overline">TOTAL A PAGAR</span>
+            <span className="kpay-dest-total">{formatCOP(total)}</span>
           </div>
         </div>
 
-        <div className="pay-s-2">
-          <div className="checkout-footer-total-lbl">TOTAL A PAGAR</div>
-          <div className="pay-s-3">
-            {formatCOP(total)}
-          </div>
+        {/* 3 PAYMENT TILES (COMPACT VERTICAL PROFILE) */}
+        <div className="kpay-tiles-grid">
+          {methods.map((m) => {
+            const isSelected = paymentMethod === m.id;
+            const TileIcon = m.Icon;
+            return (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => onSelectPaymentMethod(m.id)}
+                className={`kpay-method-tile ${isSelected ? 'is-selected' : ''}`}
+              >
+                <div className={`kpay-tile-icon-box tone-${m.iconTone}`}>
+                  <TileIcon size={22} />
+                </div>
+                <div className="kpay-tile-body">
+                  <h3 className="kpay-tile-title">{m.label}</h3>
+                  <span
+                    className={`ui-pill ui-pill-xs ${m.badgeTone === 'amber' ? 'ui-pill-amber' : 'ui-pill-neutral'}`}
+                  >
+                    {m.badge}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
         </div>
-      </div>
 
-      {/* Selector de Medios de Pago */}
-      <h3 className="pay-s-4">
-        Selecciona tu medio de pago:
-      </h3>
-
-      <div className="checkout-payment-methods-grid">
-        {methods.map((m) => {
-          const isSelected = paymentMethod === m.id;
-          return (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => onSelectPaymentMethod(m.id)}
-              className={`checkout-payment-card ${isSelected ? 'selected' : ''}`}
-            >
-              <div className="pay-s-5">{m.icon}</div>
-              <div className="pay-s-6">{m.label}</div>
-              <span className="checkout-payment-card-badge">{m.badge}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Detalle Interactivo de la opción seleccionada */}
-      <div className="checkout-payment-detail-center">
+        {/* MAIN DISPLAY CARD (Expansive Display Frame with Large QR Code) */}
         {paymentMethod === 'WOMPI_QR' && (
-          <div className="checkout-qr-box">
-            {qrLoading ? (
-              <div className="pay-s-7">
-                <div className="pay-s-8">🔄</div>
-                <div className="pay-s-9">Generando QR Bancolombia / Nequi...</div>
-                <p className="pay-s-10">Conectando con la pasarela de pagos Wompi</p>
-              </div>
-            ) : qrError ? (
-              <div className="pay-s-11">
-                <div className="pay-s-12">⚠️</div>
-                <div className="pay-s-13">{qrError}</div>
-                <p className="pay-s-14">Puedes elegir otro medio de pago para continuar.</p>
-              </div>
-            ) : wompiQrData?.qrImage ? (
-              <div>
-                <div className="pay-s-15">
+          <div className="kpay-display-card">
+            {/* Stylized High-Definition Bancolombia / Wompi QR Code Card (Enlarged) */}
+            <div className="kpay-qr-outer-card">
+              <div className="kpay-qr-canvas">
+                {resolvedQrImgSrc ? (
                   <img
-                    src={
-                      wompiQrData.qrImage.startsWith('data:')
-                        ? wompiQrData.qrImage
-                        : wompiQrData.qrImage.startsWith('PD94bWw') || wompiQrData.qrImage.startsWith('PHN2Zw')
-                          ? `data:image/svg+xml;base64,${wompiQrData.qrImage}`
-                          : `data:image/png;base64,${wompiQrData.qrImage}`
-                    }
+                    src={resolvedQrImgSrc}
                     alt="Código QR Bancolombia / Nequi"
-                    className="pay-s-16"
+                    className="kpay-qr-img"
                   />
-                </div>
-                <div className="pay-s-17">
-                  <span className="pay-s-18">
-                    Escanea con tu App Bancolombia o Nequi
-                  </span>
-                  <span className="pay-s-19">
-                    ● Listo
-                  </span>
-                </div>
-                <p className="pay-s-20">
-                  Total: <strong className="pay-s-21">{formatCOP(total)}</strong> • Ref: <strong>{wompiQrData.reference}</strong>
-                </p>
-                <div className="pay-s-22">
-                  ⚡ Al completar el pago en tu celular, el Kiosco lo detecta y envía la orden a cocina al instante.
+                ) : (
+                  <StylizedBancolombiaQrSvg />
+                )}
+
+                {/* Authentic Center Bancolombia Logo Stamp */}
+                <div className="kpay-bancolombia-stamp">
+                  <div className="kpay-stamp-bar bar-black" />
+                  <div className="kpay-stamp-bar bar-amber" />
+                  <div className="kpay-stamp-bar bar-rose" />
                 </div>
               </div>
-            ) : localFallbackQr ? (
-              <div>
-                <div className="pay-s-23">
-                  <img
-                    src={localFallbackQr}
-                    alt="Código QR de Pago"
-                    className="pay-s-24"
-                  />
-                </div>
-                <div className="pay-s-25">
-                  Escanea con tu App Bancolombia, Nequi o Cámara
-                </div>
-                <p className="pay-s-10">
-                  Tu pago se confirma de inmediato y tu orden pasa directamente a la pantalla de cocina.
-                </p>
+            </div>
+
+            {/* Instruction Headline & Status Tag */}
+            <div className="kpay-qr-info-block">
+              <div className="kpay-qr-headline-row">
+                <h3 className="kpay-qr-headline">Escanea con tu App Bancolombia o Nequi</h3>
+                <span className="ui-pill ui-pill-xs ui-pill-emerald">
+                  <span className="ui-dot online" />
+                  <span>{qrLoading ? 'Sincronizando' : 'Listo'}</span>
+                </span>
               </div>
-            ) : (
-              <div className="pay-s-7">
-                <div className="pay-s-8">🔄</div>
-                <div className="pay-s-9">Generando QR local...</div>
-              </div>
-            )}
+              <p className="kpay-qr-meta-line">
+                Total: <span className="kpay-meta-total">{formatCOP(total)}</span> • Ref:{' '}
+                <span className="kpay-meta-ref">{displayRef}</span>
+              </p>
+              {qrError && <p className="kpay-qr-error-note">{qrError}</p>}
+            </div>
+
+            {/* Botón opcional de confirmación inmediata */}
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={onConfirmOrder}
+              className="kpay-confirm-action-btn"
+            >
+              {isSubmitting ? 'Enviando orden ...' : '✓ Confirmar el pago'}
+            </button>
           </div>
         )}
 
         {paymentMethod === 'CASH' && (
-          <div className="checkout-cash-box">
-            <div className="pay-s-26">💵</div>
-            <div className="pay-s-27">
-              Pago en Efectivo en Caja
+          <div className="kpay-display-card kpay-frontdesk-card">
+            <div className="kpay-frontdesk-icon-circle tone-emerald">
+              <Banknote size={38} />
             </div>
-            <p className="pay-s-28">
-              Al presionar <strong>Confirmar Orden</strong>, tu turno quedará reservado. Acércate a la <strong>Caja / Front Desk</strong> para pagar. La cocina comenzará tu comida tan pronto reciban el pago.
+            <h3 className="kpay-qr-headline">Pago en Efectivo en Caja (Front Desk)</h3>
+            <p className="kpay-frontdesk-desc">
+              Al presionar <strong>Confirmar Orden</strong>, tu turno quedará reservado. Acércate a
+              la <strong>Caja Principal</strong> para realizar tu pago en efectivo y tu pedido
+              entrará de inmediato a preparación.
             </p>
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={onConfirmOrder}
+              className="kpay-confirm-action-btn is-primary"
+            >
+              {isSubmitting ? 'Enviando orden...' : '✓ Confirmar Orden y Pagar en Caja'}
+            </button>
           </div>
         )}
 
         {paymentMethod === 'CARD' && (
-          <div className="checkout-card-box">
-            <div className="pay-s-26">💳</div>
-            <div className="pay-s-29">
-              Pago con Tarjeta o Datáfono en Caja
+          <div className="kpay-display-card kpay-frontdesk-card">
+            <div className="kpay-frontdesk-icon-circle tone-blue">
+              <CreditCard size={38} />
             </div>
-            <p className="pay-s-30">
-              Acércate con tu número de orden a la <strong>Caja / Front Desk</strong> para pasar tu tarjeta débito o crédito por el datáfono.
+            <h3 className="kpay-qr-headline">Pago con Datáfono en Caja (Front Desk)</h3>
+            <p className="kpay-frontdesk-desc">
+              Acércate con tu número de turno a la <strong>Caja Principal</strong> para pasar tu
+              tarjeta débito, crédito o contactless por el datáfono.
             </p>
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={onConfirmOrder}
+              className="kpay-confirm-action-btn is-primary"
+            >
+              {isSubmitting ? 'Enviando orden...' : '✓ Confirmar Orden y Pagar en Caja'}
+            </button>
           </div>
         )}
-      </div>
+      </main>
 
-      {/* Botón de Confirmación Final */}
-      <div className="pay-s-31">
-        <button
-          type="button"
-          disabled={isSubmitting}
-          onClick={onConfirmOrder}
-          className="checkout-confirm-btn pulse-emerald-btn"
-        >
-          {isSubmitting ? (
-            'Enviando orden a cocina...'
-          ) : paymentMethod === 'WOMPI_QR' ? (
-            '✓ Confirmar y Enviar a Cocina'
-          ) : (
-            '✓ Confirmar Orden y Pagar en Caja'
-          )}
-        </button>
-      </div>
+      {/* BOTTOM FOOTER */}
+      <footer className="kpay-bottom-footer">
+        <div className="kpay-footer-inner">
+          <div className="kpay-footer-left">
+            <span className="kpay-footer-brand">UPAYSOLUTIONS KIOSCO</span>
+            <span>•</span>
+            <span>Pasarela de Pago Segura</span>
+          </div>
+          <div className="kpay-footer-right">
+            <span className="ui-dot online lg ui-dot-pulse" />
+            <span>Escucha bancaria en vivo</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
-

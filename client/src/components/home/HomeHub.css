@@ -1,115 +1,86 @@
-/* UPAYSOLUTIONS S.A.S. - Terminal POS & Gestión Hub Styles */
+/* UPAYSOLUTIONS S.A.S. - iOS Dashboard Design System
+   Uses Global Design Tokens (tokens.css) & UI Primitives (ui-primitives.css) */
 
 .hub-container {
   height: 100vh;
   width: 100vw;
-  background-color: #f8fafc;
-  color: #1e293b;
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--ios-surface-variant);
+  color: var(--ios-on-surface);
+  font-family: var(--font-sans);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
   box-sizing: border-box;
   -webkit-font-smoothing: antialiased;
 }
 
-.hub-topbar {
-  width: 100%;
-  padding: 14px 32px 8px 32px;
+/* TOP APP SHELL (Navigation Bar) */
+.hub-app-shell {
+  background-color: #FFFFFF;
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  flex-shrink: 0;
+  z-index: 30;
+  padding-top: calc(env(safe-area-inset-top, 0px) + var(--ios-top-safe-extra, 0px));
+  border-bottom: 1px solid var(--ios-outline);
+}
+
+/* iOS Native Status Header */
+.hub-status-header {
+  padding: 8px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  color: var(--ios-on-surface-variant);
+  font-size: 11px;
+  letter-spacing: 0.2px;
+  font-weight: 500;
+  border-bottom: 1px solid var(--ios-outline-subtle);
   box-sizing: border-box;
 }
 
-.hub-system-clock {
+.hub-status-left {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #64748b;
 }
 
-.hub-live-clock {
+.hub-status-time {
   font-weight: 700;
-  color: #334155;
-  letter-spacing: -0.02em;
+  color: var(--ios-on-surface);
+  letter-spacing: -0.2px;
+  font-size: 12px;
 }
 
-.hub-clock-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background-color: #cbd5e1;
-  display: inline-block;
+.hub-status-date {
+  color: var(--ios-on-surface-variant);
 }
 
-.hub-online-badge {
+.hub-status-right {
   display: flex;
   align-items: center;
-  gap: 6px;
-  color: #059669;
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-
-.hub-pulse-dot {
-  position: relative;
-  display: flex;
-  width: 8px;
-  height: 8px;
-}
-
-.hub-pulse-dot .pulse-ring {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background-color: #34d399;
-  opacity: 0.75;
-  animation: hubPulse 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-}
-
-.hub-pulse-dot .pulse-core {
-  position: relative;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: #10b981;
-}
-
-@keyframes hubPulse {
-
-  75%,
-  100% {
-    transform: scale(2.4);
-    opacity: 0;
-  }
-}
-
-.hub-device-telemetry {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  color: #64748b;
+  gap: 12px;
 }
 
 .hub-telemetry-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.8rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--ios-on-surface);
+  font-size: 11px;
 }
 
-/* Corporate Identity Bar */
+.hub-telemetry-icon {
+  color: var(--ios-on-surface);
+}
+
+/* Main Navigation Bar */
 .hub-mainheader {
-  width: 100%;
-  padding: 10px 32px;
+  padding: 14px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -119,443 +90,322 @@
 .hub-brand-group {
   display: flex;
   align-items: center;
-  gap: 14px;
-}
-
-.hub-brand-logo {
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #0f766e 0%, #0891b2 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  font-weight: 900;
-  font-size: 1.6rem;
-  letter-spacing: -0.05em;
-  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.25);
-  border: 2px solid #ffffff;
-  flex-shrink: 0;
-}
-
-.hub-brand-name {
-  font-size: 1.45rem;
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  color: #0f172a;
-  line-height: 1.1;
-  display: flex;
-  align-items: baseline;
-}
-
-.hub-brand-name span {
-  color: #0d9488;
-}
-
-.hub-brand-subtitle {
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: #64748b;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-top: 2px;
-}
-
-.hub-header-actions {
-  display: flex;
-  align-items: center;
   gap: 12px;
 }
 
-.hub-action-btn {
-  display: inline-flex;
+.hub-brand-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background-color: #FFFFFF;
+  border: 1px solid var(--ios-outline);
+  display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 9999px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: #334155;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.hub-action-btn:hover {
-  background-color: #f8fafc;
-  border-color: #cbd5e1;
-  transform: translateY(-1px);
-}
-
-.hub-action-btn:active {
-  transform: scale(0.98);
-}
-
-.hub-action-btn.logged-in {
-  background: #f0fdfa;
-  border-color: #99f6e4;
-  color: #0f766e;
-}
-
-/* Main Content Grid */
-.hub-maincontent {
-  width: 100%;
-  max-width: 1140px;
-  margin: 0 auto;
-  padding: 16px 28px;
-  flex: 1;
-  flex-direction: column;
   justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
+  padding: 4px;
   box-sizing: border-box;
 }
 
+.hub-brand-name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ios-on-surface);
+  line-height: 1.1;
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.hub-brand-name .upay-accent {
+  color: var(--ios-accent);
+  font-weight: 800;
+}
+
+.hub-brand-subtitle {
+  margin: 2px 0 0 0;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ios-on-surface-variant);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Quick Action Controls */
+.hub-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hub-profile-icon {
+  color: var(--ios-accent);
+}
+
+.hub-settings-icon {
+  color: var(--ios-on-surface-variant);
+}
+
+/* MAIN VIEWPORT CONTENT */
+.hub-maincontent {
+  flex: 1;
+  padding: 24px;
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* INSET CASH REGISTER BANNER (iOS Style Inset Banner) */
+.hhub-shift-banner {
+  background-color: var(--ios-surface);
+  border: 1px solid var(--ios-outline);
+  border-radius: 20px;
+  padding: 18px 22px;
+  box-shadow: 0 2px 12px -2px rgba(0, 0, 0, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.hhub-shift-banner:hover {
+  border-color: rgba(0, 168, 107, 0.4);
+  box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.06);
+}
+
+.hhub-shift-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.hhub-shift-icon-box {
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
+  background-color: var(--ios-surface-variant);
+  color: var(--ios-on-surface-variant);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.hhub-shift-icon-box.is-open {
+  background-color: var(--ios-accent-container);
+  color: var(--ios-accent);
+}
+
+.hhub-shift-text-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.hhub-shift-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.hhub-shift-title-row h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ios-on-surface);
+  letter-spacing: -0.01em;
+}
+
+.hhub-shift-desc {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: var(--ios-on-surface-variant);
+  line-height: 1.4;
+}
+
+.hhub-shift-desc strong {
+  color: var(--ios-on-surface);
+  font-weight: 600;
+}
+
+.hhub-shift-action-btn {
+  padding: 0 22px;
+  border-radius: var(--radius-pill, 999px);
+  flex-shrink: 0;
+}
+
+/* OPERATIONAL MODULE CARDS GRID (3x2 Responsive Layout) */
 .hub-navigation-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  box-sizing: border-box;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .hub-navigation-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px;
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .hub-navigation-grid {
     grid-template-columns: 1fr;
-    gap: 14px;
-  }
-
-  .hub-mainheader {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
   }
 }
 
 .hub-card {
-  background-color: #ffffff;
-  border-radius: 24px;
-  padding: 26px 28px;
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  padding: 24px;
+  background-color: var(--ios-surface);
+  border: 1px solid var(--ios-outline);
+  border-radius: 20px;
+  box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.04);
   min-height: 185px;
-  border: 1px solid #f1f5f9;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
-  text-decoration: none;
-  color: inherit;
   cursor: pointer;
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
+  transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
   box-sizing: border-box;
 }
 
 .hub-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(13, 148, 136, 0.28);
-  box-shadow: 0 20px 30px -10px rgba(13, 148, 136, 0.14), 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 168, 107, 0.35);
 }
 
 .hub-card:active {
   transform: scale(0.98);
 }
 
-.hub-icon-container {
+.hub-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.hub-card-icon-box {
   width: 54px;
   height: 54px;
   border-radius: 16px;
-  background-color: #f0fdf4;
-  background: #f0fdfa;
+  background-color: var(--ios-surface-variant);
+  color: var(--ios-on-surface-variant);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #0d9488;
-  transition: transform 0.2s ease, background-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
-.hub-card:hover .hub-icon-container {
-  transform: scale(1.08);
-  background-color: #ccfbf1;
-  color: #0f766e;
+.hub-card:hover .hub-card-icon-box {
+  background-color: var(--ios-accent-container);
+  color: var(--ios-accent);
+  transform: scale(1.05);
 }
 
-.hub-card-text {
-  text-align: right;
-  margin-top: 16px;
+.hub-card-icon-box.active-accent {
+  background-color: var(--ios-accent-container);
+  color: var(--ios-accent);
+}
+
+.hub-card-body {
+  margin-top: 28px;
 }
 
 .hub-card-title {
-  display: block;
-  font-size: 1.38rem;
-  font-weight: 800;
-  color: #1e293b;
-  letter-spacing: -0.02em;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--ios-on-surface);
+  letter-spacing: -0.01em;
   transition: color 0.15s ease;
-  line-height: 1.2;
 }
 
 .hub-card:hover .hub-card-title {
-  color: #0d9488;
+  color: var(--ios-accent);
 }
 
 .hub-card-subtitle {
-  display: block;
-  font-size: 0.74rem;
-  font-weight: 700;
+  margin: 3px 0 0 0;
+  font-size: 11px;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #64748b;
-  margin-top: 4px;
+  color: var(--ios-on-surface-variant);
 }
 
-/* Footer / Status Bar */
+/* BOTTOM FOOTER & SYSTEM BAR (iOS Home Dock Style) */
 .hub-footer {
-  width: 100%;
-  border-top: 1px solid rgba(226, 232, 240, 0.8);
-  background-color: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(8px);
-  padding: 12px 32px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.78rem;
-  color: #475569;
+  background-color: var(--ios-surface);
+  border-top: 1px solid var(--ios-outline);
+  padding: 12px 24px;
   box-sizing: border-box;
 }
 
-@media (max-width: 680px) {
-  .hub-footer {
+.hub-footer-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 11px;
+  color: var(--ios-on-surface-variant);
+}
+
+@media (max-width: 768px) {
+  .hub-footer-inner {
     flex-direction: column;
-    gap: 8px;
     align-items: flex-start;
+    gap: 8px;
   }
 }
 
-.hub-terminal-info {
+.hub-footer-left {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.hub-terminal-brand {
-  font-weight: 800;
-  color: #0f172a;
+.hub-footer-brand {
+  font-weight: 700;
+  color: var(--ios-on-surface);
 }
 
-.hub-terminal-ver {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  color: #64748b;
-}
-
-.hub-sync-status {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.hub-last-sync {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #64748b;
-}
-
-.hub-server-state {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-  color: #334155;
-}
-
-.hub-sync-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: #10b981;
-  display: inline-block;
-}
-
-.hub-divider {
-  width: 1px;
-  height: 12px;
-  background-color: #cbd5e1;
-}
-
-
-/* === Extracted Static Component Styles (hhub-s-*) === */
-.hhub-s-1 {
-  width: 16px;
-  height: 16px;
-  color: #475569;
-}
-
-.hhub-s-2 {
-  width: 20px;
-  height: 20px;
-  color: #475569;
-}
-
-.hhub-s-3 {
-  color: #10b981;
-}
-
-.hhub-s-4 {
-  width: 16px;
-  height: 16px;
-  color: #0d9488;
-}
-
-.hhub-s-5 {
-  width: 16px;
-  height: 16px;
-  color: #64748b;
-}
-
-.hhub-s-6 {
+.hub-footer-right {
   display: flex;
   align-items: center;
   gap: 14px;
 }
 
-.hhub-s-7 {
-  width: 22px;
-  height: 22px;
-}
-
-.hhub-s-8 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.hhub-s-9 {
-  font-size: 0.94rem;
-  font-weight: 800;
-  color: #0f172a;
-}
-
-.hhub-s-10 {
-  margin: 2px 0 0 0;
-  font-size: 0.78rem;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.hhub-s-11 {
-  font-size: 0.9rem;
-}
-
-.hhub-s-12 {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  width: 100%;
-}
-
-.hhub-s-13 {
-  width: 30px;
-  height: 30px;
-}
-
-.hhub-s-14 {
-  width: 14px;
-  height: 14px;
-  color: #0d9488;
-}
-
-/* HomeHub dynamic shift banner classes */
-.hhub-shift-banner {
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 20px;
-  padding: 14px 22px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  user-select: none;
-}
-
-.hhub-shift-banner.is-open {
-  border: 1.5px solid #86efac;
-}
-
-.hhub-shift-icon-box {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: #fef3c7;
-  color: #d97706;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.hhub-shift-icon-box.is-open {
-  background: #dcfce7;
-  color: #16a34a;
-}
-
-.hhub-shift-status-pill {
-  padding: 2px 8px;
-  border-radius: 9999px;
-  font-size: 0.72rem;
-  font-weight: 800;
-  background-color: #fee2e2;
-  color: #dc2626;
-}
-
-.hhub-shift-status-pill.is-open {
-  background-color: #dcfce7;
-  color: #15803d;
-}
-
-.hhub-shift-cta-pill {
-  padding: 8px 16px;
-  border-radius: 9999px;
-  background-color: #0d9488;
-  border: none;
-  color: #ffffff;
-  font-size: 0.82rem;
-  font-weight: 800;
+.hub-footer-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-shrink: 0;
 }
 
-.hhub-shift-cta-pill.is-open {
-  background-color: #f0fdf4;
-  border: 1.5px solid #86efac;
-  color: #15803d;
+.hub-footer-item strong {
+  font-weight: 600;
+  color: var(--ios-on-surface);
 }
 
-.hhub-pos-card-pill {
-  font-size: 0.72rem;
-  font-weight: 800;
-  padding: 3px 8px;
-  border-radius: 9999px;
-  background-color: #f1f5f9;
-  color: #64748b;
+.hub-footer-icon {
+  color: var(--ios-accent);
 }
 
-.hhub-pos-card-pill.is-open {
-  background-color: #dcfce7;
-  color: #166534;
+.hub-footer-divider {
+  color: var(--ios-outline);
 }

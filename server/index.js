@@ -834,15 +834,16 @@ app.get(['/p/:code', '/p/p/:code', '/receipt/:code', '/r/:code'], async (req, re
   }
 });
 
-// Rutas directas hacia la SPA React
+// Rutas directas hacia la SPA React (Rutas Limpias sin prefijo /react)
 const reactDistDir = path.join(__dirname, '../client/dist');
-app.use('/react', express.static(reactDistDir));
-app.get(['/react', '/react/*'], (req, res) => {
+app.use(express.static(reactDistDir));
+app.use('/assets', express.static(path.join(reactDistDir, 'assets')));
+app.get(['/kiosk', '/kds', '/kds/*', '/display', '/front', '/front/*', '/admin', '/pos', '/pos/*', '/cashier', '/cash-in'], (req, res) => {
   res.sendFile(path.join(reactDistDir, 'index.html'));
 });
 
-app.get(['/kiosk', '/autoservice', '/kiosk-fs', '/kiosk-fullscreen'], (req, res) => {
-  res.redirect('/react/?tab=kiosk&fullscreen=true');
+app.get(['/react', '/react/*'], (req, res) => {
+  res.redirect('/');
 });
 
 app.get(['/turns', '/monitor'], (req, res) => {

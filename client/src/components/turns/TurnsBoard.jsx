@@ -136,7 +136,7 @@ export function TurnsBoard() {
                       </div>
 
                       <div className="tbrd-s-25">
-                        <span className={`tbrd-dest-pill ${o.tableId ? 'is-table' : ''}`}>
+                        <span className={`ui-pill ui-pill-solid-red ${o.tableId ? 'is-table' : ''}`}>
                           {o.tableId ? `Mesa ${o.tableId}` : 'Mostrador'}
                         </span>
                       </div>

@@ -24,7 +24,7 @@ export function ReviewStep({
         </div>
 
         <div className="checkout-header-actions-group">
-          <span className="checkout-badge-pill">
+          <span className="ui-pill ui-pill-md ui-pill-gold">
             {totalItems} {totalItems === 1 ? 'artículo' : 'artículos'}
           </span>
 
@@ -69,7 +69,7 @@ export function ReviewStep({
                 {item.modifiers && item.modifiers.length > 0 && (
                   <div className="checkout-item-mods">
                     {item.modifiers.map((m, idx) => (
-                      <span key={idx} className="checkout-mod-pill">
+                      <span key={idx} className="ui-pill ui-pill-xs ui-pill-amber">
                         + {m.name}
                       </span>
                     ))}

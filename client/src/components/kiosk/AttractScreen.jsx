@@ -61,10 +61,10 @@ export function AttractScreen({ onStart }) {
 
       {/* HEADER: Mensaje de bienvenida y Título TAP TO START */}
       <header className="attract-header">
-        {/* Banner Pill de Marca */}
-        <div className="attract-brand-pill">
-          <span className="attract-brand-icon">🥙</span>
-          <span className="attract-brand-text">Bienvenido a Kebab &amp; Shawarma</span>
+        {/* Banner de Marca */}
+        <div className="ui-brand-banner">
+          <span>🥙</span>
+          <span>Bienvenido a Kebab &amp; Shawarma</span>
         </div>
 
         {/* Headline Principal TAP TO START */}

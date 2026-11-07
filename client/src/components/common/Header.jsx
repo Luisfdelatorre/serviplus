@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useMenuStore } from '../../store/useMenuStore';
 import { useI18n } from '../../i18n';
 import { sfx } from '../../utils/audio';
 import { subscribeOutbox, flushOrderOutbox } from '../../shared/offline/orderOutbox';
 import { Shield, RotateCw } from 'lucide-react';
+import { UpayLogo } from './UpayLogo';
 import './CommonComponents.css';
 
 export function Header() {
   const [isReloading, setIsReloading] = useState(false);
   const [isOnline, setIsOnline] = useState(() => (typeof navigator !== 'undefined' ? navigator.onLine : true));
   const [outboxCount, setOutboxCount] = useState(0);
-  const activeTab = useMenuStore((state) => state.activeTab);
-  const setActiveTab = useMenuStore((state) => state.setActiveTab);
+  const location = useLocation();
+  const navigate = useNavigate();
   const openAdminLogin = useMenuStore((state) => state.openAdminLogin);
   const { lang, setLang } = useI18n();
 
@@ -55,25 +57,29 @@ export function Header() {
 
   return (
     <header className="main-header hdr-bar">
-      {/* Brand Serviplus */}
+      {/* Brand Serviplus / UPAY */}
       <div className="hdr-brand">
+        <UpayLogo size={26} className="hdr-brand-logo-icon" />
         <span className="hdr-brand-title">Serviplus</span>
       </div>
 
       {/* Navigation Tabs */}
       <nav className="hdr-nav">
         {[
-          { id: 'home', label: '🏠 Inicio' },
-          { id: 'cashier', label: 'Caja' },
-          { id: 'kds', label: 'KDS' },
-          { id: 'kiosk', label: 'Kiosk' }
+          { path: '/', label: '🏠 Inicio', match: (p) => p === '/' },
+          { path: '/front', label: 'Caja', match: (p) => p.startsWith('/front') },
+          { path: '/kds', label: 'KDS', match: (p) => p.startsWith('/kds') },
+          { path: '/kiosk', label: 'Kiosk', match: (p) => p.startsWith('/kiosk') }
         ].map((t) => {
-          const isActive = activeTab === t.id;
+          const isActive = t.match(location.pathname);
           return (
             <button
-              key={t.id}
+              key={t.path}
               type="button"
-              onClick={() => handleTabChange(t.id)}
+              onClick={() => {
+                sfx.playTap();
+                navigate(t.path);
+              }}
               className={`hdr-tab-btn ${isActive ? 'active' : ''}`}
             >
               {t.label}
@@ -117,7 +123,7 @@ export function Header() {
           type="button"
           onClick={() => {
             sfx.playTap();
-            openAdminLogin();
+            navigate('/admin');
           }}
           title="Panel de Administración (Acceso Gerencial Aldelo)"
           className="hdr-admin-btn"
@@ -128,13 +134,13 @@ export function Header() {
 
         {/* Status Dot & Offline Outbox Badge */}
         <div className={`hdr-status ${isOnline ? 'online' : 'offline'}`}>
-          <span className={`hdr-status-dot ${isOnline ? 'online' : 'offline'}`} />
+          <span className={`ui-dot lg ${isOnline ? 'online' : 'offline'}`} />
           <span>{isOnline ? 'En línea' : 'Sin conexión'}</span>
           {outboxCount > 0 && (
             <button
               type="button"
               onClick={() => flushOrderOutbox()}
-              className="hdr-outbox-badge"
+              className="ui-pill ui-pill-xs ui-pill-gold ui-pill-interactive"
               title="Órdenes en cola offline pendientes de sincronizar (clic para reintentar)"
             >
               ⏳ {outboxCount}

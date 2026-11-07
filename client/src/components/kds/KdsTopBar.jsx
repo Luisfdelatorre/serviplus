@@ -93,7 +93,7 @@ export function KdsTopBar({ prepCount, readyCount, totalPages }) {
           <span className="kds-clock" id="kds-live-clock">{clock}</span>
         </div>
         <span
-          className="kds-topbar-res-pill kds-topbar-res-pill-styled"
+          className="ui-pill ui-pill-xs ui-pill-dark-glass"
           title="Resolución de pantalla / televisor"
         >
           <Tv size={13} className="kds-tv-icon" />
@@ -103,9 +103,9 @@ export function KdsTopBar({ prepCount, readyCount, totalPages }) {
 
       {/* Center: Filter Capsule (Icons + Numbers only) */}
       <div className="kds-topbar-center">
-        <div className="kds-filter-capsule">
+        <div className="ui-capsule-dark">
           <button
-            className={`kds-tab-pill kds-tab-pill-flex ${kdsFilter === 'PREP' ? 'active' : ''}`}
+            className={`ui-capsule-dark-btn ${kdsFilter === 'PREP' ? 'active' : ''}`}
             onClick={() => setKdsFilter('PREP')}
             title="En Preparación"
           >
@@ -113,7 +113,7 @@ export function KdsTopBar({ prepCount, readyCount, totalPages }) {
             <span className="kds-tab-count">{prepCount}</span>
           </button>
           <button
-            className={`kds-tab-pill kds-tab-pill-flex ${kdsFilter === 'READY' ? 'active' : ''}`}
+            className={`ui-capsule-dark-btn ${kdsFilter === 'READY' ? 'active' : ''}`}
             onClick={() => setKdsFilter('READY')}
             title="Listas para Entrega"
           >
@@ -125,13 +125,13 @@ export function KdsTopBar({ prepCount, readyCount, totalPages }) {
 
       {/* Right: Icon-only Controls */}
       <div className="kds-topbar-right">
-        <div className="kds-scale-pill-group" title="Tamaño de tarjetas de cocina (S, M, L)">
+        <div className="ui-scale-group" title="Tamaño de tarjetas de cocina (S, M, L)">
           <span className="kds-scale-icon kds-scale-icon-flex">
             <SlidersHorizontal size={14} />
           </span>
           <button
             type="button"
-            className={`kds-scale-pill ${kdsScale === 'compact' ? 'active' : ''}`}
+            className={`ui-scale-btn ${kdsScale === 'compact' ? 'active' : ''}`}
             onClick={() => setKdsScale('compact')}
             title="Compacto (5 columnas)"
           >
@@ -139,7 +139,7 @@ export function KdsTopBar({ prepCount, readyCount, totalPages }) {
           </button>
           <button
             type="button"
-            className={`kds-scale-pill ${kdsScale === 'normal' ? 'active' : ''}`}
+            className={`ui-scale-btn ${kdsScale === 'normal' ? 'active' : ''}`}
             onClick={() => setKdsScale('normal')}
             title="Normal (4 columnas)"
           >
@@ -147,7 +147,7 @@ export function KdsTopBar({ prepCount, readyCount, totalPages }) {
           </button>
           <button
             type="button"
-            className={`kds-scale-pill ${kdsScale === 'large' ? 'active' : ''}`}
+            className={`ui-scale-btn ${kdsScale === 'large' ? 'active' : ''}`}
             onClick={() => setKdsScale('large')}
             title="Grande (3 columnas / 4 columnas en TV 2K)"
           >

@@ -59,7 +59,7 @@ export function KdsCard({ order }) {
         </div>
 
         <div className="kds-header-right kds-header-right-row">
-          <span className="kds-elapsed-pill" id={`kds-elapsed-${order.id}`}> {elapsedText}</span>
+          <span className="ui-elapsed-tag" id={`kds-elapsed-${order.id}`}> {elapsedText}</span>
           {orderTimeStr && <span className="kds-entry-time">{orderTimeStr}</span>}
 
           {kdsStatus === 'READY' && (

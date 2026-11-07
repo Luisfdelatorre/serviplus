@@ -56,25 +56,7 @@
   gap: 12px;
 }
 
-.ulm-icon-badge {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
-}
 
-.ulm-icon-badge.teal {
-  background: linear-gradient(135deg, #0f766e 0%, #0d9488 50%, #14b8a6 100%);
-}
-
-.ulm-icon-badge.admin {
-  background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
-}
 
 .ulm-title-group h3 {
   margin: 0;
@@ -162,78 +144,7 @@
   margin-bottom: 6px;
 }
 
-.ulm-chips-scroll {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 4px 2px 6px;
-}
 
-.ulm-user-chip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  border-radius: 9999px;
-  background: #f8fafc;
-  border: 1.5px solid #e2e8f0;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #334155;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s ease;
-}
-
-.ulm-user-chip:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-}
-
-.ulm-user-chip.selected {
-  background: #f0fdfa;
-  border-color: #0d9488;
-  color: #0f766e;
-}
-
-.ulm-chip-avatar {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background-color: #0d9488;
-  color: #ffffff;
-  font-size: 0.7rem;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ulm-user-chip.selected .ulm-chip-avatar {
-  background-color: #0f766e;
-}
-
-/* Badge de usuario seleccionado */
-.ulm-selected-badge {
-  margin-bottom: 12px;
-  padding: 8px 14px;
-  border-radius: 12px;
-  background-color: #f1f5f9;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.82rem;
-  color: #334155;
-}
-
-.ulm-selected-badge button {
-  background: transparent;
-  border: none;
-  color: #0d9488;
-  font-weight: 800;
-  font-size: 0.78rem;
-  cursor: pointer;
-}
 
 /* Caja de PIN */
 .ulm-pin-box {
@@ -248,26 +159,6 @@
   min-height: 64px;
   margin-bottom: 14px;
   transition: all 0.15s ease;
-}
-
-.ulm-pin-dots {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.ulm-pin-dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background-color: #cbd5e1;
-  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.ulm-pin-dot.filled {
-  background-color: #0d9488;
-  transform: scale(1.15);
-  box-shadow: 0 0 8px rgba(13, 148, 136, 0.4);
 }
 
 .ulm-pin-hint {
@@ -336,15 +227,15 @@
 .ulm-submit-btn {
   width: 100%;
   padding: 14px;
-  border-radius: 16px;
+  border-radius: var(--radius-pill, 999px);
   border: none;
-  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+  background-color: var(--ios-accent, #00A86B);
   color: #ffffff;
   font-size: 0.98rem;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);
-  transition: all 0.15s ease;
+  box-shadow: var(--ios-accent-shadow, 0 4px 14px rgba(0, 168, 107, 0.3));
+  transition: all 0.15s var(--ease-ios);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -352,7 +243,7 @@
 }
 
 .ulm-submit-btn:hover:not(:disabled) {
-  filter: brightness(1.05);
+  background-color: var(--ios-accent-hover, #008F5B);
   transform: translateY(-1px);
 }
 
@@ -378,7 +269,7 @@
 .ulm-shift-btn {
   flex: 1;
   padding: 10px 12px;
-  border-radius: 14px;
+  border-radius: var(--radius-pill, 999px);
   font-size: 0.82rem;
   font-weight: 800;
   display: flex;

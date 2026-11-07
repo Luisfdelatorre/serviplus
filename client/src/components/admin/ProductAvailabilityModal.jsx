@@ -98,7 +98,7 @@ export function ProductAvailabilityModal({ isOpen, onClose }) {
         {/* Header */}
         <div className="admin-settings-header pavail-s-2">
           <div className="admin-settings-title-group">
-            <div className={`admin-header-badge ${inactiveCount > 0 ? 'has-inactive' : 'all-active'}`}>
+            <div className={`ui-icon-box-xl ${inactiveCount > 0 ? 'ui-icon-box-rose' : 'ui-icon-box-emerald'}`}>
               <Package size={22} color="#fff" />
             </div>
             <div>
@@ -148,7 +148,7 @@ export function ProductAvailabilityModal({ isOpen, onClose }) {
         <div className="pavail-s-10">
           <button
             onClick={() => setSelectedCat('ALL')}
-            className={`pavail-cat-pill ${selectedCat === 'ALL' ? 'active' : ''}`}
+            className={`ui-pill-cat ui-pill-cat-dark ${selectedCat === 'ALL' ? 'active' : ''}`}
           >
             Todos ({products.length})
           </button>
@@ -159,7 +159,7 @@ export function ProductAvailabilityModal({ isOpen, onClose }) {
               <button
                 key={cat}
                 onClick={() => setSelectedCat(cat)}
-                className={`pavail-cat-pill ${selectedCat === cat ? 'active' : ''} ${inactInCat > 0 ? 'has-inactive' : ''}`}
+                className={`ui-pill-cat ui-pill-cat-dark ${selectedCat === cat ? 'active' : ''} ${inactInCat > 0 ? 'has-inactive' : ''}`}
               >
                 {cat} ({countInCat}) {inactInCat > 0 && `• ${inactInCat} agotado`}
               </button>

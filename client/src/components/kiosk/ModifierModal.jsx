@@ -205,9 +205,9 @@ export function ModifierModal({ item, categoryName, isOpen, onClose, onAdd, orig
           <>
             {/* Barra superior de anclajes táctiles */}
             <header className="kiosk-card-header">
-              <div className="kiosk-header-left-badge">
-                <span className="kiosk-card-badge">
-                  <span className="kiosk-card-badge-dot" />
+              <div className="kiosk-header-left">
+                <span className="ui-pill ui-pill-md ui-pill-neutral">
+                  <span className="ui-dot lg amber" />
                   Plato Estrella • {categoryName || 'Especialidades'}
                 </span>
               </div>
@@ -317,9 +317,9 @@ export function ModifierModal({ item, categoryName, isOpen, onClose, onAdd, orig
                     {selectedExtrasList.length > 0 && (
                       <div className="kiosk-summary-row">
                         <span className="kiosk-summary-row-label">Adicionales:</span>
-                        <div className="kiosk-summary-chips">
+                        <div className="ui-chips-wrap">
                           {selectedExtrasList.map((ext) => (
-                            <span key={ext.id} className="kiosk-summary-chip extra-chip">
+                            <span key={ext.id} className="ui-pill ui-pill-xs ui-pill-amber">
                               {getModifierEmoji(ext.name)} {ext.name} <strong>+{formatCOP(ext.price)}</strong>
                             </span>
                           ))}
@@ -331,9 +331,9 @@ export function ModifierModal({ item, categoryName, isOpen, onClose, onAdd, orig
                     {selectedBaseList.length > 0 && (
                       <div className="kiosk-summary-row">
                         <span className="kiosk-summary-row-label">Salsas:</span>
-                        <div className="kiosk-summary-chips">
+                        <div className="ui-chips-wrap">
                           {selectedBaseList.map((b) => (
-                            <span key={b.id} className="kiosk-summary-chip base-chip">
+                            <span key={b.id} className="ui-pill ui-pill-xs ui-pill-emerald">
                               {getModifierEmoji(b.name)} {b.name}
                             </span>
                           ))}
@@ -438,7 +438,7 @@ export function ModifierModal({ item, categoryName, isOpen, onClose, onAdd, orig
               </button>
 
               <div className="kiosk-customize-title-group">
-                <span className="kiosk-customize-category-badge">
+                <span className="kiosk-customize-category-title">
                   {categoryName || 'Personalización'}
                 </span>
               </div>
@@ -460,11 +460,11 @@ export function ModifierModal({ item, categoryName, isOpen, onClose, onAdd, orig
               {/* Columna Izquierda: Hero Card Compacta */}
               <div className="kiosk-hero-card">
                 <div className="kiosk-hero-badges">
-                  <span className="kiosk-badge-recommended">
-                    <span className="kiosk-badge-dot" />
+                  <span className="ui-pill ui-pill-xs ui-pill-amber ui-pill-upper">
+                    <span className="ui-dot amber" />
                     Recomendado
                   </span>
-                  <span className="kiosk-badge-calories">🔥 {nutrition.calories} kcal</span>
+                  <span className="ui-pill ui-pill-xs ui-pill-neutral">🔥 {nutrition.calories} kcal</span>
                 </div>
 
                 <div className="kiosk-hero-image-stage">
@@ -497,9 +497,9 @@ export function ModifierModal({ item, categoryName, isOpen, onClose, onAdd, orig
                     <div className="kiosk-selected-extras-heading">
                       Extras elegidos ({selectedModsList.length}):
                     </div>
-                    <div className="kiosk-selected-extras-chips">
+                    <div className="ui-chips-wrap">
                       {selectedModsList.map((m) => (
-                        <span key={m.id} className="kiosk-selected-chip">
+                        <span key={m.id} className="ui-pill ui-pill-xs ui-pill-surface">
                           {getModifierEmoji(m.name)} {m.name}
                         </span>
                       ))}
@@ -515,7 +515,7 @@ export function ModifierModal({ item, categoryName, isOpen, onClose, onAdd, orig
                   <section className="kiosk-section-card">
                     <div className="kiosk-section-header">
                       <div className="kiosk-section-heading-group">
-                        <span className="kiosk-step-number-badge">1</span>
+                        <span className="ui-step-number-badge">1</span>
                         <div>
                           <div className="kiosk-section-title-row">
                             <h2 className="kiosk-section-title">Adicionales y Extras</h2>
@@ -558,7 +558,7 @@ export function ModifierModal({ item, categoryName, isOpen, onClose, onAdd, orig
                   <section className="kiosk-section-card">
                     <div className="kiosk-section-header">
                       <div className="kiosk-section-heading-group">
-                        <span className="kiosk-step-number-badge">2</span>
+                        <span className="ui-step-number-badge">2</span>
                         <div>
                           <div className="kiosk-section-title-row">
                             <h2 className="kiosk-section-title">Salsas y Toppings</h2>
@@ -606,7 +606,7 @@ export function ModifierModal({ item, categoryName, isOpen, onClose, onAdd, orig
                     </div>
                   </div>
 
-                  <div className="kiosk-pills-row">
+                  <div className="ui-row-wrap">
                     {['Sin cebolla', 'Bien cocido', 'Salsa aparte', 'Sin vegetales', 'Poco picante'].map(
                       (tag) => {
                         const isActive = notes.includes(tag);
@@ -615,7 +615,7 @@ export function ModifierModal({ item, categoryName, isOpen, onClose, onAdd, orig
                             key={tag}
                             type="button"
                             onClick={() => toggleInstructionPill(tag)}
-                            className={`kiosk-instruction-pill ${isActive ? 'active' : ''}`}
+                            className={`ui-pill-tool ${isActive ? 'active' : ''}`}
                           >
                             {isActive ? '✓ ' : '+ '} {tag}
                           </button>
@@ -690,7 +690,7 @@ export function ModifierModal({ item, categoryName, isOpen, onClose, onAdd, orig
                   <span className="material-symbols-outlined">check</span>
                   <span>Listo • Ver Producto</span>
                 </span>
-                <span className="kiosk-cta-price-pill">{formatCOP(totalPrice)}</span>
+                <span className="ui-btn-price-tag">{formatCOP(totalPrice)}</span>
               </button>
             </footer>
           </div>

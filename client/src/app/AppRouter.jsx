@@ -1,4 +1,5 @@
-import React, { Suspense, lazy } from 'react';
+import { Suspense, lazy } from 'react';
+import { Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import {
   KioskLayout,
   PosLayout,
@@ -8,69 +9,84 @@ import {
   TerminalShell,
   TerminalLoader
 } from './layouts/TerminalLayouts';
+import { RequireAuth, RequireAdmin, RequireShift } from './guards/guards';
 
-// Code-splitting por terminal: el Kiosco no descarga el bundle de Admin ni de Caja
-const HomeHubView = lazy(() =>
-  import('../components/home/HomeHubView').then((m) => ({ default: m.HomeHubView }))
-);
-const KioskView = lazy(() =>
-  import('../components/kiosk/KioskView').then((m) => ({ default: m.KioskView }))
-);
-const CashierView = lazy(() =>
-  import('../components/cashier/CashierView').then((m) => ({ default: m.CashierView }))
-);
-const CashDrawerOpeningView = lazy(() =>
-  import('../components/cashier/CashDrawerOpeningView').then((m) => ({ default: m.CashDrawerOpeningView }))
-);
-const KdsGrid = lazy(() =>
-  import('../components/kds/KdsGrid').then((m) => ({ default: m.KdsGrid }))
-);
-const TurnsBoard = lazy(() =>
-  import('../components/turns/TurnsBoard').then((m) => ({ default: m.TurnsBoard }))
-);
-const AdminSettingsView = lazy(() =>
-  import('../components/admin/AdminSettingsView').then((m) => ({ default: m.AdminSettingsView }))
-);
+// Helper lazyNamed para imports lazy limpios
+const lazyNamed = (loader, name) =>
+  lazy(() => loader().then((m) => ({ default: m[name] })));
 
-export function AppRouter({ activeTab }) {
-  return (
+// Helper routeLayout para envolver layouts con Suspense y Outlet
+const routeLayout = (Layout) => (
+  <Layout>
     <Suspense fallback={<TerminalLoader />}>
-      {activeTab === 'home' && (
-        <TerminalShell terminal="home">
-          <HomeHubView />
-        </TerminalShell>
-      )}
-      {activeTab === 'cash-in' && (
-        <PosLayout>
-          <CashDrawerOpeningView />
-        </PosLayout>
-      )}
-      {activeTab === 'kds' && (
-        <KdsLayout>
-          <KdsGrid />
-        </KdsLayout>
-      )}
-      {activeTab === 'kiosk' && (
-        <KioskLayout>
-          <KioskView />
-        </KioskLayout>
-      )}
-      {activeTab === 'cashier' && (
-        <PosLayout>
-          <CashierView />
-        </PosLayout>
-      )}
-      {activeTab === 'turns' && (
-        <DisplayLayout>
-          <TurnsBoard />
-        </DisplayLayout>
-      )}
-      {activeTab === 'admin' && (
-        <AdminLayout>
-          <AdminSettingsView />
-        </AdminLayout>
-      )}
+      <Outlet />
     </Suspense>
+  </Layout>
+);
+
+const HomeHubView = lazyNamed(() => import('../components/home/HomeHubView'), 'HomeHubView');
+const KioskView = lazyNamed(() => import('../components/kiosk/KioskView'), 'KioskView');
+const CashierView = lazyNamed(() => import('../components/cashier/CashierView'), 'CashierView');
+const CashDrawerOpeningView = lazyNamed(() => import('../components/cashier/CashDrawerOpeningView'), 'CashDrawerOpeningView');
+const KdsGrid = lazyNamed(() => import('../components/kds/KdsGrid'), 'KdsGrid');
+const TurnsBoard = lazyNamed(() => import('../components/turns/TurnsBoard'), 'TurnsBoard');
+const AdminSettingsView = lazyNamed(() => import('../components/admin/AdminSettingsView'), 'AdminSettingsView');
+
+export function AppRouter() {
+  return (
+    <Routes>
+      {/* Ruta 1: Home Hub (Abierta) */}
+      <Route
+        path="/"
+        element={
+          <TerminalShell terminal="home">
+            <Suspense fallback={<TerminalLoader />}>
+              <HomeHubView />
+            </Suspense>
+          </TerminalShell>
+        }
+      />
+
+      {/* Rutas Abiertas de Terminales */}
+      <Route element={routeLayout(KioskLayout)}>
+        <Route path="/kiosk" element={<KioskView />} />
+      </Route>
+
+      <Route element={routeLayout(KdsLayout)}>
+        <Route path="/kds/:station?" element={<KdsGrid />} />
+      </Route>
+
+      <Route element={routeLayout(DisplayLayout)}>
+        <Route path="/display" element={<TurnsBoard />} />
+      </Route>
+
+      {/* Rutas Protegidas de Front / Caja */}
+      <Route element={<RequireAuth />}>
+        <Route element={routeLayout(PosLayout)}>
+          <Route path="/front/cash-in" element={<CashDrawerOpeningView />} />
+          <Route element={<RequireShift />}>
+            <Route path="/front" element={<CashierView />} />
+          </Route>
+        </Route>
+      </Route>
+
+      {/* Ruta Protegida de Administración */}
+      <Route element={<RequireAdmin />}>
+        <Route element={routeLayout(AdminLayout)}>
+          <Route path="/admin" element={<AdminSettingsView />} />
+        </Route>
+      </Route>
+
+      {/* Redirecciones de compatibilidad */}
+      <Route path="/pos" element={<Navigate to="/front" replace />} />
+      <Route path="/cashier" element={<Navigate to="/front" replace />} />
+      <Route path="/cash-in" element={<Navigate to="/front/cash-in" replace />} />
+      <Route path="/apertura" element={<Navigate to="/front/cash-in" replace />} />
+      <Route path="/turns" element={<Navigate to="/display" replace />} />
+      <Route path="/react/*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 
+export default AppRouter;

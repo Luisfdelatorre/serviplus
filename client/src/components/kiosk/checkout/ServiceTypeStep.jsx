@@ -5,7 +5,7 @@ export function ServiceTypeStep({ onSelectEatIn, onSelectTakeOut }) {
     <div className="checkout-service-center animate-step-fade">
       {/* Título de Bienvenida */}
       <div className="checkout-service-header-wrap">
-        <span className="checkout-service-badge">Paso 2 de tu Orden</span>
+        <span className="ui-pill ui-pill-md ui-pill-amber">Paso 2 de tu Orden</span>
         <h1 className="checkout-service-title">¿Dónde comerás hoy?</h1>
         <p className="checkout-service-sub">Toca una opción para continuar con tu pedido</p>
       </div>

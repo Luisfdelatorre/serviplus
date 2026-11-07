@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useKdsStore, getOrderKdsStatus } from '../../store/useKdsStore';
 import { useMenuStore } from '../../store/useMenuStore';
 import { fetchActiveOrders, fetchMenu } from '../../api';
@@ -12,6 +13,7 @@ import { ScreenResolutionBadge } from '../common/ScreenResolutionBadge';
 import './KdsView.css';
 
 export function KdsGrid() {
+  const { station } = useParams();
   const activeOrders = useKdsStore((state) => state.activeOrders);
   const setActiveOrders = useKdsStore((state) => state.setActiveOrders);
   const setCategories = useMenuStore((state) => state.setCategories);
@@ -138,12 +140,13 @@ export function KdsGrid() {
   const containerClasses = [
     'kds-grid',
     `scale-${kdsScale}`,
-    kdsAutoFit ? 'autofit-active' : ''
+    kdsAutoFit ? 'autofit-active' : '',
+    shiftClass
   ].filter(Boolean).join(' ');
 
   return (
     <div
-      className={`view-section active kds-view-root kds-theme-${kdsTheme} ${shiftClass}`}
+      className={`view-section active kds-view-root kds-theme-${kdsTheme}`}
       data-kds-theme={kdsTheme}
     >
       {/* Barra superior de cocina */}

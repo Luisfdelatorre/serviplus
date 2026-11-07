@@ -403,28 +403,6 @@
   gap: 8px;
 }
 
-/* Dynamic classes for CashShiftModal */
-.admin-header-badge.shift-open { background: #10b981; }
-.admin-header-badge.shift-closed { background: #f59e0b; }
-
-.cshift-status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-.cshift-status-pill.open {
-  background: #065f46;
-  color: #34d399;
-}
-.cshift-status-pill.closed {
-  background: #78350f;
-  color: #fcd34d;
-}
-
 .cshift-tab-btn {
   padding: 8px 16px;
   border-radius: 8px;

@@ -22,10 +22,15 @@
 
 /* Header Compacto (48px) */
 .cdo-header {
-  height: 48px;
+  min-height: 48px;
   background-color: #ffffff;
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
   border-bottom: 1px solid rgba(226, 232, 240, 0.85);
-  padding: 0 16px;
+  padding: calc(env(safe-area-inset-top, 0px) + var(--ios-top-safe-extra, 0px)) 16px 0 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -43,15 +48,13 @@
   width: 32px;
   height: 32px;
   border-radius: 10px;
-  background-color: #0f766e;
-  color: #ffffff;
-  font-weight: 900;
-  font-size: 1.15rem;
+  background-color: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
-  letter-spacing: -0.05em;
   flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .cdo-brand-title {
@@ -80,87 +83,7 @@
   margin-top: 1px;
 }
 
-.cdo-online-pill {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 2px 8px;
-  background-color: #ecfdf5;
-  border: 1px solid #d1fae5;
-  border-radius: 9999px;
-  color: #047857;
-  font-size: 0.7rem;
-  font-weight: 700;
-  transition: all 0.25s ease;
-}
 
-.cdo-online-pill.offline {
-  background-color: #fef2f2;
-  border-color: #fecaca;
-  color: #dc2626;
-}
-
-.cdo-ping-dot {
-  position: relative;
-  display: flex;
-  width: 7px;
-  height: 7px;
-}
-
-.cdo-ping-dot .ring {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background-color: #34d399;
-  opacity: 0.75;
-  animation: cdoPing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-}
-
-.cdo-ping-dot.offline .ring {
-  background-color: #f87171;
-  animation: none;
-  opacity: 0;
-}
-
-.cdo-ping-dot .dot {
-  position: relative;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background-color: #10b981;
-}
-
-.cdo-ping-dot.offline .dot {
-  background-color: #ef4444;
-}
-
-@keyframes cdoPing {
-  75%, 100% {
-    transform: scale(2.4);
-    opacity: 0;
-  }
-}
-
-.cdo-station-badge {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding-left: 12px;
-  border-left: 1px solid #e2e8f0;
-  font-size: 0.72rem;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.cdo-shift-tag {
-  background-color: #f1f5f9;
-  color: #475569;
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 6px;
-}
 
 .cdo-header-actions {
   display: flex;
@@ -169,25 +92,7 @@
 }
 
 .cdo-action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #475569;
-  cursor: pointer;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-  transition: all 0.15s ease;
-}
-
-.cdo-action-btn:hover {
-  background-color: #f8fafc;
-  color: #1e293b;
-  border-color: #cbd5e1;
+  border-radius: var(--radius-pill, 999px);
 }
 
 /* Main Area Optimizado para 768px de alto */
@@ -242,18 +147,6 @@
   font-size: 0.7rem;
   color: #64748b;
   font-weight: 500;
-}
-
-.cdo-date-pill {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.7rem;
-  background-color: #ffffff;
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  border-radius: 10px;
-  padding: 5px 10px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
 }
 
 /* Rejilla limpia de 2 columnas calibrada para 1024x768 */
@@ -366,23 +259,6 @@
   gap: 10px;
   width: 135px;
 }
-
-.cdo-row-pill {
-  width: 7px;
-  height: 24px;
-  border-radius: 9999px;
-  display: inline-block;
-  background-color: #0d9488;
-}
-
-.cdo-row-pill.denom-100k, .cdo-row-pill.denom-100u, .cdo-row-pill.denom-100e, .cdo-row-pill.denom-1000m { background-color: #10b981; }
-.cdo-row-pill.denom-50k,  .cdo-row-pill.denom-50u,  .cdo-row-pill.denom-50e,  .cdo-row-pill.denom-500m  { background-color: #a855f7; }
-.cdo-row-pill.denom-20k,  .cdo-row-pill.denom-20u,  .cdo-row-pill.denom-20e,  .cdo-row-pill.denom-200m  { background-color: #f59e0b; }
-.cdo-row-pill.denom-10k,  .cdo-row-pill.denom-10u,  .cdo-row-pill.denom-10e,  .cdo-row-pill.denom-100m  { background-color: #f43f5e; }
-.cdo-row-pill.denom-5k,   .cdo-row-pill.denom-5u,   .cdo-row-pill.denom-5e,   .cdo-row-pill.denom-50m   { background-color: #0891b2; }
-.cdo-row-pill.denom-2k,   .cdo-row-pill.denom-2u,   .cdo-row-pill.denom-2e,   .cdo-row-pill.denom-20m   { background-color: #2563eb; }
-.cdo-row-pill.denom-1k,   .cdo-row-pill.denom-1u,   .cdo-row-pill.denom-1e,   .cdo-row-pill.denom-10m   { background-color: #b45309; }
-.cdo-row-pill.denom-coins, .cdo-row-pill.denom-coins_u, .cdo-row-pill.denom-coins_e, .cdo-row-pill.denom-coins_m { background-color: #94a3b8; }
 
 .cdo-row-name {
   font-size: 0.88rem;
@@ -602,30 +478,7 @@
 }
 
 .cdo-submit-btn {
-  width: 100%;
-  padding: 10px;
-  background-color: #0d9488;
-  color: #ffffff;
-  font-size: 0.85rem;
-  font-weight: 800;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  box-shadow: 0 3px 10px rgba(13, 148, 136, 0.25);
   margin-top: 8px;
-  transition: all 0.15s ease;
-}
-
-.cdo-submit-btn:hover {
-  background-color: #0f766e;
-}
-
-.cdo-submit-btn:active {
-  transform: scale(0.98);
 }
 
 /* Footer Compacto (32px) */
@@ -655,69 +508,6 @@
    Clases de Refactorización para eliminar Inline Styles (Regla AGENTS.md)
    ========================================================================== */
 
-.cdo-kiosk-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.cdo-kiosk-pill.online {
-  color: #047857;
-  background-color: #ecfdf5;
-  border: 1px solid #d1fae5;
-}
-
-.cdo-kiosk-pill.offline {
-  color: #b91c1c;
-  background-color: #fef2f2;
-  border: 1px solid #fecaca;
-}
-
-.cdo-kiosk-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-}
-
-.cdo-kiosk-dot.online {
-  background-color: #10b981;
-}
-
-.cdo-kiosk-dot.offline {
-  background-color: #ef4444;
-}
-
-.cdo-icon-sm {
-  width: 16px;
-  height: 16px;
-  color: #94a3b8;
-}
-
-.cdo-icon-md {
-  width: 20px;
-  height: 20px;
-}
-
-.cdo-icon-lg {
-  width: 24px;
-  height: 24px;
-}
-
-.cdo-icon-xl {
-  width: 32px;
-  height: 32px;
-}
-
-.cdo-icon-teal {
-  width: 15px;
-  height: 15px;
-  color: #64748b;
-}
-
 .cdo-date-label {
   color: #94a3b8;
 }
@@ -727,13 +517,7 @@
   color: #334155;
 }
 
-.cdo-summary-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: #0d9488;
-  display: inline-block;
-}
+
 
 .cdo-summary-highlight {
   color: #0d9488;
@@ -758,31 +542,7 @@
 }
 
 .cdo-print-slip-btn {
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: 10px;
-  border: 1px solid #cbd5e1;
-  background-color: #ffffff;
-  color: #475569;
-  font-size: 0.74rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  cursor: pointer;
   margin-top: 6px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-  transition: all 0.15s ease;
-}
-
-.cdo-print-slip-btn:hover {
-  background-color: #f8fafc;
-  border-color: #94a3b8;
-}
-
-.cdo-print-slip-btn:active {
-  transform: scale(0.98);
 }
 
 /* Modal de éxito */
@@ -846,26 +606,4 @@
   font-size: 0.82rem;
   color: #64748b;
   line-height: 1.5;
-}
-
-.cdo-modal-btn {
-  width: 100%;
-  padding: 14px;
-  background-color: #0d9488;
-  color: #ffffff;
-  font-weight: 800;
-  font-size: 0.92rem;
-  border: none;
-  border-radius: 14px;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.25);
-  transition: all 0.15s ease;
-}
-
-.cdo-modal-btn:hover {
-  background-color: #0f766e;
-}
-
-.cdo-modal-btn:active {
-  transform: scale(0.98);
 }

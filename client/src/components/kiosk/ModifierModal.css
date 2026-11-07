@@ -58,27 +58,6 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.04);
 }
 
-.kiosk-card-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 14px;
-  background: #f2f4f6;
-  border-radius: 9999px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #504532;
-  letter-spacing: -0.2px;
-}
-
-.kiosk-card-badge-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #ffbc0d;
-  box-shadow: 0 0 0 2px rgba(255, 188, 13, 0.25);
-}
-
 /* Botón de cierre circular táctil centrado */
 .kiosk-btn-close-tactile {
   position: absolute;
@@ -336,34 +315,7 @@
   padding-top: 3px;
 }
 
-.kiosk-summary-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  flex: 1;
-}
 
-.kiosk-summary-chip {
-  font-size: 12px;
-  font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.kiosk-summary-chip.extra-chip {
-  background: #fffdf0;
-  border: 1px solid #fde68a;
-  color: #78350f;
-}
-
-.kiosk-summary-chip.base-chip {
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  color: #065f46;
-}
 
 .kiosk-summary-notes {
   font-size: 12px;
@@ -549,7 +501,7 @@
   background: #e4e4e7;
 }
 
-.kiosk-customize-category-badge {
+.kiosk-customize-category-title {
   font-size: 14px;
   font-weight: 800;
   color: #504532;
@@ -608,35 +560,6 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
-}
-
-.kiosk-badge-recommended {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: rgba(245, 158, 11, 0.15);
-  color: #b45309;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 3px 9px;
-  border-radius: 9999px;
-  text-transform: uppercase;
-}
-
-.kiosk-badge-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #ffbc0d;
-}
-
-.kiosk-badge-calories {
-  font-size: 11px;
-  font-weight: 800;
-  color: #71717a;
-  background: #f4f4f5;
-  padding: 3px 9px;
-  border-radius: 9999px;
 }
 
 .kiosk-hero-image-stage {
@@ -730,21 +653,7 @@
   margin-bottom: 4px;
 }
 
-.kiosk-selected-extras-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
 
-.kiosk-selected-chip {
-  font-size: 11px;
-  font-weight: 800;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 9999px;
-  padding: 2px 7px;
-  color: #0f172a;
-}
 
 /* Columna Derecha de Opciones */
 .kiosk-options-column {
@@ -786,18 +695,7 @@
   gap: 8px;
 }
 
-.kiosk-step-number-badge {
-  width: 24px;
-  height: 24px;
-  border-radius: 7px;
-  background: #09090b;
-  color: #ffffff;
-  font-weight: 900;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+
 
 .kiosk-section-title {
   font-size: 15px;
@@ -946,40 +844,8 @@
   color: #065f46;
 }
 
-/* Pastillas de Instrucciones */
-.kiosk-pills-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 8px;
-}
-
-.kiosk-instruction-pill {
-  padding: 6px 10px;
-  border-radius: 9px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  border: 1px solid #e4e4e7;
-  background: #f4f4f5;
-  color: #27272a;
-  transition: all 0.15s ease;
-  animation: kioskPillIn 0.38s cubic-bezier(0.32, 0, 0.06, 1) backwards;
-}
-
-.kiosk-instruction-pill:nth-child(1) { animation-delay: 0.22s; }
-.kiosk-instruction-pill:nth-child(2) { animation-delay: 0.26s; }
-.kiosk-instruction-pill:nth-child(3) { animation-delay: 0.30s; }
-.kiosk-instruction-pill:nth-child(4) { animation-delay: 0.34s; }
-.kiosk-instruction-pill:nth-child(5) { animation-delay: 0.38s; }
-
-.kiosk-instruction-pill.active {
-  border: 1.5px solid #09090b;
-  background: #09090b;
-  color: #ffffff;
-}
-
 .kiosk-notes-input {
+  margin-top: 8px;
   width: 100%;
   padding: 8px 12px;
   border-radius: 10px;
@@ -1081,14 +947,6 @@
 
 .kiosk-cta-yellow-btn:hover {
   filter: brightness(1.06);
-}
-
-.kiosk-cta-price-pill {
-  background: rgba(0, 0, 0, 0.08);
-  padding: 3px 8px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 900;
 }
 
 /* ==========================================================================

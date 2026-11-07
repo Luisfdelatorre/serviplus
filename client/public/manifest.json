@@ -1,0 +1,18 @@
+{
+  "name": "UPAYSOLUTIONS POS",
+  "short_name": "UPAY POS",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "transparent",
+  "theme_color": "transparent",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
+

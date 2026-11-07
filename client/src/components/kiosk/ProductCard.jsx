@@ -48,12 +48,12 @@ export function ProductCard({ item, categoryName }) {
         onClick={handleCardClick}
       >
         {isSelected && (
-          <div className="product-badge-qty kiosk-product-badge-qty">
+          <div className="ui-product-badge-qty">
             {totalItemQty}
           </div>
         )}
 
-        <div className="product-price-badge kiosk-product-price-badge">
+        <div className="ui-product-price-badge">
           {formatCOP(item.price)}
         </div>
 

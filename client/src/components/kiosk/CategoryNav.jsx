@@ -21,7 +21,7 @@ export function CategoryNav() {
           <button
             key={cat.id || cat.name}
             type="button"
-            className={`cat-pill kiosk-cat-pill ${isActive ? 'active' : ''}`}
+            className={`cat-pill ui-pill-cat ui-pill-cat-emerald ${isActive ? 'active' : ''}`}
             onClick={() => handleSelect(cat.name)}
           >
             {cat.name}
