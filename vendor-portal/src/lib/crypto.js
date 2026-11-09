@@ -22,12 +22,14 @@ export function canonicalJson(value) {
 let cachedPrivate;
 let cachedPublic;
 
+/** Acepta la clave privada Ed25519 como PEM (con o sin "\n" escapados) o como PKCS8 DER en base64. */
 function signingPrivateKey() {
-  cachedPrivate ||= crypto.createPrivateKey({
-    key: Buffer.from(requireEnv('LICENSE_SIGNING_PRIVATE_KEY'), 'base64'),
-    format: 'der',
-    type: 'pkcs8'
-  });
+  if (!cachedPrivate) {
+    const raw = requireEnv('LICENSE_SIGNING_PRIVATE_KEY').trim();
+    cachedPrivate = raw.includes('BEGIN')
+      ? crypto.createPrivateKey(raw.replace(/\\n/g, '\n'))
+      : crypto.createPrivateKey({ key: Buffer.from(raw, 'base64'), format: 'der', type: 'pkcs8' });
+  }
   return cachedPrivate;
 }
 
