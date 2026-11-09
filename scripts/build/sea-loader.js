@@ -13,7 +13,12 @@ function argValue(argv, name) {
   return i >= 0 ? argv[i + 1] : undefined;
 }
 
-if (process.argv.includes('--apply-update')) {
+if (process.argv[1] === '--run-script') {
+  // Ejecuta un script auxiliar (p. ej. importar MDB→SQLite) con el mismo runtime del exe.
+  const scriptPath = process.argv[2];
+  process.argv = [process.execPath, scriptPath, ...process.argv.slice(3)];
+  require(scriptPath);
+} else if (process.argv.includes('--apply-update')) {
   // La app viene indicada con --app-dir: el exe de trabajo no está en la carpeta de la app.
   const appDir = argValue(process.argv, 'app-dir');
   if (!appDir) {

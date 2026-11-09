@@ -102,7 +102,11 @@ function createSetupService({ configStore, aldeloService, importScriptPath = app
 
   function importMdbToSqlite(mdbPath, destPath) {
     return new Promise((resolve, reject) => {
-      execFile(process.execPath, [importScriptPath, mdbPath, destPath, '--force'], { timeout: 120000 }, (err, stdout, stderr) => {
+      // En el exe empaquetado, `process.execPath` es el propio servidor: el importador entra por --run-script.
+      const scriptArgs = appPaths.IS_PACKAGED
+        ? ['--run-script', importScriptPath, mdbPath, destPath, '--force']
+        : [importScriptPath, mdbPath, destPath, '--force'];
+      execFile(process.execPath, scriptArgs, { timeout: 120000 }, (err, stdout, stderr) => {
         if (err) return reject(new Error(`Importación fallida: ${stderr || err.message}`));
         resolve(stdout);
       });

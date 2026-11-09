@@ -12,16 +12,28 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const { APP_ROOT, DATA_DIR } = require('./lib/appPaths');
+const { APP_ROOT, DATA_DIR, IS_PACKAGED } = require('./lib/appPaths');
 const ROOT_DIR = APP_ROOT;
 const CONFIG_PATH = process.env.SP_CONFIG_PATH || path.join(DATA_DIR, 'config.json');
 const EXAMPLE_CONFIG_PATH = path.join(ROOT_DIR, 'config.example.json');
 const ENV_PATH = process.env.SP_ENV_PATH || path.join(DATA_DIR, '.env');
 
-try {
-  require('dotenv').config({ path: ENV_PATH, quiet: true });
-} catch (e) {
-  console.warn('[Config] dotenv no disponible:', e.message);
+// Cifrado en reposo: en el equipo instalado los secretos viven cifrados (secrets.enc) y la base
+// se abre con la llave del equipo. Fuera de ahí se usa el .env de siempre.
+const vault = require('./security/vault');
+const { getFingerprint } = require('./license/fingerprint');
+vault.init({
+  dataDir: DATA_DIR,
+  envPath: ENV_PATH,
+  enabled: vault.isEnabledFor({ isPackaged: IS_PACKAGED }),
+  getFingerprint
+});
+if (!vault.isEnabled()) {
+  try {
+    require('dotenv').config({ path: ENV_PATH, quiet: true });
+  } catch (e) {
+    console.warn('[Config] dotenv no disponible:', e.message);
+  }
 }
 
 /**
@@ -122,6 +134,10 @@ function writeFileConfig(data) {
 // .env (persistencia de secretos editados desde Admin)
 // ----------------------------------------------------------------------------
 function upsertEnvVars(vars) {
+  if (vault.saveSecretsEncrypted(vars)) {
+    for (const [key, value] of Object.entries(vars)) process.env[key] = String(value).replace(/\r?\n/g, '');
+    return;
+  }
   let content = '';
   try { content = fs.readFileSync(ENV_PATH, 'utf8'); } catch (_) {}
   const lines = content.split(/\r?\n/);

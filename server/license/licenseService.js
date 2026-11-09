@@ -18,6 +18,7 @@ const { writeJsonAtomic, readJsonSafe } = require('../lib/atomicFile');
 const { verifyDocument } = require('./signing');
 const { getFingerprint, machineCode, matchFingerprint } = require('./fingerprint');
 const { PACKAGED } = require('./buildFlags');
+const vault = require('../security/vault');
 
 const GRACE_MS = 72 * 60 * 60 * 1000;
 const HEARTBEAT_INTERVAL_MS = 4 * 60 * 60 * 1000;
@@ -234,6 +235,37 @@ function createLicenseService({ getConfig = () => ({}), dataDir = defaultDataDir
     return json.data || {};
   }
 
+  /**
+   * Custodia la llave de datos en el servidor (escrow) para poder restaurar este equipo.
+   * Si falla, no pasa nada grave: el heartbeat lo vuelve a intentar.
+   */
+  async function escrowKeyIfNeeded(doc) {
+    const dataKey = vault.getDataKey();
+    if (!vault.isEnabled() || !dataKey) return;
+    const licenseId = doc.payload.licenseId;
+    if (vault.isEscrowed(licenseId)) return;
+    try {
+      await postJson('/api/license/escrow', {
+        licenseId,
+        fingerprint: fingerprint(),
+        dataKey: dataKey.toString('base64')
+      });
+      vault.markEscrowed(licenseId);
+    } catch (err) {
+      console.warn('[License] Custodia de la llave pendiente:', err.message);
+    }
+  }
+
+  /**
+   * Pide al servidor la llave de un respaldo anterior (solo se entrega en una restauración
+   * autorizada). Se usa para re-cifrar el respaldo con la llave de este equipo.
+   */
+  async function fetchEscrowKey(licenseId) {
+    const data = await postJson('/api/license/escrow/retrieve', { licenseId, fingerprint: fingerprint() });
+    if (!data.dataKey) throw new LicenseError('NOT_RELEASED', 'El servidor no liberó la llave de respaldo para este equipo.', 403);
+    return Buffer.from(data.dataKey, 'base64');
+  }
+
   /** Activación online: envía clave + huella, recibe la licencia firmada para esta máquina. */
   async function activate(licenseKey) {
     const key = String(licenseKey || '').trim().toUpperCase();
@@ -246,8 +278,9 @@ function createLicenseService({ getConfig = () => ({}), dataDir = defaultDataDir
       appVersion: APP_VERSION
     });
     if (!data.license) throw new LicenseError('SERVER_ERROR', 'El servidor no devolvió una licencia.', 502);
-    // TODO(fase 5): guardar data.escrow (clave de datos custodiada) cuando exista el cifrado de datos.
-    return installDocument(data.license);
+    const status = installDocument(data.license);
+    await escrowKeyIfNeeded(data.license);
+    return status;
   }
 
   /** Importa un archivo .lic pegado manualmente (respaldo para soporte). */
@@ -280,6 +313,7 @@ function createLicenseService({ getConfig = () => ({}), dataDir = defaultDataDir
           console.warn('[License] Licencia renovada rechazada:', err.message);
         }
       }
+      await escrowKeyIfNeeded(doc);
     } catch (err) {
       if (err.code !== 'NETWORK') console.warn('[License] Heartbeat:', err.message);
     }
@@ -312,7 +346,7 @@ function createLicenseService({ getConfig = () => ({}), dataDir = defaultDataDir
     return () => listeners.delete(fn);
   }
 
-  return { getStatus, activate, importLicense, heartbeat, start, stop, onChange, isEnforced };
+  return { getStatus, activate, importLicense, heartbeat, fetchEscrowKey, start, stop, onChange, isEnforced };
 }
 
 module.exports = { createLicenseService, LicenseError, GRACE_MS, APP_VERSION };

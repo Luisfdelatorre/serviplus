@@ -5,7 +5,7 @@
  * Deja pasar lo que el propio asistente necesita (setup, licencia, impresoras, login de
  * admin, config pública y estáticos) y bloquea el resto de la API con 409 SETUP_REQUIRED.
  */
-const ALLOWED_API_PREFIXES = ['/api/setup', '/api/license', '/api/printer', '/api/config/public', '/api/admin/auth'];
+const ALLOWED_API_PREFIXES = ['/api/setup', '/api/license', '/api/printer', '/api/config/public', '/api/admin/auth', '/api/backups/restore'];
 
 function isAllowedApi(p) {
   return ALLOWED_API_PREFIXES.some((prefix) => p === prefix || p.startsWith(`${prefix}/`));

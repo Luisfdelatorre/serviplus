@@ -14,6 +14,9 @@ const path = require('path');
 
 const ROOT_DIR = path.join(__dirname, '..', '..');
 const { DATA_DIR } = require('../lib/appPaths');
+const vault = require('../security/vault');
+const encrypted = require('./encryptedSqlite');
+const { applyPendingRestore } = require('../security/restore');
 const DEFAULT_SQLITE_PATH = path.join(DATA_DIR, 'serviplus.db');
 
 function resolveSqlitePath(p) {
@@ -21,15 +24,32 @@ function resolveSqlitePath(p) {
   return path.isAbsolute(trimmed) ? trimmed : path.resolve(ROOT_DIR, trimmed);
 }
 
+const WAL_PRAGMAS = 'PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000; PRAGMA foreign_keys = OFF;';
+
 function openDatabase(filePath) {
-  const { DatabaseSync } = require('node:sqlite');
   if (!fs.existsSync(filePath)) {
     throw new Error(
       `Base SQLite no encontrada en ${filePath}. Créala con: npm run db:import`
     );
   }
+  if (vault.isEnabled()) return openEncryptedDatabase(filePath);
+
+  const { DatabaseSync } = require('node:sqlite');
   const db = new DatabaseSync(filePath);
-  db.exec('PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000; PRAGMA foreign_keys = OFF;');
+  db.exec(WAL_PRAGMAS);
+  return db;
+}
+
+/** Abre la base cifrada con la llave del equipo. Una base en claro (importada o heredada) se cifra antes. */
+function openEncryptedDatabase(filePath) {
+  applyPendingRestore(filePath);
+  const dataKey = vault.getDataKey();
+  if (encrypted.isPlaintextSqlite(filePath)) {
+    const { tables } = encrypted.encryptInPlace(filePath, dataKey);
+    console.log(`[SQLite] Base cifrada (${tables} tablas): ${filePath}`);
+  }
+  const db = encrypted.openEncrypted(filePath, dataKey);
+  db.exec(WAL_PRAGMAS);
   return db;
 }
 
@@ -52,6 +72,11 @@ function wrapSqlite(db) {
     },
     async insert(sql) {
       return withSql(() => Number(db.prepare(sql).run().lastInsertRowid), sql);
+    },
+    /** Copia consistente de la base a `dest` (cifrada si la base lo está). */
+    backupTo(dest) {
+      encrypted.vacuumInto(db, dest);
+      return dest;
     },
     close() {
       db.close();

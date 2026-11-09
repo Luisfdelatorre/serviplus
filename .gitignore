@@ -77,3 +77,14 @@ data/updates/
 data/update-backup/
 data/update-work/
 data/logs/
+
+# Llaves, secretos y respaldos del equipo (datos de runtime, nunca se versionan)
+data/keystore.json
+data/secrets.enc
+data/escrow-state.json
+data/backups/
+data/*.restore-pending
+data/*.before-restore
+data/*.enc-tmp
+data/*.rekey-tmp
+data/license-dev/

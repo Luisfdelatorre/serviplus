@@ -26,6 +26,9 @@ const { createSetupService } = require('./setup/setupService');
 const appPaths = require('./lib/appPaths');
 const { createUpdateService, createDefaultSpawnUpdater, readCurrentVersion } = require('./update/updateService');
 const { createUpdateRoutes } = require('./routes/updateRoutes');
+const { createBackupService } = require('./security/backupService');
+const { createBackupRoutes } = require('./routes/backupRoutes');
+const dbDriver = require('./db');
 const {
   pinRateLimiter,
   signSessionToken,
@@ -127,6 +130,17 @@ app.use('/api', (req, res, next) => {
 app.use('/api/license', createLicenseRoutes(licenseService));
 app.use('/api/setup', createSetupRoutes(setupService));
 app.use('/api/updates', createUpdateRoutes(updateService));
+
+const backupService = createBackupService({
+  dataDir: appPaths.DATA_DIR,
+  getConnection: () => dbDriver.connection
+});
+app.use('/api/backups', createBackupRoutes({
+  backupService,
+  licenseService,
+  dbDriver,
+  isSetupComplete: () => setupService.isComplete()
+}));
 app.use(createLicenseGate(licenseService));
 app.use(createSetupGate(setupService));
 licenseService.onChange((summary) => io.emit('license:status', summary));
@@ -931,6 +945,7 @@ const PORT = process.env.PORT || 80;
 function start() {
   licenseService.start();
   updateService.start();
+  backupService.start();
   server.listen(PORT, '0.0.0.0', () => {
     console.log('====================================================');
     console.log('🚀 Serviplus Unified POS & Kiosk Gateway Server on:');
@@ -944,4 +959,4 @@ function start() {
 // En desarrollo (`node server/index.js`) arranca solo. En el exe lo arranca el cargador SEA.
 if (require.main === module) start();
 
-module.exports = { app, server, io, licenseService, setupService, updateService, start };
+module.exports = { app, server, io, licenseService, setupService, updateService, backupService, start };
