@@ -1,0 +1,32 @@
+<!--
+  Definición del servicio Windows para Serviplus (se ejecuta con WinSW).
+  El instalador copia WinSW.exe como serviplus-service.exe junto a este XML.
+  El servicio arranca al encender el equipo y se reinicia solo si falla, sin ventana que cerrar.
+-->
+<service>
+  <id>Serviplus</id>
+  <name>Serviplus POS</name>
+  <description>Servidor POS, Kiosko y KDS de Serviplus (local, sin internet).</description>
+
+  <!-- serviplus.exe vive junto a este servicio (misma carpeta de instalación). -->
+  <executable>%BASE%\serviplus.exe</executable>
+
+  <env name="PORT" value="80" />
+  <env name="NODE_ENV" value="production" />
+  <!-- STRICT_AUTH exige token en rutas operativas una vez configurado el sistema. -->
+  <env name="STRICT_AUTH" value="false" />
+
+  <workingdirectory>%BASE%</workingdirectory>
+
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>8</keepFiles>
+  </log>
+
+  <onfailure action="restart" delay="5 sec" />
+  <onfailure action="restart" delay="10 sec" />
+  <resetfailure>1 hour</resetfailure>
+
+  <startmode>Automatic</startmode>
+  <delayedAutoStart>false</delayedAutoStart>
+</service>

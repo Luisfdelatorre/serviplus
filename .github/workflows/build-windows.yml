@@ -1,0 +1,70 @@
+name: Build Windows installer
+
+# Dispara con un tag vX.Y.Z. Produce Serviplus-Setup-X.Y.Z.exe como artefacto/release.
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Derivar versión del tag
+        id: ver
+        shell: bash
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Instalar dependencias (raíz y cliente)
+        run: |
+          npm ci
+          npm --prefix client ci
+
+      - name: Compilar la SPA React
+        run: npm run build:client
+
+      - name: Compilar rawprint.exe (.NET Framework)
+        shell: pwsh
+        run: |
+          $csc = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+          New-Item -ItemType Directory -Force -Path build | Out-Null
+          & $csc /nologo /target:exe /out:build\rawprint.exe /r:System.Drawing.dll server\rawprint.cs
+
+      - name: Ensamblar la app (server protegido + deps de producción)
+        run: node scripts/build/assemble.js
+
+      - name: Crear serviplus.exe (Node SEA)
+        run: node scripts/build/make-sea.js --exe build/dist/app/serviplus.exe
+
+      - name: Descargar WinSW (servicio Windows)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path installer\winsw | Out-Null
+          Invoke-WebRequest -Uri "https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe" -OutFile installer\winsw\WinSW.exe
+
+      - name: Compilar el instalador (Inno Setup)
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DAppVersion=${{ steps.ver.outputs.version }} installer\serviplus.iss
+
+      - name: Firmar el paquete de actualización (Ed25519)
+        if: ${{ env.SP_UPDATE_SIGNING_KEY != '' }}
+        env:
+          SP_UPDATE_SIGNING_KEY: ${{ secrets.SP_UPDATE_SIGNING_KEY }}
+        run: node scripts/build/sign-release.js --installer "build/dist/Serviplus-Setup-${{ steps.ver.outputs.version }}.exe" --channel stable
+
+      - name: Publicar artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: Serviplus-Setup-${{ steps.ver.outputs.version }}
+          path: |
+            build/dist/Serviplus-Setup-*.exe
+            build/dist/*.manifest.json

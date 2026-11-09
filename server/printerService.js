@@ -23,7 +23,8 @@ function savePrinterSection(printerSettings) {
 }
 
 // Ruta al ejecutable compilado nativo de Windows RawPrint
-const RAWPRINT_EXE = path.join(__dirname, 'rawprint.exe');
+const appPaths = require('./lib/appPaths');
+const RAWPRINT_EXE = appPaths.RAWPRINT_EXE;
 
 // Constantes ESC/POS
 const ESC = 0x1B;
@@ -200,8 +201,10 @@ class PrinterService {
     this.ensureRawPrintExecutable();
   }
 
-  // Asegura que rawprint.exe existe o lo compila de inmediato con csc.exe
+  // Asegura que rawprint.exe existe o lo compila de inmediato con csc.exe.
+  // En builds empaquetados rawprint.exe ya viene compilado: nunca se invoca csc.exe en runtime.
   ensureRawPrintExecutable() {
+    if (appPaths.IS_PACKAGED) return;
     if (!fs.existsSync(RAWPRINT_EXE)) {
       try {
         console.log('[PrinterService] Compilando helper rawprint.exe con csc.exe...');

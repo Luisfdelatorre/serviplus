@@ -23,6 +23,7 @@ const { createLicenseService } = require('./license/licenseService');
 const { createSetupRoutes } = require('./routes/setupRoutes');
 const { createSetupGate } = require('./middleware/setupGate');
 const { createSetupService } = require('./setup/setupService');
+const appPaths = require('./lib/appPaths');
 const {
   pinRateLimiter,
   signSessionToken,
@@ -856,7 +857,7 @@ app.get(['/p/:code', '/p/p/:code', '/receipt/:code', '/r/:code'], async (req, re
 });
 
 // Rutas directas hacia la SPA React (Rutas Limpias sin prefijo /react)
-const reactDistDir = path.join(__dirname, '../client/dist');
+const reactDistDir = appPaths.CLIENT_DIST;
 app.use(express.static(reactDistDir));
 app.use('/assets', express.static(path.join(reactDistDir, 'assets')));
 app.get(['/activate', '/setup', '/kiosk', '/kds', '/kds/*', '/display', '/front', '/front/*', '/admin', '/pos', '/pos/*', '/cashier', '/cash-in'], (req, res) => {
@@ -868,11 +869,11 @@ app.get(['/react', '/react/*'], (req, res) => {
 });
 
 app.get(['/turns', '/monitor'], (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/modern/turns.html'));
+  res.sendFile(path.join(appPaths.PUBLIC_DIR, 'modern/turns.html'));
 });
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
+  res.sendFile(path.join(appPaths.PUBLIC_DIR, 'index.html'));
 });
 
 app.get(['/old', '/old/*'], (req, res) => {
@@ -880,7 +881,7 @@ app.get(['/old', '/old/*'], (req, res) => {
 });
 
 app.get(['/modern', '/modern/*'], (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/modern/index.html'));
+  res.sendFile(path.join(appPaths.PUBLIC_DIR, 'modern/index.html'));
 });
 
 app.get('/visor', (req, res) => {
@@ -888,7 +889,7 @@ app.get('/visor', (req, res) => {
 });
 
 // Servir archivos estáticos públicos (imágenes, sonidos, app clásica)
-const publicDir = path.join(__dirname, '../public');
+const publicDir = appPaths.PUBLIC_DIR;
 app.use(express.static(publicDir));
 
 // Manejador de errores centralizado
@@ -902,7 +903,9 @@ app.use((err, _req, res, _next) => {
 });
 
 const PORT = process.env.PORT || 80;
-if (require.main === module) {
+
+/** Arranca la licencia y pone el servidor a escuchar. Lo llama el dev (abajo) y el exe (SEA). */
+function start() {
   licenseService.start();
   server.listen(PORT, '0.0.0.0', () => {
     console.log('====================================================');
@@ -911,6 +914,10 @@ if (require.main === module) {
     console.log(`📦 Productos DB: ${aldeloService.getProductsSource ? aldeloService.getProductsSource() : 'C:\\SP\\B\\kebab.mdb'}`);
     console.log('====================================================');
   });
+  return { app, server, io };
 }
 
-module.exports = { app, server, io, licenseService, setupService };
+// En desarrollo (`node server/index.js`) arranca solo. En el exe lo arranca el cargador SEA.
+if (require.main === module) start();
+
+module.exports = { app, server, io, licenseService, setupService, start };

@@ -1,0 +1,6 @@
+{
+  "main": "scripts/build/sea-loader.js",
+  "output": "build/sea/serviplus.blob",
+  "disableExperimentalSEAWarning": true,
+  "useSnapshotCode": false
+}

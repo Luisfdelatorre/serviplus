@@ -12,6 +12,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { execFile } = require('child_process');
+const appPaths = require('../lib/appPaths');
 
 // Rutas habituales del kebab.mdb de Aldelo en una instalación Windows.
 const COMMON_MDB_PATHS = [
@@ -23,7 +24,7 @@ const COMMON_MDB_PATHS = [
 
 const STEPS = ['database', 'business', 'printer', 'admin'];
 
-function createSetupService({ configStore, aldeloService, importScriptPath = path.join(__dirname, '../../scripts/import-mdb-to-sqlite.js'), seedMdbPath = path.join(__dirname, '../kebab.mdb') } = {}) {
+function createSetupService({ configStore, aldeloService, importScriptPath = appPaths.IMPORT_SCRIPT, seedMdbPath = appPaths.SEED_MDB } = {}) {
   function getSetupConfig() {
     return (configStore.getConfig().setup) || {};
   }

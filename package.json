@@ -20,7 +20,11 @@
     "pm2:stop": "npx pm2 stop ecosystem.config.js",
     "pm2:restart": "npx pm2 restart ecosystem.config.js",
     "pm2:logs": "npx pm2 logs",
-    "pm2:status": "npx pm2 status"
+    "pm2:status": "npx pm2 status",
+    "build:stage": "node scripts/build/stage-server.js",
+    "build:assemble": "node scripts/build/assemble.js",
+    "build:sea": "node scripts/build/make-sea.js",
+    "build:app": "npm run build:client && node scripts/build/assemble.js && node scripts/build/make-sea.js"
   },
   "window": {
     "title": "SeriPlus",
@@ -50,6 +54,8 @@
     "node-adodb": "^5.0.3"
   },
   "devDependencies": {
+    "esbuild": "^0.24.2",
+    "javascript-obfuscator": "^4.1.1",
     "mdb-reader": "^3.2.0"
   }
 }

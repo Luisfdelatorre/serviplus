@@ -5,7 +5,7 @@ node_modules/
 # Production build artifacts
 client/dist/
 dist/
-build/
+/build/
 **/build/
 
 # Logs
@@ -66,3 +66,7 @@ license.lic
 data/license.lic
 data/license-state.json
 data/license-dev/
+
+# Los scripts de build SÍ se versionan (son código fuente, no artefactos)
+!scripts/build/
+!scripts/build/**
