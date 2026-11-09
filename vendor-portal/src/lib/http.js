@@ -28,9 +28,19 @@ export async function readJson(request) {
   }
 }
 
+/**
+ * IP del cliente para rate-limit y auditoría.
+ * X-Forwarded-For lo puede falsificar cualquiera, así que solo se usa con TRUST_PROXY_HOPS=N
+ * (número de proxies propios delante de la app, p. ej. 1 con nginx). Se toma la entrada que añadió
+ * nuestro proxy más externo (contando desde la derecha), nunca la primera, que controla el cliente.
+ * Sin proxy de confianza, Next no expone la IP del socket: se devuelve null y el rate-limit
+ * pasa a ser global por ruta (más estricto, nunca más laxo).
+ */
 export function clientIp(request) {
-  const fwd = request.headers.get('x-forwarded-for');
-  return (fwd && fwd.split(',')[0].trim()) || request.headers.get('x-real-ip') || null;
+  const hops = Number.parseInt(process.env.TRUST_PROXY_HOPS || '0', 10);
+  if (!hops || hops < 1) return null;
+  const chain = (request.headers.get('x-forwarded-for') || '').split(',').map((s) => s.trim()).filter(Boolean);
+  return chain[chain.length - hops] || null;
 }
 
 /** Envuelve un handler y convierte errores en respuestas JSON {error, message}. */
@@ -54,7 +64,10 @@ export function handler(fn) {
   };
 }
 
-/** Rate-limit simple en memoria (por proceso). Suficiente para una sola instancia. */
+/**
+ * Rate-limit simple en memoria (por proceso). Suficiente para UNA instancia; antes de escalar a
+ * varias instancias hay que moverlo a un almacén compartido (Postgres o Redis).
+ */
 const buckets = new Map();
 export function rateLimit(key, { limit, windowMs }) {
   const now = Date.now();

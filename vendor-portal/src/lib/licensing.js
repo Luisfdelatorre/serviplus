@@ -15,6 +15,8 @@ import {
 import { fingerprintHash, fingerprintMatches, normalizeFingerprint } from './fingerprint';
 
 export const ESCROW_GRANT_TTL_MS = 24 * 60 * 60 * 1000;
+// Máximo de puestos "copia detectada" que se registran por licencia.
+const MAX_DUPLICATE_SEATS = 20;
 const FEATURE_RE = /^[a-z0-9_.-]{1,40}$/;
 const SEMVER_RE = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/;
 
@@ -82,11 +84,11 @@ export async function activate({ licenseKey, fingerprint, appVersion, ip }) {
   const fp = requireFingerprint(fingerprint);
   const version = appVersion ? String(appVersion).slice(0, 40) : null;
 
+  const keyHash = hashLicenseKey(licenseKey);
   return prisma.$transaction(async (tx) => {
-    const license = await tx.license.findUnique({
-      where: { keyHash: hashLicenseKey(licenseKey) },
-      include: { seats: true }
-    });
+    // Bloquea la fila de la licencia: dos activaciones simultáneas no pueden superar maxSeats.
+    await tx.$queryRaw`SELECT id FROM "License" WHERE "keyHash" = ${keyHash} FOR UPDATE`;
+    const license = await tx.license.findUnique({ where: { keyHash }, include: { seats: true } });
     if (!license) throw new HttpError(404, 'invalid_license_key', 'Clave de licencia no válida');
     if (license.status === 'REVOKED') throw new HttpError(403, 'license_revoked', 'La licencia está revocada');
     if (isExpired(license)) throw new HttpError(403, 'license_expired', 'La licencia expiró');
@@ -168,8 +170,13 @@ export async function heartbeat({ licenseId, fingerprint, appVersion, ip }) {
     }
 
     // Fingerprint desconocido para esta licencia: la instalación fue copiada a otro equipo.
+    // Un mismo equipo copiado reutiliza su puesto REVOKED (findMatchingSeat de arriba); el tope evita
+    // que alguien con el licenseId llene la tabla inventando fingerprints.
     const activeSeat = license.seats.find((s) => s.status === 'ACTIVE');
-    if (activeSeat) {
+    const duplicates = license.seats.filter((s) => s.statusReason === 'duplicate_fingerprint').length;
+    if (activeSeat && duplicates >= MAX_DUPLICATE_SEATS) {
+      await tx.seat.update({ where: { id: activeSeat.id }, data: { duplicateFlag: true } });
+    } else if (activeSeat) {
       await tx.seat.update({ where: { id: activeSeat.id }, data: { duplicateFlag: true } });
       const dup = await tx.seat.create({
         data: {
@@ -206,14 +213,22 @@ export async function storeEscrow({ licenseId, fingerprint, wrappedKey, ip }) {
   }
   return prisma.$transaction(async (tx) => {
     const { license, seat } = await requireActiveSeat(tx, licenseId, fp);
-    await ensureEscrowKey(tx, license.id);
-    const prev = await tx.escrowKey.findUnique({ where: { licenseId: license.id } });
+    const prev = await ensureEscrowKey(tx, license.id);
+    // Un equipo no puede reemplazar la clave custodiada que él mismo subió (un equipo comprometido
+    // podría dejar la custodia inservible). Solo se reemplaza cuando la subió un puesto anterior
+    // que ya no está activo, p. ej. un PC nuevo tras liberar el puesto sin backup que restaurar.
+    if (prev.wrappedKey) {
+      const owner = prev.storedBySeatId && license.seats.find((s) => s.id === prev.storedBySeatId);
+      if (!owner || owner.status === 'ACTIVE') {
+        throw new HttpError(409, 'escrow_exists', 'Ya hay una clave custodiada para esta licencia');
+      }
+    }
     const now = new Date();
     await tx.escrowKey.update({
       where: { licenseId: license.id },
-      data: { wrappedKey: blob, wrappedSha: sha256Hex(blob), storedAt: now }
+      data: { wrappedKey: blob, wrappedSha: sha256Hex(blob), storedAt: now, storedBySeatId: seat.id }
     });
-    await audit({ actor: 'app', action: prev?.wrappedKey ? 'escrow.rotated' : 'escrow.stored', entity: 'license',
+    await audit({ actor: 'app', action: prev.wrappedKey ? 'escrow.rotated' : 'escrow.stored', entity: 'license',
       entityId: license.id, details: { seatId: seat.id }, ip }, tx);
     return { stored: true, storedAt: now.toISOString() };
   });

@@ -36,7 +36,11 @@ npm run simulate -- update stable
 - `DATABASE_URL` apunta a la instancia remota de Postgres; aplicar migraciones con `npm run db:deploy`.
 - `LICENSE_SIGNING_PRIVATE_KEY`, `ESCROW_MASTER_KEY` y `SESSION_SECRET` se cargan como secretos del host.
   **Nunca** en archivos del repo. Perder `ESCROW_MASTER_KEY` = perder todas las claves custodiadas: respaldarla aparte.
-- Servir solo por HTTPS (la cookie de sesión es `Secure` en producción). El rate-limit es en memoria: una sola instancia.
+- Servir solo por HTTPS (la cookie de sesión es `Secure` en producción), detrás de un proxy propio
+  (nginx/Caddy) con `TRUST_PROXY_HOPS=1`. Sin esa variable se ignora `X-Forwarded-For` (falsificable) y el
+  rate-limit pasa a ser global por ruta, así que un abuso podría bloquear el login de todos.
+- **Una sola instancia.** El rate-limit vive en memoria del proceso; antes de escalar horizontalmente hay que
+  moverlo a Postgres o Redis.
 
 ## API para la app instalada
 
@@ -65,9 +69,12 @@ hasheado (SHA-256 hex) en el cliente. Coincide con 3 de 4. En `X-Fingerprint` va
 
 **Copias.** Si llega un heartbeat de un fingerprint desconocido mientras hay un puesto activo, se crea un
 puesto `REVOKED` para la copia (la más nueva) y se marca el original como "fingerprint duplicado" en el panel.
+La misma copia reutiliza su puesto en heartbeats posteriores; como máximo se registran 20 copias por licencia.
 
 **Escrow.** Al activar, la app recibe `wrapKey` (por licencia, cifrada en reposo con `ESCROW_MASTER_KEY`),
-envuelve su clave de datos con ella (AES-256-GCM) y sube el resultado a `/escrow`. Para restaurar, primero
+envuelve su clave de datos con ella (AES-256-GCM) y sube el resultado a `/escrow`. Un equipo no puede
+reemplazar la clave que él mismo subió (409 `escrow_exists`). Solo un puesto posterior puede hacerlo, cuando
+el que la subió ya no está activo (PC nuevo sin backup). Para restaurar, primero
 se libera el puesto y se activa el PC nuevo. Luego un operador pulsa **Autorizar restauración** (motivo y
 contraseña), lo que abre una ventana de 24 h para **una** recuperación desde el equipo activo. El panel
 nunca muestra material de claves.

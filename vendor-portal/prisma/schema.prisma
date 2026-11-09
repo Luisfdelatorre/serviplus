@@ -110,6 +110,8 @@ model EscrowKey {
   wrappedKey String?
   wrappedSha String?
   storedAt   DateTime?
+  // Puesto que subió la clave; solo un puesto posterior (con este ya inactivo) puede reemplazarla.
+  storedBySeatId String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
