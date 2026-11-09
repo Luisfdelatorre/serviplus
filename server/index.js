@@ -24,6 +24,8 @@ const { createSetupRoutes } = require('./routes/setupRoutes');
 const { createSetupGate } = require('./middleware/setupGate');
 const { createSetupService } = require('./setup/setupService');
 const appPaths = require('./lib/appPaths');
+const { createUpdateService, createDefaultSpawnUpdater, readCurrentVersion } = require('./update/updateService');
+const { createUpdateRoutes } = require('./routes/updateRoutes');
 const {
   pinRateLimiter,
   signSessionToken,
@@ -46,6 +48,26 @@ const whatsappService = new WhatsAppService(getConfig);
 
 const licenseService = createLicenseService({ getConfig });
 const setupService = createSetupService({ configStore, aldeloService });
+
+const PORT_NUMBER = Number(process.env.PORT) || 80;
+const updateService = createUpdateService({
+  appRoot: appPaths.APP_ROOT,
+  dataDir: appPaths.DATA_DIR,
+  currentVersion: readCurrentVersion(appPaths.APP_ROOT, require('../package.json').version),
+  isPackaged: appPaths.IS_PACKAGED,
+  getConfig,
+  getChannel: () => (licenseService.getStatus().license || {}).channel || 'stable',
+  spawnUpdater: appPaths.IS_PACKAGED
+    ? createDefaultSpawnUpdater({
+        execPath: process.execPath,
+        workDir: path.join(appPaths.DATA_DIR, 'update-work'),
+        serviceExe: path.join(appPaths.APP_ROOT, 'serviplus-service.exe'),
+        port: PORT_NUMBER,
+        appRoot: appPaths.APP_ROOT,
+        dataDir: appPaths.DATA_DIR
+      })
+    : null
+});
 
 const initialConfig = getConfig();
 let cloudBridgeClient = null;
@@ -104,6 +126,7 @@ app.use('/api', (req, res, next) => {
 // Licencia: el gate va antes de cualquier ruta operativa o estática.
 app.use('/api/license', createLicenseRoutes(licenseService));
 app.use('/api/setup', createSetupRoutes(setupService));
+app.use('/api/updates', createUpdateRoutes(updateService));
 app.use(createLicenseGate(licenseService));
 app.use(createSetupGate(setupService));
 licenseService.onChange((summary) => io.emit('license:status', summary));
@@ -907,6 +930,7 @@ const PORT = process.env.PORT || 80;
 /** Arranca la licencia y pone el servidor a escuchar. Lo llama el dev (abajo) y el exe (SEA). */
 function start() {
   licenseService.start();
+  updateService.start();
   server.listen(PORT, '0.0.0.0', () => {
     console.log('====================================================');
     console.log('🚀 Serviplus Unified POS & Kiosk Gateway Server on:');
@@ -920,4 +944,4 @@ function start() {
 // En desarrollo (`node server/index.js`) arranca solo. En el exe lo arranca el cargador SEA.
 if (require.main === module) start();
 
-module.exports = { app, server, io, licenseService, setupService, start };
+module.exports = { app, server, io, licenseService, setupService, updateService, start };

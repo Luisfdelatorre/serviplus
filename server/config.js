@@ -12,11 +12,11 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const { APP_ROOT } = require('./lib/appPaths');
+const { APP_ROOT, DATA_DIR } = require('./lib/appPaths');
 const ROOT_DIR = APP_ROOT;
-const CONFIG_PATH = process.env.SP_CONFIG_PATH || path.join(ROOT_DIR, 'config.json');
+const CONFIG_PATH = process.env.SP_CONFIG_PATH || path.join(DATA_DIR, 'config.json');
 const EXAMPLE_CONFIG_PATH = path.join(ROOT_DIR, 'config.example.json');
-const ENV_PATH = process.env.SP_ENV_PATH || path.join(ROOT_DIR, '.env');
+const ENV_PATH = process.env.SP_ENV_PATH || path.join(DATA_DIR, '.env');
 
 try {
   require('dotenv').config({ path: ENV_PATH, quiet: true });

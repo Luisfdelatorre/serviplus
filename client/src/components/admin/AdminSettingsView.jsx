@@ -47,6 +47,7 @@ import {
 import { UpayLogo } from '../common/UpayLogo';
 import './AdminSettingsView.css';
 import { showAlert } from '../../store/useAlertDialogStore';
+import { UpdatesPanel } from './UpdatesPanel';
 
 export function AdminSettingsView() {
   const navigate = useNavigate();
@@ -421,6 +422,9 @@ export function AdminSettingsView() {
           <span>Volver al Menú</span>
         </button>
       </header>
+
+      {/* Actualizaciones del sistema */}
+      <UpdatesPanel />
 
       {/* TOAST DE NOTIFICACIÓN */}
       {toastMessage && (

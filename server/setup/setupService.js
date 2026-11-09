@@ -129,7 +129,7 @@ function createSetupService({ configStore, aldeloService, importScriptPath = app
     }
 
     if (mode === 'sqlite') {
-      const destPath = path.join(configStore.ROOT_DIR, 'data', 'serviplus.db');
+      const destPath = path.join(appPaths.DATA_DIR, 'serviplus.db');
       fs.mkdirSync(path.dirname(destPath), { recursive: true });
       let imported = false;
       if (importFrom) {

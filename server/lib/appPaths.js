@@ -29,6 +29,16 @@ function resolveAppRoot() {
 
 const APP_ROOT = resolveAppRoot();
 
+// Datos del restaurante (config.json, .env, base SQLite, licencia, respaldos). Fuera de la
+// carpeta de la app para que actualizar o reinstalar nunca los toque.
+function resolveDataDir() {
+  if (process.env.SP_DATA_DIR) return path.resolve(process.env.SP_DATA_DIR);
+  if (IS_PACKAGED) return path.join(process.env.ProgramData || 'C:\\ProgramData', 'ServiPlus');
+  return path.join(APP_ROOT, 'data');
+}
+
+const DATA_DIR = resolveDataDir();
+
 // Carpetas que viven en la raíz tanto en desarrollo como empaquetado.
 const CLIENT_DIST = path.join(APP_ROOT, 'client', 'dist');
 const PUBLIC_DIR = path.join(APP_ROOT, 'public');
@@ -42,6 +52,7 @@ const SEED_MDB = path.join(assetsDir, 'kebab.mdb');
 module.exports = {
   IS_PACKAGED,
   APP_ROOT,
+  DATA_DIR,
   CLIENT_DIST,
   PUBLIC_DIR,
   IMPORT_SCRIPT,

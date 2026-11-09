@@ -47,18 +47,19 @@ Source: "serviplus-service.xml"; DestDir: "{app}"; DestName: "serviplus-service.
 Name: "{commonappdata}\ServiPlus"; Permissions: users-modify
 
 [Run]
-; 1. Exclusion de Windows Defender para la carpeta de instalacion (reduce falsos positivos).
-Filename: "powershell.exe"; Parameters: "-NoProfile -Command ""Add-MpPreference -ExclusionPath '{app}'"""; Flags: runhidden; StatusMsg: "Configurando Windows Defender..."
+; Solo en la primera instalación: exclusión de Defender (reduce falsos positivos).
+Filename: "powershell.exe"; Parameters: "-NoProfile -Command ""Add-MpPreference -ExclusionPath '{app}'"""; Flags: runhidden; StatusMsg: "Configurando Windows Defender..."; Check: not IsUpgrade
 
-; 2. Regla de firewall para el puerto del servidor (LAN).
+; Regla de firewall: se borra antes de crearla para no duplicarla en cada actualización.
+Filename: "netsh.exe"; Parameters: "advfirewall firewall delete rule name=""Serviplus POS"""; Flags: runhidden; RunOnceId: "DelOldFwRule"
 Filename: "netsh.exe"; Parameters: "advfirewall firewall add rule name=""Serviplus POS"" dir=in action=allow protocol=TCP localport=80"; Flags: runhidden; StatusMsg: "Abriendo el puerto en el firewall..."
 
-; 3. Instalar y arrancar el servicio Windows.
-Filename: "{app}\serviplus-service.exe"; Parameters: "install"; Flags: runhidden; StatusMsg: "Instalando el servicio Serviplus..."
+; Instalar el servicio solo si aún no existe (en una actualización ya está registrado).
+Filename: "{app}\serviplus-service.exe"; Parameters: "install"; Flags: runhidden; StatusMsg: "Instalando el servicio Serviplus..."; Check: not ServiceInstalled
 Filename: "{app}\serviplus-service.exe"; Parameters: "start"; Flags: runhidden; StatusMsg: "Iniciando el servicio Serviplus..."
 
-; 4. Abrir el asistente de configuracion en el navegador.
-Filename: "http://localhost/setup"; Flags: shellexec postinstall nowait; Description: "Abrir la configuracion de Serviplus"
+; Abrir el asistente de configuración solo en la primera instalación interactiva.
+Filename: "http://localhost/setup"; Flags: shellexec postinstall nowait skipifsilent; Description: "Abrir la configuracion de Serviplus"; Check: not IsUpgrade
 
 [UninstallRun]
 Filename: "{app}\serviplus-service.exe"; Parameters: "stop"; Flags: runhidden; RunOnceId: "StopSvc"
@@ -67,14 +68,26 @@ Filename: "netsh.exe"; Parameters: "advfirewall firewall delete rule name=""Serv
 Filename: "powershell.exe"; Parameters: "-NoProfile -Command ""Remove-MpPreference -ExclusionPath '{app}'"""; Flags: runhidden; RunOnceId: "DelDefenderExc"
 
 [Code]
-// Advierte si el puerto 80 ya esta en uso (IIS, Skype) antes de instalar.
-function InitializeSetup(): Boolean;
+// Verdadero si el servicio Serviplus ya está registrado (instalación previa o actualización).
+function ServiceInstalled: Boolean;
+begin
+  Result := RegKeyExists(HKEY_LOCAL_MACHINE, 'SYSTEM\CurrentControlSet\Services\Serviplus');
+end;
+
+// Verdadero si ya hay una instalación de Serviplus en este equipo (estamos actualizando).
+function IsUpgrade: Boolean;
+begin
+  Result := ServiceInstalled;
+end;
+
+// Antes de copiar archivos, detiene el servicio: Windows no reemplaza archivos en uso.
+procedure CurStepChanged(CurStep: TSetupStep);
 var
   ResultCode: Integer;
 begin
-  Result := True;
-  if Exec('netstat.exe', '-an -p TCP', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+  if (CurStep = ssInstall) and ServiceInstalled then
   begin
-    // Nota: la comprobacion real del puerto se refina en el runner; aqui solo se deja el gancho.
+    Exec(ExpandConstant('{app}\serviplus-service.exe'), 'stop', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Sleep(3000);
   end;
 end;

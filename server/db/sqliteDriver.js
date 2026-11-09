@@ -13,7 +13,8 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT_DIR = path.join(__dirname, '..', '..');
-const DEFAULT_SQLITE_PATH = path.join('data', 'serviplus.db');
+const { DATA_DIR } = require('../lib/appPaths');
+const DEFAULT_SQLITE_PATH = path.join(DATA_DIR, 'serviplus.db');
 
 function resolveSqlitePath(p) {
   const trimmed = String(p || '').trim() || DEFAULT_SQLITE_PATH;

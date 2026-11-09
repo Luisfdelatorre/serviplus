@@ -70,3 +70,10 @@ data/license-dev/
 # Los scripts de build SÍ se versionan (son código fuente, no artefactos)
 !scripts/build/
 !scripts/build/**
+
+# Estado y respaldos de actualizaciones (datos de runtime, nunca se versionan)
+data/update-state.json
+data/updates/
+data/update-backup/
+data/update-work/
+data/logs/

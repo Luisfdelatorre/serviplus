@@ -1,19 +1,33 @@
 /**
  * Punto de entrada embebido en serviplus.exe (Node SEA).
- * El código del servidor NO se embebe: vive como archivos en `server/` junto al exe,
- * para poder ofuscar solo la licencia y para que node-adodb encuentre sus scripts.
- * Este cargador localiza `server/index.js` relativo al ejecutable y lo arranca.
  *
- * `index.js` solo escucha por sí mismo cuando se ejecuta como `node server/index.js`
- * (require.main === module); al cargarlo como módulo hay que llamar a start() explícitamente.
+ * Modo normal: arranca el servidor que vive en `server/` junto al exe.
+ * Modo `--apply-update`: el propio exe se copió a una carpeta de trabajo y actúa como
+ * actualizador. Ese modo NO carga el servidor, porque el instalador va a reemplazar esos archivos.
  */
 const path = require('node:path');
 const { createRequire } = require('node:module');
 
-const appDir = path.dirname(process.execPath);
-const requireFromApp = createRequire(path.join(appDir, 'package.json'));
-const server = requireFromApp(path.join(appDir, 'server', 'index.js'));
+function argValue(argv, name) {
+  const i = argv.indexOf(`--${name}`);
+  return i >= 0 ? argv[i + 1] : undefined;
+}
 
-if (typeof server.start === 'function') {
-  server.start();
+if (process.argv.includes('--apply-update')) {
+  // La app viene indicada con --app-dir: el exe de trabajo no está en la carpeta de la app.
+  const appDir = argValue(process.argv, 'app-dir');
+  if (!appDir) {
+    console.error('Uso: serviplus.exe --apply-update --app-dir <carpeta de la app> --data-dir <dir> --pending <json> --service-exe <exe>');
+    process.exit(2);
+  }
+  const requireFromApp = createRequire(path.join(appDir, 'package.json'));
+  const { main } = requireFromApp(path.join(appDir, 'server', 'update', 'updater.js'));
+  main(process.argv).then((code) => process.exit(code));
+} else {
+  const appDir = path.dirname(process.execPath);
+  const requireFromApp = createRequire(path.join(appDir, 'package.json'));
+  const server = requireFromApp(path.join(appDir, 'server', 'index.js'));
+  if (typeof server.start === 'function') {
+    server.start();
+  }
 }
