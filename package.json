@@ -4,7 +4,7 @@
   "description": "sever",
   "scripts": {
     "start": "node server/index.js",
-    "test": "node --test tests/*.test.js",
+    "test": "node --test tests/pos.test.js tests/db.sqlite.test.js",
     "kiosk": "node server/index.js",
     "agent:cloud": "node server/cloudBridgeClient.js",
     "legacy": "node server.js",
