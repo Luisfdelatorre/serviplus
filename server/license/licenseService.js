@@ -264,6 +264,12 @@ function createLicenseService({ getConfig = () => ({}), dataDir = defaultDataDir
       });
       vault.markEscrowed(licenseId);
     } catch (err) {
+      // 409 escrow_exists: otro puesto activo ya custodia una llave. No se marca como guardada: si ese
+      // puesto se libera, este equipo debe poder subir la suya (si no, sus respaldos quedan sin recuperar).
+      if (err.code === 'escrow_exists') {
+        console.info('[License] Custodia ya existe en el servidor para otro puesto activo; se reintentará.');
+        return;
+      }
       console.warn('[License] Custodia de la llave pendiente:', err.message);
     }
   }

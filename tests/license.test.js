@@ -267,3 +267,33 @@ test('Service: escrow retrieval without an authorised grant surfaces the portal 
   const { service } = makeService({ fetchImpl });
   await assert.rejects(service.fetchEscrowKey('LIC-TEST'), (e) => e.code === 'escrow_not_authorized' && e.status === 403);
 });
+
+test('Service: escrow already held by another active seat (409) is not marked as stored', async () => {
+  const vault = require('../server/security/vault');
+  const dataDir = fs.mkdtempSync(path.join(tmp, 'escrow-'));
+  vault._resetForTests();
+  vault.init({ dataDir, envPath: path.join(dataDir, '.env'), enabled: true, getFingerprint: () => FP });
+  process.env.SP_ESCROW_WRAP_KEY = crypto.randomBytes(32).toString('base64');
+  const posts = [];
+  let escrowStatus = 409;
+  const fetchImpl = async (url, opts) => {
+    if (url.endsWith('/api/license/heartbeat')) return { ok: true, status: 200, json: async () => ({ revoked: false, status: 'active' }) };
+    posts.push(url);
+    if (escrowStatus === 409) {
+      return { ok: false, status: 409, json: async () => ({ error: 'escrow_exists', message: 'Ya hay una clave custodiada' }) };
+    }
+    return { ok: true, status: 200, json: async () => ({ stored: true }) };
+  };
+  const service = createLicenseService({ dataDir, fingerprint: () => FP, fetchImpl, getConfig: () => ({ license: { serverUrl: 'http://license.test' } }) });
+  service.importLicense(JSON.stringify(makeLicense()));
+
+  await service.heartbeat();
+  assert.equal(posts.filter((u) => u.endsWith('/api/license/escrow')).length, 1, 'intenta subir la custodia');
+  assert.equal(vault.isEscrowed('LIC-TEST'), false, 'un 409 no cuenta como custodia guardada');
+
+  escrowStatus = 200;
+  await service.heartbeat();
+  assert.equal(vault.isEscrowed('LIC-TEST'), true, 'al subir con éxito queda marcada');
+  vault._resetForTests();
+  delete process.env.SP_ESCROW_WRAP_KEY;
+});
