@@ -51,6 +51,8 @@ class CloudBridgeClient {
    * Vigilante de kebab.mdb: detecta cambios de precios/menú realizados en Aldelo POS
    */
   startMdbWatcher(config) {
+    // Solo aplica al driver ADODB: con SQLite los cambios no vienen de Aldelo POS.
+    if (aldeloService.getDriverName() !== 'adodb') return;
     try {
       const connStr = config?.db?.connectionString || '';
       const match = connStr.match(/Data Source=([^;]+)/i);

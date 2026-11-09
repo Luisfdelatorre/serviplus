@@ -1,0 +1,28 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "server-sqlite",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "server/index.js"
+      ],
+      "env": {
+        "PORT": "3080",
+        "DB_DRIVER": "sqlite"
+      },
+      "port": 3080
+    },
+    {
+      "name": "client-vite",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "client",
+        "run",
+        "dev"
+      ],
+      "port": 3000
+    }
+  ]
+}

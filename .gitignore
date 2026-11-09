@@ -55,3 +55,8 @@ Thumbs.db
 .idea/
 audit_log.json
 *.tmp
+
+# Base SQLite local (se genera con npm run db:import)
+data/*.db
+data/*.db-wal
+data/*.db-shm
