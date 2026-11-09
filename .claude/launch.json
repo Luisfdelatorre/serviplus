@@ -49,7 +49,7 @@
         "PORT": "3081",
         "DB_DRIVER": "sqlite",
         "SP_LICENSE_ENFORCE": "1",
-        "SP_DATA_DIR": "/private/tmp/claude-501/-Users-gerlisalvarez--claude-spares-spare-Rz3kQ8/8c39451f-6627-4415-b058-07fbefbb0170/scratchpad/licdata",
+        "SP_DATA_DIR": "data/license-dev",
         "SP_LICENSE_SERVER_URL": "http://localhost:4455"
       },
       "port": 3081

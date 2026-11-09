@@ -65,3 +65,4 @@ data/*.db-shm
 license.lic
 data/license.lic
 data/license-state.json
+data/license-dev/

@@ -32,6 +32,7 @@ const KdsGrid = lazyNamed(() => import('../components/kds/KdsGrid'), 'KdsGrid');
 const TurnsBoard = lazyNamed(() => import('../components/turns/TurnsBoard'), 'TurnsBoard');
 const AdminSettingsView = lazyNamed(() => import('../components/admin/AdminSettingsView'), 'AdminSettingsView');
 const ActivationView = lazyNamed(() => import('../components/license/ActivationView'), 'ActivationView');
+const SetupWizard = lazyNamed(() => import('../components/setup/SetupWizard'), 'SetupWizard');
 
 export function AppRouter() {
   return (
@@ -54,6 +55,16 @@ export function AppRouter() {
         element={
           <Suspense fallback={<TerminalLoader />}>
             <ActivationView />
+          </Suspense>
+        }
+      />
+
+      {/* Asistente de configuración (abierto: primera ejecución) */}
+      <Route
+        path="/setup"
+        element={
+          <Suspense fallback={<TerminalLoader />}>
+            <SetupWizard />
           </Suspense>
         }
       />

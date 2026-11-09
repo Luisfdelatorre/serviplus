@@ -86,6 +86,11 @@ export async function requestJson(
     window.location.assign('/activate');
   }
 
+  // Sistema sin configurar: cualquier pantalla pasa al asistente de configuración.
+  if (res.status === 409 && json && json.code === 'SETUP_REQUIRED' && window.location.pathname !== '/setup') {
+    window.location.assign('/setup');
+  }
+
   if (!res.ok || (json && json.success === false && !json.simulated)) {
     throw new Error((json && json.error) || defaultError);
   }

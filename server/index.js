@@ -20,6 +20,9 @@ const { createAdminRoutes } = require('./routes/adminRoutes');
 const { createLicenseRoutes } = require('./routes/licenseRoutes');
 const { createLicenseGate } = require('./middleware/licenseGate');
 const { createLicenseService } = require('./license/licenseService');
+const { createSetupRoutes } = require('./routes/setupRoutes');
+const { createSetupGate } = require('./middleware/setupGate');
+const { createSetupService } = require('./setup/setupService');
 const {
   pinRateLimiter,
   signSessionToken,
@@ -41,6 +44,7 @@ const smsService = new SmsService(getConfig);
 const whatsappService = new WhatsAppService(getConfig);
 
 const licenseService = createLicenseService({ getConfig });
+const setupService = createSetupService({ configStore, aldeloService });
 
 const initialConfig = getConfig();
 let cloudBridgeClient = null;
@@ -98,7 +102,9 @@ app.use('/api', (req, res, next) => {
 
 // Licencia: el gate va antes de cualquier ruta operativa o estática.
 app.use('/api/license', createLicenseRoutes(licenseService));
+app.use('/api/setup', createSetupRoutes(setupService));
 app.use(createLicenseGate(licenseService));
+app.use(createSetupGate(setupService));
 licenseService.onChange((summary) => io.emit('license:status', summary));
 
 // Ping legacy endpoint for connectivity discovery
@@ -853,7 +859,7 @@ app.get(['/p/:code', '/p/p/:code', '/receipt/:code', '/r/:code'], async (req, re
 const reactDistDir = path.join(__dirname, '../client/dist');
 app.use(express.static(reactDistDir));
 app.use('/assets', express.static(path.join(reactDistDir, 'assets')));
-app.get(['/activate', '/kiosk', '/kds', '/kds/*', '/display', '/front', '/front/*', '/admin', '/pos', '/pos/*', '/cashier', '/cash-in'], (req, res) => {
+app.get(['/activate', '/setup', '/kiosk', '/kds', '/kds/*', '/display', '/front', '/front/*', '/admin', '/pos', '/pos/*', '/cashier', '/cash-in'], (req, res) => {
   res.sendFile(path.join(reactDistDir, 'index.html'));
 });
 
@@ -907,4 +913,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { app, server, io, licenseService };
+module.exports = { app, server, io, licenseService, setupService };
