@@ -112,7 +112,7 @@ function createUpdateService({
 
   function serverUrl() {
     const cfg = getConfig() || {};
-    const base = process.env.SP_LICENSE_SERVER_URL || (cfg.license && cfg.license.serverUrl) || (cfg.cloud && cfg.cloud.baseUrl) || DEFAULT_SERVER_URL;
+    const base = process.env.SP_LICENSE_SERVER_URL || (cfg.license && cfg.license.serverUrl) || DEFAULT_SERVER_URL;
     return base.replace(/\/+$/, '');
   }
 

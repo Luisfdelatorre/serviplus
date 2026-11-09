@@ -88,7 +88,7 @@ function createLicenseService({ getConfig = () => ({}), dataDir = defaultDataDir
     const cfg = getConfig() || {};
     return {
       // Redirigir el servidor es inofensivo: sin la clave privada no puede emitir licencias válidas.
-      serverUrl: process.env.SP_LICENSE_SERVER_URL || (cfg.license && cfg.license.serverUrl) || (cfg.cloud && cfg.cloud.baseUrl) || DEFAULT_SERVER_URL,
+      serverUrl: process.env.SP_LICENSE_SERVER_URL || (cfg.license && cfg.license.serverUrl) || DEFAULT_SERVER_URL,
       supportContact: (cfg.license && cfg.license.supportContact) || ''
     };
   }

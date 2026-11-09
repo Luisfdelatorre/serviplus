@@ -297,3 +297,15 @@ test('Service: escrow already held by another active seat (409) is not marked as
   vault._resetForTests();
   delete process.env.SP_ESCROW_WRAP_KEY;
 });
+
+test('Service: the license server comes from its own setting, never from the cloud bridge URL', async () => {
+  let seenUrl = null;
+  const fetchImpl = async (url) => {
+    seenUrl = String(url);
+    return { ok: false, status: 404, json: async () => ({ error: 'invalid_license_key', message: 'no' }) };
+  };
+  const dataDir = fs.mkdtempSync(path.join(tmp, 'url-'));
+  const service = createLicenseService({ dataDir, fingerprint: () => FP, fetchImpl, getConfig: () => ({ cloud: { baseUrl: 'https://old-cloud.example' } }) });
+  await assert.rejects(service.activate('SP-ABCD-1234'));
+  assert.equal(seenUrl, 'https://serviplus-vendor-portal.vercel.app/api/license/activate');
+});
