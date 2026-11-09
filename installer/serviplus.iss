@@ -51,7 +51,7 @@ Name: "{commonappdata}\ServiPlus"; Permissions: users-modify
 Filename: "powershell.exe"; Parameters: "-NoProfile -Command ""Add-MpPreference -ExclusionPath '{app}'"""; Flags: runhidden; StatusMsg: "Configurando Windows Defender..."; Check: not IsUpgrade
 
 ; Regla de firewall: se borra antes de crearla para no duplicarla en cada actualización.
-Filename: "netsh.exe"; Parameters: "advfirewall firewall delete rule name=""Serviplus POS"""; Flags: runhidden; RunOnceId: "DelOldFwRule"
+Filename: "netsh.exe"; Parameters: "advfirewall firewall delete rule name=""Serviplus POS"""; Flags: runhidden
 Filename: "netsh.exe"; Parameters: "advfirewall firewall add rule name=""Serviplus POS"" dir=in action=allow protocol=TCP localport=80"; Flags: runhidden; StatusMsg: "Abriendo el puerto en el firewall..."
 
 ; Instalar el servicio solo si aún no existe (en una actualización ya está registrado).
