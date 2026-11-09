@@ -16,7 +16,7 @@
 #endif
 
 [Setup]
-AppId={{B3F2B8C1-7A2E-4C9D-9E4A-SERVIPLUSPOS}}
+AppId={{880DE051-29BD-4FDA-A958-857ECCBA0C3A}}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher=Serviplus SAS
