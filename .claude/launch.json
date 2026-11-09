@@ -23,6 +23,36 @@
         "dev"
       ],
       "port": 3000
+    },
+    {
+      "name": "license-mock",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/license-tool.js",
+        "serve",
+        "--key",
+        "/Users/gerlisalvarez/.serviplus/license-keys/sp-2026-1.private.pem",
+        "--kid",
+        "sp-2026-1",
+        "--port",
+        "4455"
+      ],
+      "port": 4455
+    },
+    {
+      "name": "server-licensed",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "server/index.js"
+      ],
+      "env": {
+        "PORT": "3081",
+        "DB_DRIVER": "sqlite",
+        "SP_LICENSE_ENFORCE": "1",
+        "SP_DATA_DIR": "/private/tmp/claude-501/-Users-gerlisalvarez--claude-spares-spare-Rz3kQ8/8c39451f-6627-4415-b058-07fbefbb0170/scratchpad/licdata",
+        "SP_LICENSE_SERVER_URL": "http://localhost:4455"
+      },
+      "port": 3081
     }
   ]
 }

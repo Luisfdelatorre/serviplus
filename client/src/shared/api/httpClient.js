@@ -81,6 +81,11 @@ export async function requestJson(
     return null;
   }
 
+  // Licencia ausente o inválida: cualquier pantalla pasa a la activación.
+  if (res.status === 403 && json && json.code === 'LICENSE_REQUIRED' && window.location.pathname !== '/activate') {
+    window.location.assign('/activate');
+  }
+
   if (!res.ok || (json && json.success === false && !json.simulated)) {
     throw new Error((json && json.error) || defaultError);
   }

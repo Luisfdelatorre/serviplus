@@ -60,3 +60,8 @@ audit_log.json
 data/*.db
 data/*.db-wal
 data/*.db-shm
+
+# Licencia instalada por equipo (nunca se versiona)
+license.lic
+data/license.lic
+data/license-state.json

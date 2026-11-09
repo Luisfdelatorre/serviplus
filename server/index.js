@@ -17,6 +17,9 @@ const printerService = require('./printerService');
 const auditService = require('./auditService');
 const { createCashShiftRoutes } = require('./routes/cashShiftRoutes');
 const { createAdminRoutes } = require('./routes/adminRoutes');
+const { createLicenseRoutes } = require('./routes/licenseRoutes');
+const { createLicenseGate } = require('./middleware/licenseGate');
+const { createLicenseService } = require('./license/licenseService');
 const {
   pinRateLimiter,
   signSessionToken,
@@ -37,12 +40,19 @@ const wompiService = new WompiService(getConfig);
 const smsService = new SmsService(getConfig);
 const whatsappService = new WhatsAppService(getConfig);
 
+const licenseService = createLicenseService({ getConfig });
+
 const initialConfig = getConfig();
 let cloudBridgeClient = null;
-if (initialConfig.cloud && initialConfig.cloud.enabled) {
+// El puente cloud solo arranca con licencia vigente (o en cuanto se active).
+function startCloudBridgeIfLicensed() {
+  if (cloudBridgeClient || !(initialConfig.cloud && initialConfig.cloud.enabled)) return;
+  if (!licenseService.getStatus().allowed) return;
   cloudBridgeClient = new CloudBridgeClient(getConfig);
   cloudBridgeClient.start();
 }
+startCloudBridgeIfLicensed();
+licenseService.onChange(startCloudBridgeIfLicensed);
 
 const app = express();
 const server = http.createServer(app);
@@ -85,6 +95,11 @@ app.use('/api', (req, res, next) => {
   });
   next();
 });
+
+// Licencia: el gate va antes de cualquier ruta operativa o estática.
+app.use('/api/license', createLicenseRoutes(licenseService));
+app.use(createLicenseGate(licenseService));
+licenseService.onChange((summary) => io.emit('license:status', summary));
 
 // Ping legacy endpoint for connectivity discovery
 app.all('/ping', (req, res) => {
@@ -838,7 +853,7 @@ app.get(['/p/:code', '/p/p/:code', '/receipt/:code', '/r/:code'], async (req, re
 const reactDistDir = path.join(__dirname, '../client/dist');
 app.use(express.static(reactDistDir));
 app.use('/assets', express.static(path.join(reactDistDir, 'assets')));
-app.get(['/kiosk', '/kds', '/kds/*', '/display', '/front', '/front/*', '/admin', '/pos', '/pos/*', '/cashier', '/cash-in'], (req, res) => {
+app.get(['/activate', '/kiosk', '/kds', '/kds/*', '/display', '/front', '/front/*', '/admin', '/pos', '/pos/*', '/cashier', '/cash-in'], (req, res) => {
   res.sendFile(path.join(reactDistDir, 'index.html'));
 });
 
@@ -882,6 +897,7 @@ app.use((err, _req, res, _next) => {
 
 const PORT = process.env.PORT || 80;
 if (require.main === module) {
+  licenseService.start();
   server.listen(PORT, '0.0.0.0', () => {
     console.log('====================================================');
     console.log('🚀 Serviplus Unified POS & Kiosk Gateway Server on:');
@@ -891,4 +907,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { app, server, io };
+module.exports = { app, server, io, licenseService };

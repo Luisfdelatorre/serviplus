@@ -1,13 +1,15 @@
 {
   "name": "serviplus",
+  "version": "1.0.0",
   "main": "index.html",
   "description": "sever",
   "scripts": {
     "start": "node server/index.js",
-    "test": "node --test tests/pos.test.js tests/db.sqlite.test.js",
+    "test": "node --test tests/pos.test.js tests/db.sqlite.test.js tests/license.test.js",
     "kiosk": "node server/index.js",
     "agent:cloud": "node server/cloudBridgeClient.js",
     "legacy": "node server.js",
+    "license": "node scripts/license-tool.js",
     "db:import": "node scripts/import-mdb-to-sqlite.js",
     "db:reset": "node scripts/import-mdb-to-sqlite.js --force",
     "simulate": "node simulate_orders_session.js",
