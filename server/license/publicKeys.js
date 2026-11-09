@@ -2,14 +2,13 @@
  * Claves públicas Ed25519 que firman licencias y manifiestos de actualización.
  * Cada clave se identifica por su keyId (SHA-256 del DER, 16 hex), igual que en el portal.
  *
- * ANTES DE PUBLICAR UN RELEASE: reemplazar la clave de abajo por la pública de producción del
- * portal (GET /api/license/public-key). La clave de desarrollo que está aquí no la usa el portal
- * y no debe llegar a clientes.
+ * Producción: la clave del portal del proveedor. Para rotar, añade aquí la nueva ANTES de que el
+ * portal empiece a firmar con ella; retira la anterior solo cuando no queden licencias emitidas con ella.
  * La clave privada correspondiente NUNCA vive en este repositorio.
  */
 const PUBLIC_KEYS = {
-  'sp-2026-1': `-----BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEAmWE9RZnmU4M4Lx4DgC0fJeaP/5CcXXvPIodfohpA/zU=
+  production: `-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEAoO1jO/JIVT1Ej52ukLGWHuOlC35O43eIsVr6jLyZrPA=
 -----END PUBLIC KEY-----`
 };
 
