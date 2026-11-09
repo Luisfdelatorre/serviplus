@@ -15,7 +15,7 @@ export const POST = handler(async (request, { params }) => {
   const operator = await requireOperator(request);
   const { id } = await params;
   const ip = clientIp(request);
-  rateLimit(`grant:${operator.id}`, { limit: 10, windowMs: 15 * 60 * 1000 });
+  await rateLimit(`grant:${operator.id}`, { limit: 10, windowMs: 15 * 60 * 1000 });
   const body = await readJson(request);
   const reason = str(body.reason, { required: true, field: 'Motivo', max: 500 });
 

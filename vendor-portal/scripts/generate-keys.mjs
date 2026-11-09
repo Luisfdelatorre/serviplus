@@ -10,7 +10,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT } from './env.mjs';
 
-const file = path.join(ROOT, '.env.local');
+// Por defecto .env.local (desarrollo). Para producción: npm run keys:generate -- .env.production.local
+const file = path.join(ROOT, process.argv[2] || '.env.local');
 const existing = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
 const has = (name) => new RegExp(`^${name}=`, 'm').test(existing);
 
@@ -28,5 +29,6 @@ if (!lines.length) {
 } else {
   const prefix = existing && !existing.endsWith('\n') ? '\n' : '';
   fs.appendFileSync(file, `${prefix}${lines.join('\n')}\n`, { mode: 0o600 });
+  fs.chmodSync(file, 0o600);
   console.log(`Claves escritas en ${file}: ${lines.map((l) => l.split('=')[0]).join(', ')}`);
 }

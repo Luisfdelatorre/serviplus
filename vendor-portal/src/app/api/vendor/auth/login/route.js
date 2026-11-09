@@ -9,7 +9,7 @@ export const runtime = 'nodejs';
 
 export const POST = handler(async (request) => {
   const ip = clientIp(request);
-  rateLimit(`login:${ip}`, { limit: 10, windowMs: 15 * 60 * 1000 });
+  await rateLimit(`login:${ip}`, { limit: 10, windowMs: 15 * 60 * 1000 });
   const body = await readJson(request);
   const email = str(body.email, { required: true, field: 'email', max: 200 }).toLowerCase();
   const password = String(body.password || '');

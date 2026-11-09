@@ -7,6 +7,6 @@ export const runtime = 'nodejs';
 export const POST = handler(async (request) => {
   const ip = clientIp(request);
   const body = await readJson(request);
-  rateLimit(`heartbeat:${ip}:${body.licenseId}`, { limit: 60, windowMs: 10 * 60 * 1000 });
+  await rateLimit(`heartbeat:${ip}:${body.licenseId}`, { limit: 60, windowMs: 10 * 60 * 1000 });
   return json(await heartbeat({ ...body, ip }));
 });

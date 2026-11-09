@@ -21,6 +21,6 @@ function fingerprintFromHeader(request) {
 export const GET = handler(async (request, { params }) => {
   const { licenseId } = await params;
   const ip = clientIp(request);
-  rateLimit(`escrow-get:${ip}`, { limit: 10, windowMs: 10 * 60 * 1000 });
+  await rateLimit(`escrow-get:${ip}`, { limit: 10, windowMs: 10 * 60 * 1000 });
   return json(await retrieveEscrow({ licenseId, fingerprint: fingerprintFromHeader(request), ip }));
 });

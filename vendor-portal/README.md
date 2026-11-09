@@ -39,8 +39,17 @@ npm run simulate -- update stable
 - Servir solo por HTTPS (la cookie de sesión es `Secure` en producción), detrás de un proxy propio
   (nginx/Caddy) con `TRUST_PROXY_HOPS=1`. Sin esa variable se ignora `X-Forwarded-For` (falsificable) y el
   rate-limit pasa a ser global por ruta, así que un abuso podría bloquear el login de todos.
-- **Una sola instancia.** El rate-limit vive en memoria del proceso; antes de escalar horizontalmente hay que
-  moverlo a Postgres o Redis.
+- El rate-limit se guarda en Postgres (tabla `RateLimit`), así que funciona con varias instancias.
+
+### Vercel + Neon
+
+- Proyecto de Vercel con **Root Directory = `vendor-portal`**. `npm run build` ejecuta `prisma generate`.
+- Variables (Production): `DATABASE_URL` (Neon con pooler, `&pgbouncer=true&connection_limit=1`),
+  `DIRECT_URL` (Neon sin `-pooler`), `LICENSE_SIGNING_PRIVATE_KEY`, `LICENSE_SIGNING_PUBLIC_KEY`,
+  `ESCROW_MASTER_KEY`, `SESSION_SECRET` (`npm run keys:generate -- .env.production.local`) y
+  `TRUST_PROXY_HOPS=1` (Vercel fija `X-Forwarded-For`).
+- Las migraciones **no** corren en el build (un preview no debe tocar la base de producción). Se aplican a mano:
+  cargar `.env.production.local` y ejecutar `npx prisma migrate deploy`.
 
 ## API para la app instalada
 

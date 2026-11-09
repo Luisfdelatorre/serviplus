@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { prisma } from './db';
 
 export class HttpError extends Error {
   constructor(status, code, message, extra) {
@@ -65,20 +66,26 @@ export function handler(fn) {
 }
 
 /**
- * Rate-limit simple en memoria (por proceso). Suficiente para UNA instancia; antes de escalar a
- * varias instancias hay que moverlo a un almacén compartido (Postgres o Redis).
+ * Rate-limit de ventana fija guardado en Postgres, compartido entre todas las instancias.
+ * Un solo INSERT … ON CONFLICT atómico: crea el contador, lo incrementa o reinicia la ventana.
  */
-const buckets = new Map();
-export function rateLimit(key, { limit, windowMs }) {
-  const now = Date.now();
-  const entry = buckets.get(key);
-  if (!entry || now - entry.start >= windowMs) {
-    buckets.set(key, { start: now, count: 1 });
-    return;
+export async function rateLimit(key, { limit, windowMs }) {
+  const [row] = await prisma.$queryRaw`
+    INSERT INTO "RateLimit" ("key", "windowStart", "count") VALUES (${key}, now(), 1)
+    ON CONFLICT ("key") DO UPDATE SET
+      "count" = CASE WHEN "RateLimit"."windowStart" <= now() - make_interval(secs => ${windowMs / 1000})
+        THEN 1 ELSE "RateLimit"."count" + 1 END,
+      "windowStart" = CASE WHEN "RateLimit"."windowStart" <= now() - make_interval(secs => ${windowMs / 1000})
+        THEN now() ELSE "RateLimit"."windowStart" END
+    RETURNING "count", "windowStart"`;
+
+  // Limpieza ocasional de ventanas viejas para que la tabla no crezca.
+  if (Math.random() < 0.01) {
+    await prisma.$executeRaw`DELETE FROM "RateLimit" WHERE "windowStart" < now() - interval '1 day'`;
   }
-  entry.count += 1;
-  if (entry.count > limit) {
-    const retry = Math.ceil((windowMs - (now - entry.start)) / 1000);
+
+  if (row.count > limit) {
+    const retry = Math.max(1, Math.ceil((row.windowStart.getTime() + windowMs - Date.now()) / 1000));
     throw new HttpError(429, 'rate_limited', `Demasiadas solicitudes. Reintenta en ${retry} s`);
   }
 }

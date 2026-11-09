@@ -7,7 +7,16 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url       = env("DATABASE_URL")
+  // Conexión directa (sin pooler) para migraciones. En local puede ser la misma que DATABASE_URL.
+  directUrl = env("DIRECT_URL")
+}
+
+// Contadores de rate-limit compartidos entre instancias (Vercel ejecuta muchas a la vez).
+model RateLimit {
+  key         String   @id
+  windowStart DateTime
+  count       Int
 }
 
 model Operator {
