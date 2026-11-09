@@ -154,3 +154,8 @@ test('Gate: once complete everything passes through', () => {
   assert.equal(runGate(true).nextCalled, true);
   assert.equal(runGate(true, { url: '/kiosk', accept: 'text/html' }).nextCalled, true);
 });
+
+test('Gate: the activation page is never sent to setup (would loop with the license gate)', () => {
+  assert.equal(runGate(false, { url: '/activate', accept: 'text/html' }).nextCalled, true);
+  assert.equal(runGate(false, { url: '/activate', accept: 'text/html' }).redirect, undefined);
+});

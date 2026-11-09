@@ -25,7 +25,9 @@ function createSetupGate(setupService) {
     if (p.startsWith('/api/')) {
       return res.status(409).json({ success: false, code: 'SETUP_REQUIRED', error: 'El sistema aún no ha sido configurado.' });
     }
-    if (wantsHtmlPage(req) && p !== '/setup') return res.redirect(302, '/setup');
+    // La activación de licencia va antes que la configuración: nunca mandar /activate a /setup,
+    // o las dos puertas se redirigen en círculo ("too many redirects").
+    if (wantsHtmlPage(req) && p !== '/setup' && p !== '/activate') return res.redirect(302, '/setup');
     return next();
   };
 }
