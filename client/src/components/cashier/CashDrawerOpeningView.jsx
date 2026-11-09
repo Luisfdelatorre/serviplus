@@ -8,6 +8,7 @@ import { sfx } from '../../utils/audio';
 import { formatCurrency } from '../../utils/format';
 import { getDenominationsForCurrency } from '../../config/currencyDenominations';
 import { UpayLogo } from '../common/UpayLogo';
+import { showAlert } from '../../store/useAlertDialogStore';
 import './CashDrawerOpening.css';
 
 export function CashDrawerOpeningView() {
@@ -205,7 +206,7 @@ export function CashDrawerOpeningView() {
       setShowSuccessModal(true);
     } catch (err) {
       try { sfx.playBeep(); } catch (_) { }
-      alert('Error abriendo turno: ' + (err.message || 'Error desconocido'));
+      showAlert({ variant: 'error', title: 'No se pudo abrir el turno', description: err.message || 'Error desconocido' });
     } finally {
       setSubmitting(false);
     }
@@ -469,7 +470,7 @@ export function CashDrawerOpeningView() {
                       initialCash: totalCash,
                       notes: openingNotes || 'Apertura de turno de caja'
                     }, false);
-                    alert('🖨️ Comprobante de apertura enviado a la impresora térmica POS-58.');
+                    showAlert({ variant: 'info', title: 'Comprobante enviado', description: 'El comprobante de apertura se envió a la impresora térmica POS-58.' });
                   } catch (err) {
                     console.warn('Error imprimiendo comprobante:', err);
                     window.print();

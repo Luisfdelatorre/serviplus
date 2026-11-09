@@ -11,6 +11,7 @@ import {
   RefreshCw,
   AlertCircle
 } from 'lucide-react';
+import { showAlert } from '../../store/useAlertDialogStore';
 
 export function ProductAvailabilityModal({ isOpen, onClose }) {
   const [products, setProducts] = useState([]);
@@ -60,7 +61,7 @@ export function ProductAvailabilityModal({ isOpen, onClose }) {
       );
     } catch (err) {
       console.error('Error toggling product:', err);
-      alert('Error actualizando disponibilidad: ' + err.message);
+      showAlert({ variant: 'error', title: 'No se pudo actualizar la disponibilidad', description: err.message });
     } finally {
       setTogglingId(null);
     }

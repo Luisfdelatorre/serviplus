@@ -46,6 +46,7 @@ import {
 } from 'lucide-react';
 import { UpayLogo } from '../common/UpayLogo';
 import './AdminSettingsView.css';
+import { showAlert } from '../../store/useAlertDialogStore';
 
 export function AdminSettingsView() {
   const navigate = useNavigate();
@@ -212,7 +213,7 @@ export function AdminSettingsView() {
       showToast(nextState ? `🟢 "${prod.name}" marcado como DISPONIBLE` : `🔴 "${prod.name}" marcado como AGOTADO`);
     } catch (err) {
       console.error('Error actualizando stock:', err);
-      alert('Error: ' + err.message);
+      showAlert({ variant: 'error', title: 'No se pudo actualizar el producto', description: err.message });
     } finally {
       setTogglingStockId(null);
     }
@@ -228,7 +229,7 @@ export function AdminSettingsView() {
       showToast('¡Configuración guardada y aplicada con éxito!');
     } catch (err) {
       try { sfx.playBeep(); } catch (_) {}
-      alert('Error al guardar configuración: ' + err.message);
+      showAlert({ variant: 'error', title: 'No se pudo guardar la configuración', description: err.message });
     } finally {
       setSaving(false);
     }
@@ -243,7 +244,7 @@ export function AdminSettingsView() {
       showToast(`🖨️ Ticket de prueba enviado a "${pName}"`);
     } catch (err) {
       console.error('Error al imprimir prueba:', err);
-      alert('Error de impresión: ' + err.message);
+      showAlert({ variant: 'error', title: 'No se pudo imprimir', description: err.message });
     } finally {
       setTestingPrinter(false);
     }
@@ -258,7 +259,7 @@ export function AdminSettingsView() {
       showToast(`👨‍🍳 Comanda de prueba enviada a Cocina: "${pName}"`);
     } catch (err) {
       console.error('Error al imprimir prueba cocina:', err);
-      alert('Error de impresión en cocina: ' + err.message);
+      showAlert({ variant: 'error', title: 'No se pudo imprimir en cocina', description: err.message });
     } finally {
       setTestingKitchenPrinter(false);
     }
@@ -273,7 +274,7 @@ export function AdminSettingsView() {
       showToast('🔓 Pulso de apertura enviado al cajón monedero');
     } catch (err) {
       console.error('Error abriendo cajón:', err);
-      alert('Error al abrir cajón: ' + err.message);
+      showAlert({ variant: 'error', title: 'No se pudo abrir el cajón', description: err.message });
     } finally {
       setOpeningDrawer(false);
     }

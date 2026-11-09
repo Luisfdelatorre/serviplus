@@ -59,6 +59,7 @@ import { ModifierModal } from '../kiosk/ModifierModal';
 import { CashShiftModal } from './CashShiftModal';
 import { SettlePaymentModal } from './SettlePaymentModal';
 import { ProductAvailabilityModal } from '../admin/ProductAvailabilityModal';
+import { showAlert, showConfirm } from '../../store/useAlertDialogStore';
 import './CashierView.css';
 
 const STITCH_PRODUCT_IMAGES = {
@@ -340,7 +341,7 @@ export function CashierView() {
       }
     } catch (err) {
       console.error('Error cambiando disponibilidad de producto:', err);
-      alert('Error: ' + err.message);
+      showAlert({ variant: 'error', title: 'No se pudo cambiar la disponibilidad', description: err.message });
     } finally {
       setTogglingItemId(null);
     }
@@ -436,9 +437,11 @@ export function CashierView() {
 
     if (item.isActive === false) {
       sfx.playWarning();
-      alert(
-        `⚠️ "${item.name}" está marcado como AGOTADO (86'd).\nMantén presionada cualquier tarjeta por 1 segundo o activa "Agotados" arriba para volver a habilitarlo.`
-      );
+      showAlert({
+        variant: 'warning',
+        title: `"${item.name}" está agotado`,
+        description: 'Mantén presionada cualquier tarjeta por 1 segundo o activa "Agotados" arriba para volver a habilitarlo.',
+      });
       return;
     }
 
@@ -558,16 +561,18 @@ export function CashierView() {
       setOrderNotes('');
       setCustomerInfo('');
       setShowPaymentDrawer(false);
-      alert(
-        `¡Comanda enviada a Cocina!\nOrden #${res.orderNumber || res.id} (${orderType === 1
+      showAlert({
+        variant: 'success',
+        title: 'Comanda enviada a cocina',
+        description: `Orden #${res.orderNumber || res.id} (${orderType === 1
           ? `Mesa #${selectedTable}`
           : orderType === 2
             ? 'PARA LLEVAR'
             : 'DOMICILIO'
-        })`
-      );
+        })`,
+      });
     } catch (err) {
-      alert('Error enviando orden: ' + err.message);
+      showAlert({ variant: 'error', title: 'No se pudo enviar la orden', description: err.message });
     } finally {
       setIsSubmitting(false);
     }
@@ -605,16 +610,18 @@ export function CashierView() {
       setOrderNotes('');
       setCustomerInfo('');
       setShowPaymentDrawer(false);
-      alert(
-        `¡Venta cobrada e impresa con éxito!\nOrden #${res.orderNumber || res.id} (${orderType === 1
+      showAlert({
+        variant: 'success',
+        title: 'Venta cobrada e impresa',
+        description: `Orden #${res.orderNumber || res.id} (${orderType === 1
           ? `Mesa #${selectedTable}`
           : orderType === 2
             ? 'PARA LLEVAR'
             : 'DOMICILIO'
-        }) - ${formatCOP(total)}`
-      );
+        }) - ${formatCOP(total)}`,
+      });
     } catch (err) {
-      alert('Error al registrar cobro: ' + err.message);
+      showAlert({ variant: 'error', title: 'No se pudo registrar el cobro', description: err.message });
     } finally {
       setIsSubmitting(false);
     }
@@ -630,14 +637,16 @@ export function CashierView() {
       await updateOrderStatus(settlingOrder.id, '2');
       sfx.playReadyChime();
       const isTakeOut = Number(settlingOrder.orderType) === 2 || !settlingOrder.tableId;
-      alert(
-        `¡Pago completado con éxito!\nOrden #${settlingOrder.orderNumber || settlingOrder.id} (${isTakeOut ? 'PARA LLEVAR' : `Mesa #${settlingOrder.tableId}`
-        }) PAGADA y enviada a cocina.`
-      );
+      showAlert({
+        variant: 'success',
+        title: 'Pago completado',
+        description: `Orden #${settlingOrder.orderNumber || settlingOrder.id} (${isTakeOut ? 'PARA LLEVAR' : `Mesa #${settlingOrder.tableId}`
+        }) pagada y enviada a cocina.`,
+      });
       setSettlingOrder(null);
       setSettleCashTendered('');
     } catch (e) {
-      alert('Error completando pago: ' + e.message);
+      showAlert({ variant: 'error', title: 'No se pudo completar el pago', description: e.message });
     } finally {
       setIsSubmitting(false);
     }
@@ -645,28 +654,34 @@ export function CashierView() {
 
   // 4. Anular orden
   const handleVoidOrder = async (orderId) => {
-    if (!confirm(`¿Está seguro de anular la orden #${orderId}? Esta acción es irreversible.`)) return;
+    const confirmed = await showConfirm({
+      variant: 'warning',
+      title: `¿Anular la orden #${orderId}?`,
+      description: 'Esta acción no se puede deshacer.',
+      actionLabel: 'Anular orden',
+    });
+    if (!confirmed) return;
     sfx.playTap();
     try {
       await updateOrderStatus(orderId, '3');
       sfx.playTap();
-      alert(`Orden #${orderId} anulada.`);
+      showAlert({ variant: 'success', title: `Orden #${orderId} anulada` });
     } catch (e) {
-      alert('Error anulando orden: ' + e.message);
+      showAlert({ variant: 'error', title: 'No se pudo anular la orden', description: e.message });
     }
   };
 
   // Cargar una orden pendiente al ticket para edición
-  const handleLoadPendingOrderToTicket = (order) => {
+  const handleLoadPendingOrderToTicket = async (order) => {
     sfx.playTap();
     if (cart.length > 0) {
-      if (
-        !confirm(
-          'El ticket actual tiene productos. ¿Deseas reemplazarlos con la orden #' + order.id + '?'
-        )
-      ) {
-        return;
-      }
+      const confirmed = await showConfirm({
+        variant: 'warning',
+        title: `¿Reemplazar el ticket con la orden #${order.id}?`,
+        description: 'El ticket actual tiene productos que se perderán.',
+        actionLabel: 'Reemplazar',
+      });
+      if (!confirmed) return;
     }
     setOrderType(Number(order.orderType) || 1);
     if (order.tableId) setSelectedTable(order.tableId);

@@ -1,0 +1,165 @@
+/* ==========================================================
+   ALERT DIALOG (reemplazo de window.alert / window.confirm)
+   ========================================================== */
+
+.alert-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.55);
+  animation: alert-dialog-fade 0.15s ease-out;
+}
+
+.alert-dialog {
+  --ad-color: var(--brand-blue);
+  --ad-color-hover: var(--brand-blue-hover);
+  --ad-color-light: var(--brand-blue-light);
+  --ad-icon-color: var(--brand-blue);
+  --ad-on-color: #ffffff;
+
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 24px 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  font-family: var(--font-family);
+  animation: alert-dialog-pop 0.18s ease-out;
+}
+
+.alert-dialog--success {
+  --ad-color: var(--brand-green);
+  --ad-color-hover: var(--brand-green-hover);
+  --ad-color-light: var(--brand-green-light);
+  --ad-icon-color: var(--brand-green-hover);
+}
+
+.alert-dialog--error {
+  --ad-color: var(--brand-red);
+  --ad-color-hover: var(--brand-red-hover);
+  --ad-color-light: var(--brand-red-light);
+  --ad-icon-color: var(--brand-red);
+}
+
+.alert-dialog--warning {
+  --ad-color: var(--brand-yellow);
+  --ad-color-hover: var(--brand-yellow-hover);
+  --ad-color-light: var(--brand-yellow-light);
+  --ad-icon-color: var(--brand-yellow-hover);
+  --ad-on-color: var(--text-main);
+}
+
+.alert-dialog-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.alert-dialog-icon {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--ad-color-light);
+  color: var(--ad-icon-color);
+}
+
+.alert-dialog-text {
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.alert-dialog-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text-main);
+}
+
+.alert-dialog-description {
+  margin: 6px 0 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.alert-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.alert-dialog-btn {
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.alert-dialog-btn:active {
+  transform: scale(0.98);
+}
+
+.alert-dialog-btn:focus-visible {
+  outline: 2px solid var(--ad-color);
+  outline-offset: 2px;
+}
+
+.alert-dialog-btn--cancel {
+  background: var(--bg-surface);
+  color: var(--text-main);
+}
+
+.alert-dialog-btn--cancel:hover {
+  background: var(--bg-hover);
+}
+
+.alert-dialog-btn--action {
+  background: var(--ad-color);
+  border-color: var(--ad-color);
+  color: var(--ad-on-color);
+}
+
+.alert-dialog-btn--action:hover {
+  background: var(--ad-color-hover);
+  border-color: var(--ad-color-hover);
+}
+
+@keyframes alert-dialog-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes alert-dialog-pop {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 480px) {
+  .alert-dialog-footer {
+    flex-direction: column-reverse;
+  }
+
+  .alert-dialog-btn {
+    width: 100%;
+  }
+}

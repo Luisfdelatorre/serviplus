@@ -12,6 +12,7 @@ import { TableSelectStep } from './TableSelectStep';
 import { PaymentStep } from './PaymentStep';
 import { SuccessStep } from './SuccessStep';
 
+import { showAlert } from '../../../store/useAlertDialogStore';
 import './CheckoutView.css';
 
 export function CheckoutView({ isOpen = true, onClose, onOrderCompleted }) {
@@ -226,7 +227,7 @@ export function CheckoutView({ isOpen = true, onClose, onOrderCompleted }) {
 
   const handleConfirmOrder = async (overrideParams = null) => {
     if (orderType === 'EAT_IN' && !tableId) {
-      alert('Por favor selecciona una mesa para continuar.');
+      showAlert({ variant: 'warning', title: 'Selecciona una mesa', description: 'Elige tu mesa para continuar con el pedido.' });
       setStep(3);
       return;
     }
@@ -277,7 +278,7 @@ export function CheckoutView({ isOpen = true, onClose, onOrderCompleted }) {
       setSecondsRemaining(KIOSK_CONFIG.timeouts.orderSuccessAutoCloseSeconds);
       setStep(5);
     } catch (err) {
-      alert('Error creando la orden: ' + err.message);
+      showAlert({ variant: 'error', title: 'No se pudo crear la orden', description: err.message });
     } finally {
       setIsSubmitting(false);
     }
@@ -285,7 +286,7 @@ export function CheckoutView({ isOpen = true, onClose, onOrderCompleted }) {
 
   const handleSendWhatsApp = async () => {
     if (!receiptInput.trim() || receiptInput.trim().length < KIOSK_CONFIG.validation.phoneMinLength) {
-      alert('Por favor ingresa un número de celular válido.');
+      showAlert({ variant: 'warning', title: 'Número de celular no válido', description: 'Ingresa un número de celular válido para recibir tu comprobante.' });
       return;
     }
     sfx.playTap();
@@ -325,7 +326,7 @@ export function CheckoutView({ isOpen = true, onClose, onOrderCompleted }) {
       setReceiptDestination(cleanPhone);
     } catch (err) {
       console.error('[WhatsApp Send Error]:', err);
-      alert('Error enviando WhatsApp: ' + err.message);
+      showAlert({ variant: 'error', title: 'No se pudo enviar el WhatsApp', description: err.message });
     } finally {
       setIsSendingReceipt(false);
     }
@@ -333,7 +334,7 @@ export function CheckoutView({ isOpen = true, onClose, onOrderCompleted }) {
 
   const handleSendSMS = async () => {
     if (!receiptInput.trim() || receiptInput.trim().length < KIOSK_CONFIG.validation.phoneMinLength) {
-      alert('Por favor ingresa un número de celular válido.');
+      showAlert({ variant: 'warning', title: 'Número de celular no válido', description: 'Ingresa un número de celular válido para recibir tu comprobante.' });
       return;
     }
     sfx.playTap();

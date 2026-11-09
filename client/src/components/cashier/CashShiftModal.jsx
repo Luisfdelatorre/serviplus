@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { fetchCurrentCashShift, openCashShift, closeCashShift, fetchCashShiftHistory, fetchEmployees, printCashShiftSlip } from '../../api';
 import { formatCOP } from '../../utils/format';
 import { sfx } from '../../utils/audio';
+import { showAlert, showConfirm } from '../../store/useAlertDialogStore';
 import './CashShiftModal.css';
 import {
   DollarSign,
@@ -89,7 +90,7 @@ export function CashShiftModal({ isOpen, onClose }) {
       await loadData();
     } catch (err) {
       console.error('Error abriendo turno:', err);
-      alert('Error al abrir turno: ' + err.message);
+      showAlert({ variant: 'error', title: 'No se pudo abrir el turno', description: err.message });
     } finally {
       setSubmitting(false);
     }
@@ -97,7 +98,13 @@ export function CashShiftModal({ isOpen, onClose }) {
 
   const handleCloseShift = async (e) => {
     e.preventDefault();
-    if (!window.confirm('¿Confirmas el Cierre Z de este turno de caja? Se emitirá el balance definitivo.')) {
+    const confirmed = await showConfirm({
+      variant: 'warning',
+      title: '¿Confirmas el Cierre Z?',
+      description: 'Se cerrará este turno de caja y se emitirá el balance definitivo.',
+      actionLabel: 'Cerrar turno',
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -120,7 +127,7 @@ export function CashShiftModal({ isOpen, onClose }) {
       await loadData();
     } catch (err) {
       console.error('Error cerrando turno:', err);
-      alert('Error al cerrar turno: ' + err.message);
+      showAlert({ variant: 'error', title: 'No se pudo cerrar el turno', description: err.message });
     } finally {
       setSubmitting(false);
     }
@@ -219,9 +226,9 @@ export function CashShiftModal({ isOpen, onClose }) {
                               sfx.playTap();
                               try {
                                 await printCashShiftSlip(h, true);
-                                alert(`🖨️ Turno #${h.shiftNumber} enviado a la impresora térmica.`);
+                                showAlert({ variant: 'info', title: 'Comprobante enviado', description: `El turno #${h.shiftNumber} se envió a la impresora térmica.` });
                               } catch (e) {
-                                alert('Error al imprimir: ' + e.message);
+                                showAlert({ variant: 'error', title: 'No se pudo imprimir', description: e.message });
                               }
                             }}
                             className="cshift-s-15"
@@ -296,9 +303,9 @@ export function CashShiftModal({ isOpen, onClose }) {
                     sfx.playTap();
                     try {
                       await printCashShiftSlip(currentShift, false);
-                      alert('🖨️ Reporte de arqueo actual enviado a la impresora térmica POS-58.');
+                      showAlert({ variant: 'info', title: 'Arqueo enviado', description: 'El reporte de arqueo actual se envió a la impresora térmica POS-58.' });
                     } catch (e) {
-                      alert('Error al imprimir arqueo: ' + e.message);
+                      showAlert({ variant: 'error', title: 'No se pudo imprimir el arqueo', description: e.message });
                     }
                   }}
                   className="cshift-s-31"

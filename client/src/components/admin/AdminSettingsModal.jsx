@@ -31,6 +31,7 @@ import {
   XCircle,
   Search
 } from 'lucide-react';
+import { showAlert } from '../../store/useAlertDialogStore';
 
 export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
   const [activeTab, setActiveTab] = useState('wompi');
@@ -91,7 +92,7 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
       showToast(`🖨️ Ticket de prueba enviado a "${pName}"`);
     } catch (err) {
       console.error('Error al imprimir prueba:', err);
-      alert('Error de impresión: ' + err.message);
+      showAlert({ variant: 'error', title: 'No se pudo imprimir', description: err.message });
     } finally {
       setTestingPrinter(false);
     }
@@ -106,7 +107,7 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
       showToast('🔓 Pulso de apertura enviado al cajón monedero');
     } catch (err) {
       console.error('Error abriendo cajón:', err);
-      alert('Error al abrir cajón: ' + err.message);
+      showAlert({ variant: 'error', title: 'No se pudo abrir el cajón', description: err.message });
     } finally {
       setOpeningDrawer(false);
     }
@@ -136,7 +137,7 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
       showToast(nextState ? `🟢 "${prod.name}" marcado como DISPONIBLE` : `🔴 "${prod.name}" marcado como AGOTADO`);
     } catch (err) {
       console.error('Error actualizando stock:', err);
-      alert('Error: ' + err.message);
+      showAlert({ variant: 'error', title: 'No se pudo actualizar el producto', description: err.message });
     } finally {
       setTogglingStockId(null);
     }
@@ -159,7 +160,7 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
       showToast('¡Configuración guardada y aplicada con éxito!');
     } catch (err) {
       sfx.playBeep();
-      alert('Error al guardar configuración: ' + err.message);
+      showAlert({ variant: 'error', title: 'No se pudo guardar la configuración', description: err.message });
     } finally {
       setSaving(false);
     }

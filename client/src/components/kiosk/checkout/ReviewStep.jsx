@@ -1,6 +1,7 @@
 import React from 'react';
 import { formatCOP } from '../../../utils/format';
 import { getProductImageUrl } from '../../../utils/productImages';
+import { showConfirm } from '../../../store/useAlertDialogStore';
 
 export function ReviewStep({
   cart = [],
@@ -31,10 +32,14 @@ export function ReviewStep({
           {cart.length > 0 && (
             <button
               type="button"
-              onClick={() => {
-                if (window.confirm('¿Deseas vaciar tu pedido por completo?')) {
-                  clearCart();
-                }
+              onClick={async () => {
+                const confirmed = await showConfirm({
+                  variant: 'warning',
+                  title: '¿Vaciar tu pedido?',
+                  description: 'Se quitarán todos los productos del pedido.',
+                  actionLabel: 'Vaciar pedido',
+                });
+                if (confirmed) clearCart();
               }}
               className="checkout-clear-btn"
             >
