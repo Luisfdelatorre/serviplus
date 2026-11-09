@@ -25,9 +25,13 @@ const argExe = (() => {
 const FUSE = 'NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2';
 const blob = path.join(ROOT, 'build/sea/serviplus.blob');
 
+const IS_WINDOWS = process.platform === 'win32';
+
 function run(cmd, args) {
   console.log(`$ ${cmd} ${args.join(' ')}`);
-  execFileSync(cmd, args, { stdio: 'inherit', cwd: ROOT });
+  // npx es un script .cmd en Windows: hay que lanzarlo a través del shell.
+  const command = cmd === 'npx' && IS_WINDOWS ? 'npx.cmd' : cmd;
+  execFileSync(command, args, { stdio: 'inherit', cwd: ROOT, shell: IS_WINDOWS && command !== process.execPath });
 }
 
 fs.mkdirSync(path.dirname(blob), { recursive: true });

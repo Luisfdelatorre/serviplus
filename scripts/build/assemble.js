@@ -22,6 +22,10 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
+const IS_WINDOWS = process.platform === 'win32';
+// En Windows npm es un script .cmd: solo se puede lanzar a través del shell.
+const npmCommand = (args, opts) => execFileSync(IS_WINDOWS ? 'npm.cmd' : 'npm', args, { ...opts, shell: IS_WINDOWS });
+
 const ROOT = path.join(__dirname, '../..');
 const APP = path.join(ROOT, 'build/dist/app');
 const FAST = process.argv.includes('--fast');
@@ -81,7 +85,7 @@ function main() {
   } else {
     fs.copyFileSync(path.join(ROOT, 'package.json'), path.join(APP, 'package.json'));
     fs.copyFileSync(path.join(ROOT, 'package-lock.json'), path.join(APP, 'package-lock.json'));
-    execFileSync('npm', ['ci', '--omit=dev', '--no-audit', '--no-fund'], { cwd: APP, stdio: 'inherit' });
+    npmCommand(['ci', '--omit=dev', '--no-audit', '--no-fund'], { cwd: APP, stdio: 'inherit' });
   }
 
   console.log(`\n✓ App ensamblada en ${path.relative(ROOT, APP)} (v${version})`);
