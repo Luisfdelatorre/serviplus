@@ -89,9 +89,9 @@ test('Fingerprint: 3 of 4 matching survives a disk swap, a clone does not', () =
 
 test('Fingerprint: bogus vendor values are ignored and machine code is stable', () => {
   const fp = buildFingerprint({ board: 'FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF', machine: 'To be filled by O.E.M.', disk: '', cpu: 'CPU' });
-  assert.equal(fp.board, null);
-  assert.equal(fp.machine, null);
-  assert.equal(fp.disk, null);
+  assert.equal(fp.boardUuid, null);
+  assert.equal(fp.machineGuid, null);
+  assert.equal(fp.diskSerial, null);
   assert.match(machineCode(FP), /^SP-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/);
   assert.equal(machineCode(FP), machineCode(buildFingerprint(RAW)));
 });
@@ -142,7 +142,7 @@ test('Service: online activation stores the signed license', async () => {
   const calls = [];
   const fetchImpl = async (url, opts) => {
     calls.push({ url, body: JSON.parse(opts.body) });
-    return { ok: true, status: 200, json: async () => ({ success: true, data: { license: makeLicense() } }) };
+    return { ok: true, status: 200, json: async () => ({ lic: makeLicense(), seatId: 'seat-1', escrow: { alg: 'aes-256-gcm', wrapKey: 'AAAA', stored: false } }) };
   };
   const { service } = makeService({ fetchImpl });
   const status = await service.activate('sp-abcd-1234');
@@ -152,9 +152,9 @@ test('Service: online activation stores the signed license', async () => {
   assert.deepEqual(calls[0].body.fingerprint, FP);
 });
 
-test('Service: activation surfaces server and network errors', async () => {
-  const rejecting = async () => ({ ok: false, status: 404, json: async () => ({ success: false, code: 'UNKNOWN_KEY', error: 'Clave desconocida' }) });
-  await assert.rejects(makeService({ fetchImpl: rejecting }).service.activate('SP-NOPE-0000'), /Clave desconocida/);
+test('Service: activation surfaces the portal error message', async () => {
+  const rejecting = async () => ({ ok: false, status: 404, json: async () => ({ error: 'invalid_license_key', message: 'Clave de licencia no válida' }) });
+  await assert.rejects(makeService({ fetchImpl: rejecting }).service.activate('SP-NOPE-0000'), (e) => e.code === 'invalid_license_key' && /no válida/.test(e.message));
 
   const offline = async () => {
     throw new TypeError('fetch failed');
@@ -165,7 +165,7 @@ test('Service: activation surfaces server and network errors', async () => {
 
 test('Service: revocation → 72h grace → blocks only new orders; un-revoke restores', async () => {
   let revoked = true;
-  const fetchImpl = async () => ({ ok: true, status: 200, json: async () => ({ success: true, data: { revoked, status: revoked ? 'revoked' : 'active' } }) });
+  const fetchImpl = async () => ({ ok: true, status: 200, json: async () => ({ revoked, status: revoked ? 'revoked' : 'active' }) });
   const { service, advance } = makeService({ fetchImpl });
   service.importLicense(makeLicense());
 
@@ -243,4 +243,27 @@ test('Gate: blocked rejects only new orders and payments', () => {
   assert.equal(runGate(blocked, { method: 'PUT', url: '/api/orders/12/status' }).nextCalled, true);
   assert.equal(runGate(blocked, { method: 'POST', url: '/api/cashier/shift/close' }).nextCalled, true);
   assert.equal(runGate(blocked).nextCalled, true);
+});
+
+test('Service: escrow retrieval unwraps the key with the wrap key the portal returns', async () => {
+  const dataKey = crypto.randomBytes(32);
+  const wrapKey = crypto.randomBytes(32);
+  const sealed = require('../server/security/crypto').seal(wrapKey, dataKey);
+  const wrappedKey = Buffer.from(JSON.stringify(sealed)).toString('base64');
+  let seenHeader = null;
+  const fetchImpl = async (url, opts) => {
+    assert.match(url, /\/api\/license\/escrow\/LIC-TEST$/);
+    seenHeader = JSON.parse(Buffer.from(opts.headers['X-Fingerprint'], 'base64url').toString('utf8'));
+    return { ok: true, status: 200, json: async () => ({ alg: 'aes-256-gcm', wrapKey: wrapKey.toString('base64'), wrappedKey, storedAt: null }) };
+  };
+  const { service } = makeService({ fetchImpl });
+  const recovered = await service.fetchEscrowKey('LIC-TEST');
+  assert.deepEqual(recovered, dataKey);
+  assert.deepEqual(seenHeader, FP);
+});
+
+test('Service: escrow retrieval without an authorised grant surfaces the portal refusal', async () => {
+  const fetchImpl = async () => ({ ok: false, status: 403, json: async () => ({ error: 'escrow_not_authorized', message: 'Recuperación no autorizada.' }) });
+  const { service } = makeService({ fetchImpl });
+  await assert.rejects(service.fetchEscrowKey('LIC-TEST'), (e) => e.code === 'escrow_not_authorized' && e.status === 403);
 });

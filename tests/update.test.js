@@ -5,7 +5,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { signDocument } = require('../server/license/signing');
+const { signDocument, keyIdFor } = require('../server/license/signing');
 const { compareVersions, verifyManifest, createUpdateService, UpdateError } = require('../server/update/updateService');
 const { runUpdate } = require('../server/update/updater');
 
@@ -15,26 +15,17 @@ const { privateKey, publicKey } = crypto.generateKeyPairSync('ed25519');
 const PRIV = privateKey.export({ type: 'pkcs8', format: 'pem' });
 fs.writeFileSync(path.join(tmp, 'pub.pem'), publicKey.export({ type: 'spki', format: 'pem' }));
 process.env.SP_LICENSE_PUBLIC_KEY_FILE = path.join(tmp, 'pub.pem');
-process.env.SP_LICENSE_PUBLIC_KEY_KID = 'test';
 
 const BYTES = Buffer.from('fake-installer-bytes');
 const SHA = crypto.createHash('sha256').update(BYTES).digest('hex');
+const KEY_ID = keyIdFor(fs.readFileSync(path.join(tmp, 'pub.pem'), 'utf8'));
+const DOWNLOAD_URL = 'https://releases.test/Serviplus-Setup-1.1.0.exe';
 
+/** Manifiesto tal como lo devuelve el portal: objeto plano firmado sobre { channel, sha256, url, version }. */
 function manifest(overrides = {}) {
-  return signDocument(
-    {
-      product: 'serviplus',
-      channel: 'stable',
-      version: '1.1.0',
-      file: 'Serviplus-Setup-1.1.0.exe',
-      sha256: SHA,
-      size: BYTES.length,
-      releasedAt: '2026-11-09T00:00:00.000Z',
-      ...overrides
-    },
-    PRIV,
-    'test'
-  );
+  const payload = { channel: 'stable', sha256: SHA, url: DOWNLOAD_URL, version: '1.1.0', ...overrides };
+  const signed = signDocument(payload, PRIV, 'x');
+  return { ...payload, publishedAt: '2026-11-09T00:00:00.000Z', notes: null, keyId: KEY_ID, signature: signed.signature };
 }
 
 function jsonResponse(body, status = 200) {
@@ -70,21 +61,29 @@ test('Updates: a valid newer manifest is accepted', () => {
   assert.equal(p.version, '1.1.0');
 });
 
-test('Updates: forged, wrong-product, wrong-channel and not-newer manifests are rejected', () => {
+test('Updates: forged, wrong-channel, not-newer and incomplete manifests are rejected', () => {
   const ok = { currentVersion: '1.0.0', channel: 'stable' };
-  const forged = manifest();
-  forged.payload.version = '9.9.9';
+  const forged = { ...manifest(), version: '9.9.9' };
   assert.throws(() => verifyManifest(forged, ok), (e) => e.code === 'BAD_SIGNATURE');
-  assert.throws(() => verifyManifest(manifest({ product: 'other' }), ok), (e) => e.code === 'WRONG_PRODUCT');
   assert.throws(() => verifyManifest(manifest({ channel: 'beta' }), ok), (e) => e.code === 'WRONG_CHANNEL');
   assert.throws(() => verifyManifest(manifest({ version: '1.0.0' }), ok), (e) => e.code === 'NOT_NEWER');
-  assert.throws(() => verifyManifest(manifest({ sha256: undefined }), ok), (e) => e.code === 'BAD_MANIFEST');
+  const noHash = manifest();
+  delete noHash.sha256;
+  assert.throws(() => verifyManifest(noHash, ok), (e) => e.code === 'BAD_SIGNATURE');
+});
+
+test('Updates: a manifest with no published release is treated as "nothing available"', async () => {
+  const fetchImpl = async () => ({ ok: false, status: 404, json: async () => ({ error: 'no_release', message: 'No hay versiones publicadas en este canal' }) });
+  const { service } = makeService({ fetchImpl });
+  const status = await service.check();
+  assert.equal(status.available, null);
+  assert.equal(status.lastError, null);
 });
 
 test('Updates: check stores an available update without downloading it', async () => {
   const fetchImpl = async (url) => {
     assert.match(url, /\/api\/updates\/stable\/latest$/);
-    return jsonResponse({ success: true, data: { manifest: manifest() } });
+    return jsonResponse(manifest());
   };
   const { service } = makeService({ fetchImpl });
   const status = await service.check();
@@ -93,7 +92,7 @@ test('Updates: check stores an available update without downloading it', async (
 });
 
 test('Updates: check with nothing newer clears availability without an error', async () => {
-  const fetchImpl = async () => jsonResponse({ success: true, data: { manifest: manifest({ version: '1.0.0' }) } });
+  const fetchImpl = async () => jsonResponse(manifest({ version: '1.0.0' }));
   const { service } = makeService({ fetchImpl });
   const status = await service.check();
   assert.equal(status.available, null);
@@ -111,7 +110,7 @@ test('Updates: a network failure during check is reported, not thrown', async ()
 
 test('Updates: download is verified against the signed SHA-256; tampered bytes are discarded', async () => {
   const fetchImpl = async (url) => {
-    if (url.includes('/latest')) return jsonResponse({ success: true, data: { manifest: manifest() } });
+    if (url.includes('/latest')) return jsonResponse(manifest());
     return { ok: true, status: 200, arrayBuffer: async () => Buffer.from('TAMPERED-BYTES!!') };
   };
   const { service, dataDir } = makeService({ fetchImpl });
@@ -123,7 +122,7 @@ test('Updates: download is verified against the signed SHA-256; tampered bytes a
 
 test('Updates: a good download is kept and returned', async () => {
   const fetchImpl = async (url) => {
-    if (url.includes('/latest')) return jsonResponse({ success: true, data: { manifest: manifest() } });
+    if (url.includes('/latest')) return jsonResponse(manifest());
     return { ok: true, status: 200, arrayBuffer: async () => BYTES };
   };
   const { service } = makeService({ fetchImpl });
@@ -134,7 +133,7 @@ test('Updates: a good download is kept and returned', async () => {
 
 test('Updates: applying is refused on a development (non-installed) machine', async () => {
   const fetchImpl = async (url) => {
-    if (url.includes('/latest')) return jsonResponse({ success: true, data: { manifest: manifest() } });
+    if (url.includes('/latest')) return jsonResponse(manifest());
     return { ok: true, status: 200, arrayBuffer: async () => BYTES };
   };
   const { service } = makeService({ fetchImpl, packaged: false });
@@ -144,7 +143,7 @@ test('Updates: applying is refused on a development (non-installed) machine', as
 
 test('Updates: applying on an installed machine stages the pending update and launches the updater', async () => {
   const fetchImpl = async (url) => {
-    if (url.includes('/latest')) return jsonResponse({ success: true, data: { manifest: manifest() } });
+    if (url.includes('/latest')) return jsonResponse(manifest());
     return { ok: true, status: 200, arrayBuffer: async () => BYTES };
   };
   const { service, dataDir, spawned } = makeService({ fetchImpl, packaged: true });

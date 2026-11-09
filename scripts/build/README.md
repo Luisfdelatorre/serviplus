@@ -14,8 +14,9 @@ Produce el instalador `Serviplus-Setup-X.Y.Z.exe`. Lo normal es dejar que
 4. **rawprint.exe** — se compila con `csc.exe` (.NET Framework) en el runner; no se compila en runtime.
 5. **Inno Setup** (`installer/serviplus.iss`) — instala, registra el servicio (WinSW), abre el
    puerto en el firewall, agrega la exclusión de Defender y abre `/setup`.
-6. **`sign-release.js`** — firma el manifiesto de actualización (Ed25519) con la clave privada
-   del secret `SP_UPDATE_SIGNING_KEY`.
+6. **Publicación** — el instalador se sube a un almacenamiento y se registra en el portal del
+   proveedor (`vendor-portal/`), que firma el manifiesto con la clave de licencias (Ed25519) y
+   calcula el SHA-256. El build no firma nada.
 
 ## Build local (sin instalador)
 
@@ -29,6 +30,6 @@ dependencias de producción: `node scripts/build/assemble.js --fast`.
 
 ## Claves de firma
 
-La clave **privada** nunca vive en el repo. En CI es el secret `SP_UPDATE_SIGNING_KEY`
-(misma pareja Ed25519 que firma licencias). La pública está en `server/license/publicKeys.js`.
-Rotación: agrega una nueva con otro `kid` sin invalidar lo ya emitido.
+La clave **privada** vive solo en el servidor del portal (`LICENSE_SIGNING_PRIVATE_KEY`). La app
+embebe la pública (`server/license/publicKeys.js`) y la identifica por su `keyId` (SHA-256 del DER).
+Rotación: agrega la nueva pública a la lista sin retirar la anterior.

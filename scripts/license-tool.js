@@ -7,16 +7,12 @@
  *   node scripts/license-tool.js sign    --key <private.pem> --kid sp-2026-1 --restaurant-id R1 \
  *          [--restaurant-name "Kebab"] [--fingerprint this|<file.json>] [--expires 2027-01-01] \
  *          [--features kiosk,kds] [--channel stable] --out license.lic
- *   node scripts/license-tool.js serve   --key <private.pem> --kid sp-2026-1 [--port 4455]
- *          [--update-file <setup.exe> --update-version 1.1.0 --update-channel stable]
  *
- * `serve` levanta un servidor de licencias de PRUEBA que implementa el contrato
- * (/api/license/activate, /api/license/heartbeat) para probar la activación de punta a punta.
- * Acepta cualquier clave que empiece con "SP-". Revocar: POST /dev/revoke {licenseId}.
+ * Para probar la activación de punta a punta usa el portal del proveedor (vendor-portal/),
+ * que implementa el contrato real de licencias y actualizaciones.
  */
 const crypto = require('crypto');
 const fs = require('fs');
-const http = require('http');
 const os = require('os');
 const path = require('path');
 const { signDocument } = require('../server/license/signing');
@@ -109,82 +105,6 @@ const commands = {
     fs.writeFileSync(out, JSON.stringify(doc, null, 2));
     console.log(`Licencia ${payload.licenseId} escrita en ${out}`);
   },
-
-  serve(args) {
-    const pem = requireKey(args);
-    const port = Number(args.port || 4455);
-    const revoked = new Set();
-    const issued = new Map(); // licenseKey -> licenseId
-
-    // Paquete de actualización de prueba: se firma igual que en CI (sign-release.js).
-    const update = args['update-file'] ? (() => {
-      const bytes = fs.readFileSync(expandHome(args['update-file']));
-      const channel = args['update-channel'] || 'stable';
-      const payload = {
-        product: 'serviplus',
-        channel,
-        version: args['update-version'] || '1.1.0',
-        file: path.basename(args['update-file']),
-        sha256: crypto.createHash('sha256').update(bytes).digest('hex'),
-        size: bytes.length,
-        releasedAt: new Date().toISOString()
-      };
-      return { channel, file: payload.file, bytes, manifest: signDocument(payload, pem, args.kid) };
-    })() : null;
-
-    const send = (res, code, body) => {
-      res.writeHead(code, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(body));
-    };
-
-    http
-      .createServer((req, res) => {
-        let raw = '';
-        req.on('data', (c) => (raw += c));
-        req.on('end', () => {
-          let body = {};
-          try {
-            body = raw ? JSON.parse(raw) : {};
-          } catch (_) {
-            return send(res, 400, { success: false, error: 'JSON inválido' });
-          }
-          console.log(`[mock] ${req.method} ${req.url}`, JSON.stringify(body));
-
-          if (req.method === 'POST' && req.url === '/api/license/activate') {
-            if (!/^SP-/.test(body.licenseKey || '')) return send(res, 404, { success: false, code: 'UNKNOWN_KEY', error: 'Clave de licencia desconocida.' });
-            const payload = buildPayload({
-              restaurantId: `R-${body.licenseKey}`,
-              restaurantName: 'Restaurante de prueba',
-              fingerprint: body.fingerprint,
-              licenseId: issued.get(body.licenseKey)
-            });
-            issued.set(body.licenseKey, payload.licenseId);
-            return send(res, 200, { success: true, data: { license: signDocument(payload, pem, args.kid) } });
-          }
-          if (req.method === 'POST' && req.url === '/api/license/heartbeat') {
-            const isRevoked = revoked.has(body.licenseId);
-            return send(res, 200, { success: true, data: { status: isRevoked ? 'revoked' : 'active', revoked: isRevoked } });
-          }
-          if (req.method === 'GET' && update && req.url === `/api/updates/${update.channel}/latest`) {
-            return send(res, 200, { success: true, data: { manifest: update.manifest } });
-          }
-          if (req.method === 'GET' && update && req.url === `/api/updates/${update.channel}/download/${encodeURIComponent(update.file)}`) {
-            res.writeHead(200, { 'Content-Type': 'application/octet-stream' });
-            return res.end(update.bytes);
-          }
-          if (req.method === 'POST' && req.url === '/dev/revoke') {
-            revoked.add(body.licenseId);
-            return send(res, 200, { success: true });
-          }
-          if (req.method === 'POST' && req.url === '/dev/unrevoke') {
-            revoked.delete(body.licenseId);
-            return send(res, 200, { success: true });
-          }
-          send(res, 404, { success: false, error: 'Not found' });
-        });
-      })
-      .listen(port, () => console.log(`Servidor de licencias de prueba en http://localhost:${port}`));
-  }
 };
 
 const args = parseArgs(process.argv.slice(2));

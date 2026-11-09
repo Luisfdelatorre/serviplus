@@ -81,7 +81,7 @@ export function UpdatesPanel() {
       {status.available && !busy && (
         <div className="upd-available">
           <p className="upd-available-title">Hay una versión nueva: {status.available.version}</p>
-          <p className="upd-muted">Publicada: {formatDate(status.available.releasedAt)}</p>
+          <p className="upd-muted">Publicada: {formatDate(status.available.publishedAt)}</p>
           <button type="button" className="upd-btn upd-btn--primary" onClick={onApply} disabled={!status.canApply || apply.isPending}>
             Actualizar ahora
           </button>

@@ -55,16 +55,8 @@ jobs:
           choco install innosetup --no-progress -y
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DAppVersion=${{ steps.ver.outputs.version }} installer\serviplus.iss
 
-      - name: Firmar el paquete de actualización (Ed25519)
-        if: ${{ env.SP_UPDATE_SIGNING_KEY != '' }}
-        env:
-          SP_UPDATE_SIGNING_KEY: ${{ secrets.SP_UPDATE_SIGNING_KEY }}
-        run: node scripts/build/sign-release.js --installer "build/dist/Serviplus-Setup-${{ steps.ver.outputs.version }}.exe" --channel stable
-
       - name: Publicar artefacto
         uses: actions/upload-artifact@v4
         with:
           name: Serviplus-Setup-${{ steps.ver.outputs.version }}
-          path: |
-            build/dist/Serviplus-Setup-*.exe
-            build/dist/*.manifest.json
+          path: build/dist/Serviplus-Setup-*.exe

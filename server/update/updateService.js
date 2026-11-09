@@ -38,19 +38,28 @@ function compareVersions(a, b) {
   return 0;
 }
 
-/** Valida el manifiesto firmado: firma, producto, canal y que sea más nuevo. Lanza UpdateError. */
-function verifyManifest(doc, { currentVersion, channel }) {
-  if (!verifyDocument(doc)) throw new UpdateError('BAD_SIGNATURE', 'El manifiesto de actualización no es auténtico.');
-  const p = doc.payload;
-  if (p.product !== 'serviplus') throw new UpdateError('WRONG_PRODUCT', 'El manifiesto no corresponde a Serviplus.');
-  if (p.channel !== channel) throw new UpdateError('WRONG_CHANNEL', `El manifiesto es del canal "${p.channel}", no de "${channel}".`);
-  if (!p.version || !p.file || !p.sha256 || !Number.isInteger(p.size)) {
+/**
+ * Valida el manifiesto del portal: { channel, version, url, sha256, signature, keyId, ... }.
+ * La firma cubre solo { channel, sha256, url, version }. Lanza UpdateError si algo no cuadra.
+ */
+function verifyManifest(manifest, { currentVersion, channel }) {
+  const signed = {
+    alg: 'Ed25519',
+    keyId: manifest && manifest.keyId,
+    payload: manifest && { channel: manifest.channel, sha256: manifest.sha256, url: manifest.url, version: manifest.version },
+    signature: manifest && manifest.signature
+  };
+  if (!verifyDocument(signed)) throw new UpdateError('BAD_SIGNATURE', 'El manifiesto de actualización no es auténtico.');
+  if (manifest.channel !== channel) {
+    throw new UpdateError('WRONG_CHANNEL', `El manifiesto es del canal "${manifest.channel}", no de "${channel}".`);
+  }
+  if (!manifest.version || !manifest.url || !manifest.sha256) {
     throw new UpdateError('BAD_MANIFEST', 'El manifiesto está incompleto.');
   }
-  if (compareVersions(p.version, currentVersion) <= 0) {
+  if (compareVersions(manifest.version, currentVersion) <= 0) {
     throw new UpdateError('NOT_NEWER', 'Ya tienes la versión más reciente.');
   }
-  return p;
+  return manifest;
 }
 
 function sha256File(filePath) {
@@ -115,10 +124,10 @@ function createUpdateService({
       throw new UpdateError('NETWORK', 'No se pudo contactar el servidor de actualizaciones. Verifica la conexión a internet.', 503);
     }
     const json = await res.json().catch(() => null);
-    if (!res.ok || !json || json.success === false) {
-      throw new UpdateError((json && json.code) || 'SERVER_ERROR', (json && json.error) || `El servidor respondió ${res.status}.`, 502);
+    if (!res.ok) {
+      throw new UpdateError((json && json.error) || 'SERVER_ERROR', (json && json.message) || `El servidor respondió ${res.status}.`, 502);
     }
-    return json.data || {};
+    return json || {};
   }
 
   /** Consulta el canal y guarda el resultado. Nunca descarga ni aplica. */
@@ -126,20 +135,16 @@ function createUpdateService({
     const channel = getChannel();
     const checkedAt = now();
     try {
-      const data = await getJson(`${serverUrl()}/api/updates/${channel}/latest`);
-      if (!data.manifest) {
-        writeState({ lastCheckAt: checkedAt, lastError: null, available: null });
-        return getStatus();
-      }
-      const payload = verifyManifest(data.manifest, { currentVersion, channel });
+      const manifest = await getJson(`${serverUrl()}/api/updates/${channel}/latest`);
+      const payload = verifyManifest(manifest, { currentVersion, channel });
       writeState({
         lastCheckAt: checkedAt,
         lastError: null,
-        available: { version: payload.version, file: payload.file, sha256: payload.sha256, size: payload.size, releasedAt: payload.releasedAt, channel, manifest: data.manifest }
+        available: { version: payload.version, url: payload.url, sha256: payload.sha256, channel, publishedAt: payload.publishedAt, notes: payload.notes }
       });
     } catch (err) {
-      // "Ya estás al día" no es un error: no hay nada disponible.
-      if (err.code === 'NOT_NEWER') {
+      // "Ya estás al día" y "no hay versiones en el canal" no son errores: no hay nada disponible.
+      if (err.code === 'NOT_NEWER' || err.code === 'no_release') {
         writeState({ lastCheckAt: checkedAt, lastError: null, available: null });
       } else {
         writeState({ lastCheckAt: checkedAt, lastError: { code: err.code || 'ERROR', message: err.message } });
@@ -148,22 +153,19 @@ function createUpdateService({
     return getStatus();
   }
 
-  /** Descarga el instalador a `updates/<versión>/` y verifica tamaño y SHA-256 contra el manifiesto. */
+  /** Descarga el instalador desde la URL del manifiesto y verifica su SHA-256 firmado. */
   async function download() {
-    const state = readState();
-    const available = state.available;
+    const available = readState().available;
     if (!available) throw new UpdateError('NOTHING_AVAILABLE', 'No hay una actualización disponible.', 409);
 
     const dir = packageDir(available.version);
-    const finalPath = path.join(dir, available.file);
+    const finalPath = path.join(dir, `Serviplus-Setup-${available.version}.exe`);
     if (fs.existsSync(finalPath) && sha256File(finalPath) === available.sha256) return finalPath;
 
     fs.mkdirSync(dir, { recursive: true });
     let res;
     try {
-      res = await fetchImpl(`${serverUrl()}/api/updates/${available.channel}/download/${encodeURIComponent(available.file)}`, {
-        signal: AbortSignal.timeout(10 * 60 * 1000)
-      });
+      res = await fetchImpl(new URL(available.url, serverUrl()).toString(), { signal: AbortSignal.timeout(10 * 60 * 1000) });
     } catch (_) {
       throw new UpdateError('NETWORK', 'No se pudo descargar la actualización.', 503);
     }
@@ -172,9 +174,7 @@ function createUpdateService({
     const bytes = Buffer.from(await res.arrayBuffer());
     const partial = `${finalPath}.partial`;
     fs.writeFileSync(partial, bytes);
-
-    const actualHash = sha256File(partial);
-    if (bytes.length !== available.size || actualHash !== available.sha256) {
+    if (crypto.createHash('sha256').update(bytes).digest('hex') !== available.sha256) {
       fs.rmSync(partial, { force: true });
       throw new UpdateError('INTEGRITY', 'El archivo descargado no coincide con el manifiesto firmado. Se descartó.');
     }
@@ -211,7 +211,7 @@ function createUpdateService({
       channel: getChannel(),
       canApply: Boolean(isPackaged),
       available: state.available
-        ? { version: state.available.version, releasedAt: state.available.releasedAt, size: state.available.size }
+        ? { version: state.available.version, publishedAt: state.available.publishedAt, notes: state.available.notes || null }
         : null,
       lastCheckAt: state.lastCheckAt || null,
       lastError: state.lastError || null,

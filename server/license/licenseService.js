@@ -19,6 +19,7 @@ const { verifyDocument } = require('./signing');
 const { getFingerprint, machineCode, matchFingerprint } = require('./fingerprint');
 const { PACKAGED } = require('./buildFlags');
 const vault = require('../security/vault');
+const sealCrypto = require('../security/crypto');
 
 const GRACE_MS = 72 * 60 * 60 * 1000;
 const HEARTBEAT_INTERVAL_MS = 4 * 60 * 60 * 1000;
@@ -109,7 +110,7 @@ function createLicenseService({ getConfig = () => ({}), dataDir = defaultDataDir
   function validateDocument(doc, fp = fingerprint()) {
     if (!verifyDocument(doc)) throw new LicenseError('TAMPERED', 'La licencia no es auténtica o fue modificada.');
     const p = doc.payload;
-    if (p.product !== PRODUCT || !p.licenseId) throw new LicenseError('TAMPERED', 'La licencia no corresponde a Serviplus.');
+    if ((p.product && p.product !== PRODUCT) || !p.licenseId) throw new LicenseError('TAMPERED', 'La licencia no corresponde a Serviplus.');
     if (!matchFingerprint(p.fingerprint, fp).ok) {
       throw new LicenseError('MACHINE_MISMATCH', 'Esta licencia pertenece a otro equipo. Contacta a soporte para trasladarla.');
     }
@@ -211,44 +212,55 @@ function createLicenseService({ getConfig = () => ({}), dataDir = defaultDataDir
     return notifyIfChanged();
   }
 
-  async function postJson(route, body) {
+  /**
+   * Llamada al servidor de licencias. Los éxitos devuelven el objeto JSON tal cual; los errores
+   * traen `{ error: <código>, message }`, como en el portal del proveedor.
+   */
+  async function callServer(method, route, { body, headers = {} } = {}) {
     const url = `${licenseConfig().serverUrl.replace(/\/+$/, '')}${route}`;
     let res;
     try {
       res = await fetchImpl(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        method,
+        headers: body === undefined ? headers : { 'Content-Type': 'application/json', ...headers },
+        body: body === undefined ? undefined : JSON.stringify(body),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
       });
     } catch (_) {
       throw new LicenseError('NETWORK', 'No se pudo contactar el servidor de licencias. Verifica la conexión a internet.', 503);
     }
-    let json = null;
-    try {
-      json = await res.json();
-    } catch (_) {}
-    if (!res.ok || !json || json.success === false) {
-      const msg = (json && json.error) || `El servidor de licencias respondió ${res.status}.`;
-      throw new LicenseError((json && json.code) || 'SERVER_ERROR', msg, res.status >= 500 ? 502 : 400);
+    const json = await res.json().catch(() => null);
+    if (!res.ok) {
+      const code = (json && json.error) || 'SERVER_ERROR';
+      const message = (json && json.message) || `El servidor de licencias respondió ${res.status}.`;
+      throw new LicenseError(code, message, res.status >= 500 ? 502 : res.status);
     }
-    return json.data || {};
+    return json || {};
+  }
+
+  const WRAP_KEY_ENV = 'SP_ESCROW_WRAP_KEY';
+
+  /** Guarda la clave de envoltura de la licencia (cifrada) para reintentar la custodia más tarde. */
+  function rememberWrapKey(wrapKeyB64) {
+    process.env[WRAP_KEY_ENV] = wrapKeyB64;
+    vault.saveSecretsEncrypted({ [WRAP_KEY_ENV]: wrapKeyB64 });
   }
 
   /**
-   * Custodia la llave de datos en el servidor (escrow) para poder restaurar este equipo.
-   * Si falla, no pasa nada grave: el heartbeat lo vuelve a intentar.
+   * Custodia la llave de datos en el servidor: la envuelve con la clave de envoltura de la licencia
+   * (AES-256-GCM) y la sube. Si falla, el heartbeat lo vuelve a intentar.
    */
   async function escrowKeyIfNeeded(doc) {
     const dataKey = vault.getDataKey();
-    if (!vault.isEnabled() || !dataKey) return;
+    const wrapKeyB64 = process.env[WRAP_KEY_ENV];
+    if (!vault.isEnabled() || !dataKey || !wrapKeyB64) return;
     const licenseId = doc.payload.licenseId;
     if (vault.isEscrowed(licenseId)) return;
     try {
-      await postJson('/api/license/escrow', {
-        licenseId,
-        fingerprint: fingerprint(),
-        dataKey: dataKey.toString('base64')
+      const sealed = sealCrypto.seal(Buffer.from(wrapKeyB64, 'base64'), dataKey);
+      const wrappedKey = Buffer.from(JSON.stringify(sealed)).toString('base64');
+      await callServer('POST', '/api/license/escrow', {
+        body: { licenseId, fingerprint: fingerprint(), wrappedKey }
       });
       vault.markEscrowed(licenseId);
     } catch (err) {
@@ -257,13 +269,14 @@ function createLicenseService({ getConfig = () => ({}), dataDir = defaultDataDir
   }
 
   /**
-   * Pide al servidor la llave de un respaldo anterior (solo se entrega en una restauración
-   * autorizada). Se usa para re-cifrar el respaldo con la llave de este equipo.
+   * Pide al servidor la llave de un respaldo anterior. Solo la entrega si soporte autorizó la
+   * restauración desde el portal (una vez, 24 h). Devuelve la llave de datos ya desenvuelta.
    */
   async function fetchEscrowKey(licenseId) {
-    const data = await postJson('/api/license/escrow/retrieve', { licenseId, fingerprint: fingerprint() });
-    if (!data.dataKey) throw new LicenseError('NOT_RELEASED', 'El servidor no liberó la llave de respaldo para este equipo.', 403);
-    return Buffer.from(data.dataKey, 'base64');
+    const headers = { 'X-Fingerprint': Buffer.from(JSON.stringify(fingerprint())).toString('base64url') };
+    const data = await callServer('GET', `/api/license/escrow/${encodeURIComponent(licenseId)}`, { headers });
+    const sealed = JSON.parse(Buffer.from(data.wrappedKey, 'base64').toString('utf8'));
+    return sealCrypto.open(Buffer.from(data.wrapKey, 'base64'), sealed);
   }
 
   /** Activación online: envía clave + huella, recibe la licencia firmada para esta máquina. */
@@ -271,15 +284,13 @@ function createLicenseService({ getConfig = () => ({}), dataDir = defaultDataDir
     const key = String(licenseKey || '').trim().toUpperCase();
     if (!/^[A-Z0-9-]{8,64}$/.test(key)) throw new LicenseError('BAD_KEY', 'La clave de licencia no tiene un formato válido.');
     const fp = fingerprint();
-    const data = await postJson('/api/license/activate', {
-      licenseKey: key,
-      fingerprint: fp,
-      machineCode: machineCode(fp),
-      appVersion: APP_VERSION
+    const data = await callServer('POST', '/api/license/activate', {
+      body: { licenseKey: key, fingerprint: fp, appVersion: APP_VERSION }
     });
-    if (!data.license) throw new LicenseError('SERVER_ERROR', 'El servidor no devolvió una licencia.', 502);
-    const status = installDocument(data.license);
-    await escrowKeyIfNeeded(data.license);
+    if (!data.lic) throw new LicenseError('SERVER_ERROR', 'El servidor no devolvió una licencia.', 502);
+    const status = installDocument(data.lic);
+    if (data.escrow && data.escrow.wrapKey) rememberWrapKey(data.escrow.wrapKey);
+    await escrowKeyIfNeeded(data.lic);
     return status;
   }
 
@@ -295,24 +306,14 @@ function createLicenseService({ getConfig = () => ({}), dataDir = defaultDataDir
     const doc = readLicense();
     if (!doc || !doc.payload) return getStatus();
     try {
-      const data = await postJson('/api/license/heartbeat', {
-        licenseId: doc.payload.licenseId,
-        fingerprint: fingerprint(),
-        appVersion: APP_VERSION
+      const data = await callServer('POST', '/api/license/heartbeat', {
+        body: { licenseId: doc.payload.licenseId, fingerprint: fingerprint(), appVersion: APP_VERSION }
       });
       const state = readState();
       const patch = { lastHeartbeatAt: now(), lastServerStatus: data.status || null };
       if (data.revoked && !state.revokedAt) patch.revokedAt = now();
       if (data.revoked === false && state.revokedAt) patch.revokedAt = null;
       writeState(patch);
-      if (data.license) {
-        try {
-          validateDocument(data.license);
-          writeJsonAtomic(licensePath, data.license);
-        } catch (err) {
-          console.warn('[License] Licencia renovada rechazada:', err.message);
-        }
-      }
       await escrowKeyIfNeeded(doc);
     } catch (err) {
       if (err.code !== 'NETWORK') console.warn('[License] Heartbeat:', err.message);

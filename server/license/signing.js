@@ -21,12 +21,22 @@ function signDocument(payload, privateKeyPem, kid) {
   return { alg: 'Ed25519', kid, payload, signature: signature.toString('base64') };
 }
 
+/** Identificador de una clave pública, igual que en el servidor: SHA-256 de su DER (SPKI), 16 hex. */
+function keyIdFor(pem) {
+  const der = crypto.createPublicKey(pem).export({ format: 'der', type: 'spki' });
+  return crypto.createHash('sha256').update(der).digest('hex').slice(0, 16);
+}
+
+/** Claves aceptadas: las embebidas (por keyId) y, solo fuera del build empaquetado, una de desarrollo. */
 function getPublicKeys() {
-  const keys = { ...PUBLIC_KEYS };
+  const keys = {};
+  for (const pem of Object.values(PUBLIC_KEYS)) keys[keyIdFor(pem)] = pem;
   // Override solo en desarrollo desde código fuente; desactivado en builds empaquetados.
   if (!PACKAGED && process.env.SP_LICENSE_PUBLIC_KEY_FILE) {
     try {
-      keys[process.env.SP_LICENSE_PUBLIC_KEY_KID || 'dev'] = fs.readFileSync(process.env.SP_LICENSE_PUBLIC_KEY_FILE, 'utf8');
+      const pem = fs.readFileSync(process.env.SP_LICENSE_PUBLIC_KEY_FILE, 'utf8');
+      keys[keyIdFor(pem)] = pem;
+      if (process.env.SP_LICENSE_PUBLIC_KEY_KID) keys[process.env.SP_LICENSE_PUBLIC_KEY_KID] = pem;
     } catch (e) {
       console.warn('[License] No se pudo leer SP_LICENSE_PUBLIC_KEY_FILE:', e.message);
     }
@@ -34,11 +44,14 @@ function getPublicKeys() {
   return keys;
 }
 
-/** Devuelve true solo si el documento está firmado por una de las claves públicas conocidas. */
+/**
+ * Devuelve true solo si el documento está firmado por una clave conocida.
+ * Acepta `keyId` (servidor de licencias) o `kid` (herramienta local).
+ */
 function verifyDocument(doc) {
   if (!doc || typeof doc !== 'object' || doc.alg !== 'Ed25519') return false;
   if (!doc.payload || typeof doc.signature !== 'string') return false;
-  const pem = getPublicKeys()[doc.kid];
+  const pem = getPublicKeys()[doc.keyId || doc.kid];
   if (!pem) return false;
   try {
     return crypto.verify(
@@ -52,4 +65,4 @@ function verifyDocument(doc) {
   }
 }
 
-module.exports = { canonicalJson, signDocument, verifyDocument };
+module.exports = { canonicalJson, signDocument, verifyDocument, keyIdFor };

@@ -12,7 +12,10 @@ const os = require('os');
 const { execFileSync } = require('child_process');
 const { PACKAGED } = require('./buildFlags');
 
-const COMPONENTS = ['board', 'machine', 'disk', 'cpu'];
+// Nombres de los componentes tal como los espera el servidor de licencias (contrato del portal).
+const COMPONENTS = ['boardUuid', 'machineGuid', 'diskSerial', 'cpuId'];
+// Nombre corto con el que se recolecta cada valor del sistema operativo.
+const RAW_KEYS = { boardUuid: 'board', machineGuid: 'machine', diskSerial: 'disk', cpuId: 'cpu' };
 const BOGUS_VALUES = [
   /^0+$/,
   /^f+$/i,
@@ -121,10 +124,10 @@ function hashComponent(name, value) {
   return crypto.createHash('sha256').update(`serviplus-fp-v1|${name}|${v.toUpperCase()}`).digest('hex').slice(0, 32);
 }
 
-/** Convierte valores crudos en la huella hasheada `{ v, board, machine, disk, cpu }`. */
+/** Convierte valores crudos en la huella hasheada `{ boardUuid, machineGuid, diskSerial, cpuId }`. */
 function buildFingerprint(raw) {
-  const fp = { v: 1 };
-  for (const name of COMPONENTS) fp[name] = hashComponent(name, raw && raw[name]);
+  const fp = {};
+  for (const name of COMPONENTS) fp[name] = hashComponent(name, raw && raw[RAW_KEYS[name]]);
   return fp;
 }
 

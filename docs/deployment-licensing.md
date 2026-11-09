@@ -67,10 +67,12 @@ Supuesto: **no controlamos el sistema operativo**. El restaurante puede ser admi
 ## 8. Build y servidor de licencias
 
 - **GitHub Actions** (`windows-latest`) disparado por tag `vX.Y.Z`: `rawprint.exe` → `client/dist` → esbuild → ofuscación → SEA → Inno Setup → paquete de actualización firmado.
-- **Servidor de licencias**: extiende el servidor cloud existente (`serviplus.upaysolutions.app`), mismo repo.
-  - `POST /api/license/activate` — `{ licenseKey, fingerprint, appVersion }` → `.lic` firmado + envoltura de escrow.
-  - `POST /api/license/heartbeat` — `{ licenseId, fingerprint, appVersion }` → `{ status, revoked, features, expiresAt }`.
-  - `POST /api/license/escrow` / `GET /api/license/escrow/:licenseId` — guardar / recuperar clave de datos envuelta (recuperar solo tras liberación autorizada).
-  - `GET /api/updates/:channel/latest` — manifiesto firmado `{ version, url, sha256, signature }`.
+- **Servidor de licencias**: el portal del proveedor (`vendor-portal/`, Next.js + Postgres). Contrato real:
+  - `POST /api/license/activate` — `{ licenseKey, fingerprint: {boardUuid, machineGuid, diskSerial, cpuId}, appVersion }` → `{ lic, seatId, escrow: { alg, wrapKey, stored } }`. `lic` = `{ v, alg, keyId, payload, signature }` (Ed25519 sobre canonicalJson(payload)).
+  - `POST /api/license/heartbeat` — `{ licenseId, fingerprint, appVersion }` → `{ status, revoked, revokedAt, features, expiresAt, channel, serverTime }`.
+  - `POST /api/license/escrow` — `{ licenseId, fingerprint, wrappedKey }`, donde `wrappedKey` = base64 de la llave de datos sellada con `wrapKey` (AES-256-GCM, JSON `{iv,tag,data}`).
+  - `GET /api/license/escrow/:licenseId` con cabecera `X-Fingerprint` (JSON en base64url) → `{ alg, wrapKey, wrappedKey }`. Solo tras una concesión creada en el panel (una vez, 24 h).
+  - `GET /api/license/public-key` → `{ keyId, spkiBase64, pem }`. El `keyId` es SHA-256 del DER, 16 hex.
+  - `GET /api/updates/:channel/latest` → `{ channel, version, url, sha256, signature, keyId, publishedAt, notes }`. La firma cubre canonicalJson({channel, sha256, url, version}).
 - **Panel de clientes** (sesión aparte): restaurantes, licencias, puestos, fingerprints, heartbeats, liberar puesto, revocar, features, canal de actualización.
 - Probar cada release estable en una VM Windows real con Aldelo instalado.
