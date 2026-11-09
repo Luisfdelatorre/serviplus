@@ -1,11 +1,13 @@
 const express = require('express');
-const { requireRole } = require('../middleware/auth');
+const { requireAdminSession } = require('../middleware/auth');
 const { restoreFromBackup } = require('../security/restore');
+const { setupAccessAllowed } = require('../security/setupAccess');
+const appPaths = require('../lib/appPaths');
 
 /**
- * Respaldos y restauración. Durante la configuración inicial (equipo nuevo) cualquiera en la LAN
- * puede restaurar; una vez configurado, exige administrador. La llave de restauración la entrega
- * el servidor de licencias solo si está autorizada.
+ * Respaldos y restauración. Durante la configuración inicial (equipo nuevo) restaurar exige el
+ * mismo acceso que el asistente (equipo local o token); una vez configurado, administrador.
+ * La llave de restauración la entrega el servidor de licencias solo si está autorizada.
  */
 function createBackupRoutes({ backupService, licenseService, dbDriver, isSetupComplete }) {
   const router = express.Router();
@@ -14,16 +16,19 @@ function createBackupRoutes({ backupService, licenseService, dbDriver, isSetupCo
     res.status(err.status || (err.code === 'BAD_BACKUP' ? 400 : 500)).json({ success: false, code: err.code || 'ERROR', error: err.message });
   };
 
-  const adminAfterSetup = (req, res, next) => {
-    if (!isSetupComplete()) return next();
-    return requireRole('admin')(req, res, next);
+  const restoreAccess = (req, res, next) => {
+    if (!isSetupComplete()) {
+      if (setupAccessAllowed(req, appPaths.DATA_DIR)) return next();
+      return res.status(403).json({ success: false, code: 'SETUP_TOKEN_REQUIRED', error: 'Introduce el token de configuración del equipo.' });
+    }
+    return requireAdminSession(req, res, next);
   };
 
-  router.get('/', requireRole('admin'), (req, res) => {
+  router.get('/', requireAdminSession, (req, res) => {
     res.json({ success: true, data: { backups: backupService.list() } });
   });
 
-  router.post('/run', requireRole('admin'), (req, res) => {
+  router.post('/run', requireAdminSession, (req, res) => {
     try {
       res.json({ success: true, data: { file: backupService.runBackup() } });
     } catch (err) {
@@ -31,8 +36,11 @@ function createBackupRoutes({ backupService, licenseService, dbDriver, isSetupCo
     }
   });
 
-  router.post('/restore', adminAfterSetup, async (req, res) => {
+  router.post('/restore', restoreAccess, async (req, res) => {
     try {
+      if (dbDriver.name !== 'sqlite') {
+        return res.status(409).json({ success: false, code: 'BACKUP_UNSUPPORTED', error: 'La restauración solo aplica al modo SQLite.' });
+      }
       const { license } = licenseService.getStatus();
       if (!license) {
         return res.status(409).json({ success: false, code: 'LICENSE_REQUIRED', error: 'Activa la licencia antes de restaurar un respaldo.' });

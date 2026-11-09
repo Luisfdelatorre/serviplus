@@ -1,18 +1,23 @@
 const express = require('express');
+const appPaths = require('../lib/appPaths');
+const { setupAccessAllowed } = require('../security/setupAccess');
 
 /**
  * Rutas del asistente de configuración.
- * - Mientras el setup no esté completo, cualquiera en la LAN puede completarlo
- *   (es el técnico instalando en sitio).
- * - Una vez completo, re-ejecutar o cambiar algo exige sesión de administrador.
+ * - Mientras el setup no esté completo, solo el propio equipo o quien tenga el token de
+ *   `setup-token.txt` puede configurarlo (ver setupAccess.js).
+ * - Una vez completo, cambiar algo exige sesión de administrador.
  */
 function createSetupRoutes(setupService) {
   const router = express.Router();
 
   const guard = (req, res, next) => {
-    if (!setupService.isComplete()) return next();
+    if (!setupService.isComplete()) {
+      if (setupAccessAllowed(req, appPaths.DATA_DIR)) return next();
+      return res.status(403).json({ success: false, code: 'SETUP_TOKEN_REQUIRED', error: 'Introduce el token de configuración del equipo.' });
+    }
     if (req.user && req.user.role === 'admin') return next();
-    return res.status(403).json({ success: false, error: 'La configuración ya está completa. Inicia sesión como administrador para cambiarla.' });
+    return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'La configuración ya está completa. Inicia sesión como administrador para cambiarla.' });
   };
 
   const sendError = (res, err) => {

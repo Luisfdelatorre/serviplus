@@ -13,8 +13,6 @@
 
   <env name="PORT" value="80" />
   <env name="NODE_ENV" value="production" />
-  <!-- STRICT_AUTH exige token en rutas operativas una vez configurado el sistema. -->
-  <env name="STRICT_AUTH" value="false" />
 
   <workingdirectory>%BASE%</workingdirectory>
 

@@ -88,3 +88,6 @@ data/*.before-restore
 data/*.enc-tmp
 data/*.rekey-tmp
 data/license-dev/
+
+# Token de configuración inicial (secreto del equipo)
+data/setup-token.txt

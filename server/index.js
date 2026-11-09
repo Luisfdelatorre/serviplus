@@ -28,6 +28,7 @@ const { createUpdateService, createDefaultSpawnUpdater, readCurrentVersion } = r
 const { createUpdateRoutes } = require('./routes/updateRoutes');
 const { createBackupService } = require('./security/backupService');
 const { createBackupRoutes } = require('./routes/backupRoutes');
+const { loadOrCreateSetupToken } = require('./security/setupAccess');
 const dbDriver = require('./db');
 const {
   pinRateLimiter,
@@ -943,6 +944,10 @@ const PORT = process.env.PORT || 80;
 
 /** Arranca la licencia y pone el servidor a escuchar. Lo llama el dev (abajo) y el exe (SEA). */
 function start() {
+  if (!setupService.isComplete()) {
+    loadOrCreateSetupToken(appPaths.DATA_DIR);
+    console.log(`[Setup] Configuración pendiente. Desde la red, usa el token de ${path.join(appPaths.DATA_DIR, 'setup-token.txt')}`);
+  }
   licenseService.start();
   updateService.start();
   backupService.start();

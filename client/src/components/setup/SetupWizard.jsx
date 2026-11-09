@@ -7,6 +7,7 @@ import { requestJson } from '../../shared/api/httpClient';
 import {
   SETUP_QUERY_KEY,
   applyBusiness,
+  setSetupToken,
   applyDatabase,
   completeSetup,
   detectMdb,
@@ -96,6 +97,11 @@ function StepNav({ onBack, onNext, nextLabel = 'Continuar', busy, nextDisabled }
 }
 
 function WelcomeStep({ status, onNext }) {
+  const [token, setToken] = useState('');
+  const start = () => {
+    setSetupToken(token);
+    onNext();
+  };
   return (
     <div className="setup-stack">
       <h1 className="setup-title">Configuremos este equipo</h1>
@@ -110,7 +116,11 @@ function WelcomeStep({ status, onNext }) {
         <li>Verificación del PIN de administrador</li>
       </ul>
       <p className="setup-note">Modo de base de datos detectado: <strong>{status.dbMode === 'adodb' ? 'Aldelo (Access)' : 'SQLite'}</strong></p>
-      <StepNav onNext={onNext} nextLabel="Empezar" />
+      <div className="setup-field">
+        <label className="setup-label" htmlFor="setup-token">Token de configuración (solo desde otro equipo de la red)</label>
+        <input id="setup-token" className="setup-input" value={token} onChange={(e) => setToken(e.target.value)} placeholder="Déjalo vacío si estás en el PC del servidor" autoComplete="off" spellCheck={false} />
+      </div>
+      <StepNav onNext={start} nextLabel="Empezar" />
     </div>
   );
 }

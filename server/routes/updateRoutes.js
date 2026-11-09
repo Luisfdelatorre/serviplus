@@ -1,5 +1,5 @@
 const express = require('express');
-const { requireRole } = require('../middleware/auth');
+const { requireAdminSession } = require('../middleware/auth');
 
 /** Rutas de actualización (solo administrador). Nunca aplican sin una petición explícita. */
 function createUpdateRoutes(updateService) {
@@ -9,11 +9,11 @@ function createUpdateRoutes(updateService) {
     res.status(err.status || 500).json({ success: false, code: err.code || 'ERROR', error: err.message });
   };
 
-  router.get('/status', requireRole('admin'), (req, res) => {
+  router.get('/status', requireAdminSession, (req, res) => {
     res.json({ success: true, data: updateService.getStatus() });
   });
 
-  router.post('/check', requireRole('admin'), async (req, res) => {
+  router.post('/check', requireAdminSession, async (req, res) => {
     try {
       res.json({ success: true, data: await updateService.check() });
     } catch (err) {
@@ -21,7 +21,7 @@ function createUpdateRoutes(updateService) {
     }
   });
 
-  router.post('/apply', requireRole('admin'), async (req, res) => {
+  router.post('/apply', requireAdminSession, async (req, res) => {
     try {
       const data = await updateService.apply();
       res.status(202).json({ success: true, data, message: 'La actualización comenzó. El sistema se reiniciará en unos minutos.' });
