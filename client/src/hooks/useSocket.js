@@ -16,10 +16,11 @@ export function useSocket() {
       addOrder(order);
     }
 
-    function handleStatusChanged({ orderId, status, tableReady }) {
+    function handleStatusChanged({ orderId, status, tableReady, isPaid }) {
       console.log('[Socket] Estado de orden modificado:', orderId, status);
       updateLocalOrder(orderId, {
         status,
+        ...(isPaid !== undefined ? { isPaid } : {}),
         ...(tableReady !== undefined ? { tableReady } : {})
       });
     }

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchCurrentCashShift, openCashShift, closeCashShift, fetchCashShiftHistory, fetchEmployees, printCashShiftSlip } from '../../api';
-import { formatCOP } from '../../utils/format';
+import { formatCurrency } from '../../utils/format';
 import { sfx } from '../../utils/audio';
 import { showAlert, showConfirm } from '../../store/useAlertDialogStore';
 import './CashShiftModal.css';
@@ -9,16 +9,12 @@ import {
   Lock,
   Unlock,
   AlertTriangle,
-  CheckCircle2,
-  Clock,
-  User,
   X,
-  CreditCard,
   QrCode,
-  FileText,
   History,
   TrendingUp,
-  RefreshCw
+  RefreshCw,
+  Printer
 } from 'lucide-react';
 
 export function CashShiftModal({ isOpen, onClose }) {
@@ -143,24 +139,27 @@ export function CashShiftModal({ isOpen, onClose }) {
   const countedCash = parseFloat(actualCash) || 0;
   const diff = countedCash - expectedCash;
 
+  const diffStatus = diff === 0 ? 'exact' : diff > 0 ? 'surplus' : 'shortage';
+  const diffLabel = { exact: 'Exacto', surplus: 'Sobrante', shortage: 'Faltante' }[diffStatus];
+
   return (
     <div className="admin-modal-overlay">
-      <div className="admin-settings-container cshift-s-1">
+      <div className="admin-settings-container cshift-modal">
         {/* Header */}
-        <div className="admin-settings-header cshift-s-2">
+        <div className="admin-settings-header">
           <div className="admin-settings-title-group">
             <div className={`ui-icon-box-xl ${isShiftOpen ? 'ui-icon-box-emerald' : 'ui-icon-box-amber'}`}>
-              <DollarSign size={22} color="#fff" />
+              <DollarSign size={22} />
             </div>
             <div>
-              <h2>Control de Caja (Turnos y Arqueo Z)</h2>
-              <div className="cshift-s-3">
-                <span className={`ui-pill ui-pill-xs ui-pill-dark-status ${isShiftOpen ? 'open' : 'closed'}`}>
+              <h2>Control de Caja</h2>
+              <div className="cshift-header-meta">
+                <span className={`ui-pill ui-pill-xs ui-pill-upper ${isShiftOpen ? 'ui-pill-emerald' : 'ui-pill-amber'}`}>
                   {isShiftOpen ? <Unlock size={12} /> : <Lock size={12} />}
-                  {isShiftOpen ? `Turno #${currentShift.shiftNumber} ABIERTO` : 'CAJA CERRADA'}
+                  {isShiftOpen ? `Turno #${currentShift.shiftNumber} abierto` : 'Caja cerrada'}
                 </span>
                 {isShiftOpen && (
-                  <span className="cshift-s-4">
+                  <span className="cshift-muted">
                     Responsable: <strong>{currentShift.cashierName}</strong>
                   </span>
                 )}
@@ -173,51 +172,49 @@ export function CashShiftModal({ isOpen, onClose }) {
         </div>
 
         {/* Pestañas: Turno Actual vs Historial */}
-        <div className="cshift-s-5">
-          <button
-            onClick={() => setActiveTab('current')}
-            className={`cshift-tab-btn ${activeTab === 'current' ? 'active' : ''}`}
-          >
-            <DollarSign size={16} />
-            <span>Turno Actual</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`cshift-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-          >
-            <History size={16} />
-            <span>Historial ({history.length})</span>
-          </button>
+        <div className="cshift-toolbar">
+          <div className="ui-capsule">
+            <button
+              type="button"
+              onClick={() => setActiveTab('current')}
+              className={`ui-capsule-btn ${activeTab === 'current' ? 'is-active' : ''}`}
+            >
+              <DollarSign size={16} />
+              <span>Turno actual</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('history')}
+              className={`ui-capsule-btn ${activeTab === 'history' ? 'is-active' : ''}`}
+            >
+              <History size={16} />
+              <span>Historial ({history.length})</span>
+            </button>
+          </div>
 
-          <button
-            onClick={loadData}
-            className="cshift-s-6"
-          >
-            <RefreshCw size={14} className={loading ? 'spin' : ''} />
+          <button type="button" onClick={loadData} className="ui-btn ui-btn-tonal ui-btn-sm">
+            <RefreshCw size={14} className={loading ? 'ui-spin' : ''} />
             <span>Actualizar</span>
           </button>
         </div>
 
         {/* Contenido */}
-        <div className="cshift-s-7">
+        <div className="cshift-body">
           {activeTab === 'history' ? (
-            <div>
-              <h3 className="cshift-s-8">Historial de Turnos Cerrados</h3>
+            <div className="cshift-stack">
+              <h3 className="cshift-section-title">Historial de turnos cerrados</h3>
               {history.length === 0 ? (
-                <p className="cshift-s-9">No hay turnos registrados en el historial.</p>
+                <p className="cshift-empty">No hay turnos registrados en el historial.</p>
               ) : (
-                <div className="cshift-s-10">
+                <div className="cshift-history-list">
                   {history.map((h) => (
-                    <div
-                      key={h.id}
-                      className="cshift-s-11"
-                    >
-                      <div className="cshift-s-12">
-                        <span className="cshift-s-13">
+                    <div key={h.id} className="cshift-card cshift-history-item">
+                      <div className="cshift-history-head">
+                        <span className="cshift-history-title">
                           Turno #{h.shiftNumber} • {h.cashierName}
                         </span>
-                        <div className="cshift-s-14">
-                          <span className="cshift-s-4">
+                        <div className="cshift-history-actions">
+                          <span className="cshift-muted">
                             {new Date(h.openedAt).toLocaleDateString()} {new Date(h.openedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                           <button
@@ -231,20 +228,21 @@ export function CashShiftModal({ isOpen, onClose }) {
                                 showAlert({ variant: 'error', title: 'No se pudo imprimir', description: e.message });
                               }
                             }}
-                            className="cshift-s-15"
+                            className="ui-btn ui-btn-secondary ui-btn-xs"
                           >
-                            🖨️ Imprimir
+                            <Printer size={14} />
+                            <span>Imprimir</span>
                           </button>
                         </div>
                       </div>
-                      <div className="cshift-s-16">
-                        <span>Base: <strong>{formatCOP(h.initialCash || 0)}</strong></span>
-                        <span>Ventas Efectivo: <strong>{formatCOP(h.sales?.cashTotal || 0)}</strong></span>
-                        <span>Wompi QR: <strong>{formatCOP(h.sales?.wompiTotal || 0)}</strong></span>
-                        <span>Total Ventas: <strong className="cshift-s-17">{formatCOP(h.sales?.totalSales || 0)}</strong></span>
+                      <div className="cshift-history-stats">
+                        <span>Base: <strong>{formatCurrency(h.initialCash || 0)}</strong></span>
+                        <span>Ventas efectivo: <strong>{formatCurrency(h.sales?.cashTotal || 0)}</strong></span>
+                        <span>Wompi QR: <strong>{formatCurrency(h.sales?.wompiTotal || 0)}</strong></span>
+                        <span>Total ventas: <strong className="cshift-text-accent">{formatCurrency(h.sales?.totalSales || 0)}</strong></span>
                         {h.closing && (
                           <span className={h.closing.difference >= 0 ? 'cshift-diff-pos' : 'cshift-diff-neg'}>
-                            Diferencia: <strong>{formatCOP(h.closing.difference)}</strong> ({h.closing.statusDifference})
+                            Diferencia: <strong>{formatCurrency(h.closing.difference)}</strong> ({h.closing.statusDifference})
                           </span>
                         )}
                       </div>
@@ -255,48 +253,63 @@ export function CashShiftModal({ isOpen, onClose }) {
             </div>
           ) : isShiftOpen ? (
             /* VISTA TURNO ABIERTO (ARQUEO EN VIVO + CORTE Z) */
-            <div className="cshift-s-18">
+            <div className="cshift-stack">
               {/* Tarjetas de Balance en Vivo */}
-              <div className="cshift-s-19">
-                <div className="cshift-s-20">
-                  <span className="cshift-s-21">
-                    <Lock size={12} /> Base Inicial
+              <div className="cshift-stats-grid">
+                <div className="cshift-stat">
+                  <span className="cshift-stat-label">
+                    <Lock size={12} /> Base inicial
                   </span>
-                  <div className="cshift-s-22">
-                    {formatCOP(currentShift.initialCash || 0)}
+                  <div className="cshift-stat-value">
+                    {formatCurrency(currentShift.initialCash || 0)}
                   </div>
                 </div>
 
-                <div className="cshift-s-20">
-                  <span className="cshift-s-23">
-                    <DollarSign size={12} /> Efectivo Cobrado
+                <div className="cshift-stat cshift-stat--emerald">
+                  <span className="cshift-stat-label">
+                    <DollarSign size={12} /> Efectivo cobrado
                   </span>
-                  <div className="cshift-s-24">
-                    {formatCOP(currentShift.sales?.cashTotal || 0)}
+                  <div className="cshift-stat-value">
+                    {formatCurrency(currentShift.sales?.cashTotal || 0)}
                   </div>
                 </div>
 
-                <div className="cshift-s-20">
-                  <span className="cshift-s-25">
+                <div className="cshift-stat cshift-stat--blue">
+                  <span className="cshift-stat-label">
                     <QrCode size={12} /> Wompi QR / Transf.
                   </span>
-                  <div className="cshift-s-26">
-                    {formatCOP(currentShift.sales?.wompiTotal || 0)}
+                  <div className="cshift-stat-value">
+                    {formatCurrency(currentShift.sales?.wompiTotal || 0)}
                   </div>
                 </div>
 
-                <div className="cshift-s-27">
-                  <span className="cshift-s-28">
-                    <TrendingUp size={12} /> Total Ventas ({currentShift.sales?.ordersCount || 0} ped.)
+                <div className="cshift-stat cshift-stat--total">
+                  <span className="cshift-stat-label">
+                    <TrendingUp size={12} /> Total ventas ({currentShift.sales?.ordersCount || 0} ped.)
                   </span>
-                  <div className="cshift-s-29">
-                    {formatCOP(currentShift.sales?.totalSales || 0)}
+                  <div className="cshift-stat-value">
+                    {formatCurrency(currentShift.sales?.totalSales || 0)}
                   </div>
                 </div>
               </div>
 
+              {/* Dinero Total Esperado en Gaveta Física */}
+              <div className="cshift-expected">
+                <div>
+                  <span className="ui-label-xs cshift-expected-label">
+                    Dinero físico esperado en gaveta
+                  </span>
+                  <p className="cshift-expected-formula">
+                    Base inicial ({formatCurrency(currentShift.initialCash || 0)}) + Ventas efectivo ({formatCurrency(currentShift.sales?.cashTotal || 0)})
+                  </p>
+                </div>
+                <div className="cshift-expected-value ui-tabular">
+                  {formatCurrency(expectedCash)}
+                </div>
+              </div>
+
               {/* Botón Imprimir Arqueo en Vivo */}
-              <div className="cshift-s-30">
+              <div className="cshift-row-end">
                 <button
                   type="button"
                   onClick={async () => {
@@ -308,165 +321,145 @@ export function CashShiftModal({ isOpen, onClose }) {
                       showAlert({ variant: 'error', title: 'No se pudo imprimir el arqueo', description: e.message });
                     }
                   }}
-                  className="cshift-s-31"
+                  className="ui-btn ui-btn-secondary ui-btn-sm"
                 >
-                  <span>🖨️</span>
-                  <span>Imprimir Arqueo en Vivo (Ticket Parcial)</span>
+                  <Printer size={16} />
+                  <span>Imprimir arqueo en vivo (ticket parcial)</span>
                 </button>
               </div>
 
-              {/* Dinero Total Esperado en Gaveta Física */}
-              <div
-                className="cshift-s-32"
-              >
-                <div>
-                  <span className="cshift-s-33">
-                    Dinero Físico Esperado en Gaveta
-                  </span>
-                  <p className="cshift-s-34">
-                    Base Inicial ({formatCOP(currentShift.initialCash || 0)}) + Ventas Efectivo ({formatCOP(currentShift.sales?.cashTotal || 0)})
-                  </p>
-                </div>
-                <div className="cshift-s-35">
-                  {formatCOP(expectedCash)}
-                </div>
-              </div>
-
               {/* Formulario de Cierre Z */}
-              <form onSubmit={handleCloseShift} className="cshift-s-36">
-                <h4 className="cshift-s-37">
-                  <Lock size={16} color="#ef4444" /> Realizar Cierre de Turno (Corte Z)
+              <form onSubmit={handleCloseShift} className="cshift-card cshift-form">
+                <h4 className="cshift-form-title">
+                  <Lock size={16} className="cshift-icon-danger" /> Realizar cierre de turno (Corte Z)
                 </h4>
 
-                <div className="cshift-s-38">
+                <div className="cshift-fields-grid">
                   <div>
-                    <label className="cshift-s-39">
-                      Efectivo Contado Físicamente en Caja:
+                    <label className="cshift-label" htmlFor="cshift-actual-cash">
+                      Efectivo contado físicamente en caja
                     </label>
                     <input
+                      id="cshift-actual-cash"
                       type="number"
                       required
                       value={actualCash}
                       onChange={(e) => setActualCash(e.target.value)}
-                      className="cshift-s-40"
+                      className="cshift-input cshift-input--lg ui-tabular"
                     />
                   </div>
 
                   <div>
-                    <label className="cshift-s-39">
-                      Balance / Diferencia de Caja:
-                    </label>
-                    <div
-                      className={`cshift-diff-box ${diff === 0 ? 'exact' : diff > 0 ? 'surplus' : 'shortage'}`}
-                    >
-                      <span>{diff === 0 ? 'Exacto' : (diff > 0 ? 'Sobrante' : 'Faltante')}:</span>
-                      <span>{formatCOP(diff)}</span>
+                    <span className="cshift-label">Balance / diferencia de caja</span>
+                    <div className={`cshift-diff-box ${diffStatus}`}>
+                      <span>{diffLabel}:</span>
+                      <span className="ui-tabular">{formatCurrency(diff)}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="cshift-s-41">
-                  <label className="cshift-s-42">
-                    Notas u observaciones de cierre (opcional):
+                <div>
+                  <label className="cshift-label" htmlFor="cshift-close-notes">
+                    Notas u observaciones de cierre (opcional)
                   </label>
                   <input
+                    id="cshift-close-notes"
                     type="text"
                     placeholder="Ej. Billetes rotos, propinas entregadas, etc."
                     value={closeNotes}
                     onChange={(e) => setCloseNotes(e.target.value)}
-                    className="cshift-s-43"
+                    className="cshift-input"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="cshift-s-44"
+                  className="ui-btn ui-btn-lg ui-btn-block cshift-btn-danger"
                 >
                   <Lock size={18} />
-                  <span>{submitting ? 'Procesando Cierre Z...' : 'Confirmar Cierre de Turno y Arqueo Z'}</span>
+                  <span>{submitting ? 'Procesando cierre Z...' : 'Confirmar cierre de turno y arqueo Z'}</span>
                 </button>
               </form>
             </div>
           ) : (
             /* VISTA CAJA CERRADA (FORMULARIO DE APERTURA) */
-            <div className="cshift-s-18">
-              <div
-                className="cshift-s-45"
-              >
-                <AlertTriangle size={24} color="#f59e0b" className="cshift-s-46" />
+            <div className="cshift-stack">
+              <div className="cshift-notice">
+                <AlertTriangle size={24} className="cshift-notice-icon" />
                 <div>
-                  <h4 className="cshift-s-47">La caja se encuentra cerrada</h4>
-                  <p className="cshift-s-48">
+                  <h4 className="cshift-notice-title">La caja se encuentra cerrada</h4>
+                  <p className="cshift-notice-text">
                     Abre el turno indicando la base de efectivo inicial para habilitar el control de ventas del día.
                   </p>
                 </div>
               </div>
 
-              <form onSubmit={handleOpenShift} className="cshift-s-49">
-                <h3 className="cshift-s-50">Apertura de Turno de Caja</h3>
+              <form onSubmit={handleOpenShift} className="cshift-card cshift-form">
+                <h3 className="cshift-form-title">Apertura de turno de caja</h3>
 
-                <div className="cshift-s-51">
-                  <div>
-                    <label className="cshift-s-52">
-                      Cajero Responsable:
-                    </label>
-                    <select
-                      value={openCashierId}
-                      onChange={(e) => {
-                        const id = Number(e.target.value);
-                        setOpenCashierId(id);
-                        const emp = employees.find((x) => x.id === id);
-                        if (emp) setOpenCashierName(emp.name);
-                      }}
-                      className="cshift-s-53"
-                    >
-                      {employees.map((emp) => (
-                        <option key={emp.id} value={emp.id}>
-                          {emp.name} (ID: {emp.id})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="cshift-s-52">
-                      Base de Dinero Inicial en Gaveta (COP):
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      min="0"
-                      step="1000"
-                      value={initialCash}
-                      onChange={(e) => setInitialCash(e.target.value)}
-                      placeholder="150000"
-                      className="cshift-s-40"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="cshift-s-52">
-                      Observaciones de apertura:
-                    </label>
-                    <input
-                      type="text"
-                      value={openNotes}
-                      onChange={(e) => setOpenNotes(e.target.value)}
-                      placeholder="Base para cambio inicial"
-                      className="cshift-s-53"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="cshift-s-54"
+                <div>
+                  <label className="cshift-label" htmlFor="cshift-open-cashier">
+                    Cajero responsable
+                  </label>
+                  <select
+                    id="cshift-open-cashier"
+                    value={openCashierId}
+                    onChange={(e) => {
+                      const id = Number(e.target.value);
+                      setOpenCashierId(id);
+                      const emp = employees.find((x) => x.id === id);
+                      if (emp) setOpenCashierName(emp.name);
+                    }}
+                    className="cshift-input"
                   >
-                    <Unlock size={18} />
-                    <span>{submitting ? 'Iniciando turno...' : '🟢 Abrir Turno de Caja'}</span>
-                  </button>
+                    {employees.map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.name} (ID: {emp.id})
+                      </option>
+                    ))}
+                  </select>
                 </div>
+
+                <div>
+                  <label className="cshift-label" htmlFor="cshift-initial-cash">
+                    Base de dinero inicial en gaveta (COP)
+                  </label>
+                  <input
+                    id="cshift-initial-cash"
+                    type="number"
+                    required
+                    min="0"
+                    step="1000"
+                    value={initialCash}
+                    onChange={(e) => setInitialCash(e.target.value)}
+                    placeholder="150000"
+                    className="cshift-input cshift-input--lg ui-tabular"
+                  />
+                </div>
+
+                <div>
+                  <label className="cshift-label" htmlFor="cshift-open-notes">
+                    Observaciones de apertura
+                  </label>
+                  <input
+                    id="cshift-open-notes"
+                    type="text"
+                    value={openNotes}
+                    onChange={(e) => setOpenNotes(e.target.value)}
+                    placeholder="Base para cambio inicial"
+                    className="cshift-input"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="ui-btn ui-btn-primary ui-btn-lg ui-btn-block"
+                >
+                  <Unlock size={18} />
+                  <span>{submitting ? 'Iniciando turno...' : 'Abrir turno de caja'}</span>
+                </button>
               </form>
             </div>
           )}

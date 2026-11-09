@@ -109,6 +109,16 @@ export function CashierView() {
   const toggleKdsTheme = useKdsStore((state) => state.toggleKdsTheme);
   const [isSyncing, setIsSyncing] = useState(false);
 
+  // Recarga las órdenes activas desde el servidor (no depende del socket).
+  const refreshActiveOrders = async () => {
+    try {
+      const orders = await fetchActiveOrders();
+      if (Array.isArray(orders)) setActiveOrders(orders);
+    } catch (err) {
+      console.warn('No se pudieron recargar las órdenes activas:', err.message);
+    }
+  };
+
   const handleSyncOrders = async () => {
     sfx.playTap();
     setIsSyncing(true);
@@ -199,6 +209,14 @@ export function CashierView() {
   const [cashTendered, setCashTendered] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPaymentDrawer, setShowPaymentDrawer] = useState(false);
+
+  // Sin productos no hay nada que cobrar: cerrar la sección de método de pago.
+  useEffect(() => {
+    if (cart.length === 0) {
+      setShowPaymentDrawer(false);
+      setCashTendered('');
+    }
+  }, [cart.length]);
 
   // Modal para completar pago de orden pendiente (Autoservicio o Mesa)
   const [settlingOrder, setSettlingOrder] = useState(null);
@@ -645,6 +663,7 @@ export function CashierView() {
       });
       setSettlingOrder(null);
       setSettleCashTendered('');
+      await refreshActiveOrders();
     } catch (e) {
       showAlert({ variant: 'error', title: 'No se pudo completar el pago', description: e.message });
     } finally {
@@ -665,6 +684,7 @@ export function CashierView() {
     try {
       await updateOrderStatus(orderId, '3');
       sfx.playTap();
+      await refreshActiveOrders();
       showAlert({ variant: 'success', title: `Orden #${orderId} anulada` });
     } catch (e) {
       showAlert({ variant: 'error', title: 'No se pudo anular la orden', description: e.message });
