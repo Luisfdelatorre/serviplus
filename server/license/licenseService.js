@@ -26,7 +26,7 @@ const HEARTBEAT_INTERVAL_MS = 4 * 60 * 60 * 1000;
 const FIRST_HEARTBEAT_DELAY_MS = 2 * 60 * 1000;
 const CLOCK_SAVE_INTERVAL_MS = 10 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 15000;
-const DEFAULT_SERVER_URL = 'https://serviplus.upaysolutions.app';
+const DEFAULT_SERVER_URL = 'https://serviplus-vendor-portal.vercel.app';
 const PRODUCT = 'serviplus';
 
 const APP_VERSION = (() => {

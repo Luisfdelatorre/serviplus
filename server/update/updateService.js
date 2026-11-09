@@ -17,7 +17,7 @@ const { writeJsonAtomic, readJsonSafe } = require('../lib/atomicFile');
 const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const FIRST_CHECK_DELAY_MS = 3 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 30000;
-const DEFAULT_SERVER_URL = 'https://serviplus.upaysolutions.app';
+const DEFAULT_SERVER_URL = 'https://serviplus-vendor-portal.vercel.app';
 
 class UpdateError extends Error {
   constructor(code, message, status = 400) {
