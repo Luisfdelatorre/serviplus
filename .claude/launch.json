@@ -23,6 +23,17 @@
         "dev"
       ],
       "port": 3000
+    },
+    {
+      "name": "vendor-portal",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "vendor-portal",
+        "run",
+        "dev"
+      ],
+      "port": 3100
     }
   ]
 }
