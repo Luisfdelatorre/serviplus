@@ -298,3 +298,16 @@
   color: var(--ios-on-surface);
   word-break: break-all;
 }
+
+/* Bloque de comandos (pantalla de reinicio) */
+.setup-code {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background-color: var(--ios-surface-variant);
+  border: 1px solid var(--ios-outline);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

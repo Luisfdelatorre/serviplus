@@ -24,7 +24,15 @@ const COMMON_MDB_PATHS = [
 
 const STEPS = ['database', 'business', 'printer', 'admin'];
 
-function createSetupService({ configStore, aldeloService, importScriptPath = appPaths.IMPORT_SCRIPT, seedMdbPath = appPaths.SEED_MDB } = {}) {
+function createSetupService({
+  configStore,
+  aldeloService,
+  // Nombre del driver que está corriendo ahora ("adodb" | "sqlite"). Cambiar el modo de base de datos
+  // solo surte efecto tras reiniciar el servicio.
+  getActiveDb = () => null,
+  importScriptPath = appPaths.IMPORT_SCRIPT,
+  seedMdbPath = appPaths.SEED_MDB
+} = {}) {
   function getSetupConfig() {
     return (configStore.getConfig().setup) || {};
   }
@@ -77,6 +85,8 @@ function createSetupService({ configStore, aldeloService, importScriptPath = app
       pending: STEPS.filter((s) => !steps[s]),
       steps,
       dbMode: dbMode(),
+      activeDb: getActiveDb(),
+      restartPending: isRestartPending(),
       restartRequired: Boolean(setup.restartRequired),
       business: {
         name: restaurant.name || '',
@@ -87,6 +97,12 @@ function createSetupService({ configStore, aldeloService, importScriptPath = app
       },
       network: networkInfo()
     };
+  }
+
+  /** true si el modo guardado no es el que está corriendo: hace falta reiniciar el servicio. */
+  function isRestartPending() {
+    const active = getActiveDb();
+    return Boolean(active) && active !== dbMode();
   }
 
   /** Busca el kebab.mdb de Aldelo en las rutas habituales más la semilla del repo. */
@@ -174,7 +190,15 @@ function createSetupService({ configStore, aldeloService, importScriptPath = app
   }
 
   /** Confirma que el PIN del gerente abre el panel de administración en la base activa. */
+  function requireRunningDb() {
+    if (!isRestartPending()) return;
+    const err = new Error('Reinicia el servicio Serviplus para aplicar el modo de base de datos elegido.');
+    err.code = 'RESTART_REQUIRED';
+    throw err;
+  }
+
   async function verifyAdmin(pin) {
+    requireRunningDb();
     const result = await aldeloService.verifyAdminAccess(pin);
     if (!result.success) return { success: false, error: result.error };
     configStore.saveConfig({ setup: { steps: { admin: true } } });
@@ -182,6 +206,7 @@ function createSetupService({ configStore, aldeloService, importScriptPath = app
   }
 
   function complete() {
+    requireRunningDb();
     const status = getStatus();
     if (status.pending.length > 0) {
       const err = new Error(`Faltan pasos por completar: ${status.pending.join(', ')}.`);

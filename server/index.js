@@ -51,7 +51,11 @@ const smsService = new SmsService(getConfig);
 const whatsappService = new WhatsAppService(getConfig);
 
 const licenseService = createLicenseService({ getConfig });
-const setupService = createSetupService({ configStore, aldeloService });
+const setupService = createSetupService({
+  configStore,
+  aldeloService,
+  getActiveDb: () => require('./db').name
+});
 
 const PORT_NUMBER = Number(process.env.PORT) || 80;
 const updateService = createUpdateService({

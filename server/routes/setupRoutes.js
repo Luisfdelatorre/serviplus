@@ -21,7 +21,7 @@ function createSetupRoutes(setupService) {
   };
 
   const sendError = (res, err) => {
-    const status = err.code === 'INCOMPLETE' ? 409 : 400;
+    const status = ['INCOMPLETE', 'RESTART_REQUIRED'].includes(err.code) ? 409 : 400;
     res.status(status).json({ success: false, code: err.code || 'ERROR', error: err.message });
   };
 

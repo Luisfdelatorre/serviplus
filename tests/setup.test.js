@@ -31,10 +31,10 @@ function fakeConfigStore(initial = {}) {
   };
 }
 
-function makeService({ config = {}, aldelo, seedMdbPath = path.join(__dirname, '..', 'server', 'kebab.mdb') } = {}) {
+function makeService({ config = {}, aldelo, seedMdbPath = path.join(__dirname, '..', 'server', 'kebab.mdb'), activeDb = null } = {}) {
   const configStore = fakeConfigStore(config);
   const aldeloService = aldelo || { verifyAdminAccess: async () => ({ success: true, employee: { name: 'Gerente' } }) };
-  const service = createSetupService({ configStore, aldeloService, seedMdbPath });
+  const service = createSetupService({ configStore, aldeloService, seedMdbPath, getActiveDb: () => activeDb });
   return { service, configStore };
 }
 
@@ -158,4 +158,19 @@ test('Gate: once complete everything passes through', () => {
 test('Gate: the activation page is never sent to setup (would loop with the license gate)', () => {
   assert.equal(runGate(false, { url: '/activate', accept: 'text/html' }).nextCalled, true);
   assert.equal(runGate(false, { url: '/activate', accept: 'text/html' }).redirect, undefined);
+});
+
+test('Setup: switching the database needs a restart before the PIN check or completion', async () => {
+  // Configurado SQLite, pero el servicio sigue corriendo con Aldelo (adodb): hay que reiniciar.
+  const { service } = makeService({ config: { db: { driver: 'sqlite' } }, activeDb: 'adodb' });
+  assert.equal(service.getStatus().restartPending, true);
+  await assert.rejects(service.verifyAdmin('4321'), (e) => e.code === 'RESTART_REQUIRED');
+  assert.throws(() => service.complete(), (e) => e.code === 'RESTART_REQUIRED');
+});
+
+test('Setup: once the saved mode is running, the restart is no longer pending', async () => {
+  const { service } = makeService({ config: { db: { driver: 'sqlite' } }, activeDb: 'sqlite' });
+  assert.equal(service.getStatus().restartPending, false);
+  const res = await service.verifyAdmin('4321');
+  assert.equal(res.success, true);
 });

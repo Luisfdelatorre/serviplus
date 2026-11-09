@@ -72,10 +72,44 @@ export function SetupWizard() {
           {step === 'database' && <DatabaseStep status={status} onDone={async () => { await refresh(); goNext(); }} onBack={goBack} />}
           {step === 'business' && <BusinessStep status={status} onDone={async () => { await refresh(); goNext(); }} onBack={goBack} />}
           {step === 'printer' && <PrinterStep onDone={async () => { await refresh(); goNext(); }} onBack={goBack} />}
-          {step === 'admin' && <AdminStep onDone={async () => { await refresh(); goNext(); }} onBack={goBack} />}
-          {step === 'finish' && <FinishStep status={status} onRefresh={refresh} />}
+          {step === 'admin' && (status.restartPending
+            ? <RestartStep onRecheck={refresh} onBack={goBack} />
+            : <AdminStep onDone={async () => { await refresh(); goNext(); }} onBack={goBack} />)}
+          {step === 'finish' && (status.restartPending
+            ? <RestartStep onRecheck={refresh} onBack={goBack} />
+            : <FinishStep status={status} onRefresh={refresh} />)}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Pantalla intermedia: el modo de base de datos cambió y el servicio aún no se reinició. */
+function RestartStep({ onRecheck, onBack }) {
+  const [busy, setBusy] = useState(false);
+  const [stillPending, setStillPending] = useState(false);
+
+  const recheck = async () => {
+    setBusy(true);
+    try {
+      const next = await onRecheck();
+      setStillPending(Boolean(next && next.restartPending));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="setup-stack">
+      <h1 className="setup-title">Reinicia el servicio</h1>
+      <p className="setup-text">
+        Cambiaste el modo de base de datos. Para aplicarlo hay que reiniciar Serviplus antes de verificar el
+        administrador. Abre PowerShell como administrador y ejecuta:
+      </p>
+      <pre className="setup-code">{`cd "C:\\Program Files\\Serviplus"\n.\\serviplus-service.exe restart`}</pre>
+      <p className="setup-note">Cuando termine, vuelve aquí y pulsa el botón.</p>
+      {stillPending && <p className="setup-note setup-note--warn">Todavía no se ha aplicado. Reinicia el servicio y vuelve a intentar.</p>}
+      <StepNav onBack={onBack} onNext={recheck} busy={busy} nextLabel="Ya reinicié el servicio" />
     </div>
   );
 }
