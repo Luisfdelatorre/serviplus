@@ -1,0 +1,31 @@
+{
+  "name": "serviplus-vendor-portal",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Panel interno del proveedor ServiPlus: restaurantes, licencias, puestos, custodia de claves y versiones. No se distribuye a los restaurantes.",
+  "scripts": {
+    "dev": "next dev -p 3100",
+    "build": "prisma generate && next build",
+    "start": "next start -p 3100",
+    "db:up": "docker compose up -d db",
+    "db:down": "docker compose down",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "node scripts/seed-operator.mjs",
+    "keys:generate": "node scripts/generate-keys.mjs",
+    "simulate": "node scripts/simulate-client.mjs",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "@prisma/client": "6.19.3",
+    "next": "15.5.29",
+    "react": "19.2.9",
+    "react-dom": "19.2.9"
+  },
+  "devDependencies": {
+    "prisma": "6.19.3"
+  },
+  "engines": {
+    "node": ">=20.9"
+  }
+}
