@@ -17,8 +17,6 @@ import {
   ChefHat,
   CreditCard,
   X,
-  Banknote,
-  QrCode,
   CheckCircle2,
   Boxes,
   CheckCheck,
@@ -58,6 +56,9 @@ import { sfx } from '../../utils/audio';
 import { ModifierModal } from '../kiosk/ModifierModal';
 import { CashShiftModal } from './CashShiftModal';
 import { SettlePaymentModal } from './SettlePaymentModal';
+import { PaymentMethodTabs } from './PaymentMethodTabs';
+import { usePaymentMethods } from '../../hooks/usePaymentMethods';
+import { resolvePaymentMethod } from '../../shared/paymentMethods';
 import { ProductAvailabilityModal } from '../admin/ProductAvailabilityModal';
 import { showAlert, showConfirm } from '../../store/useAlertDialogStore';
 import './CashierView.css';
@@ -216,6 +217,13 @@ export function CashierView() {
   const [settlingOrder, setSettlingOrder] = useState(null);
   const [settlePayMethod, setSettlePayMethod] = useState('CASH');
   const [settleCashTendered, setSettleCashTendered] = useState('');
+
+  // Métodos de pago habilitados en Admin: si el elegido deja de estar disponible, pasa al primero habilitado.
+  const enabledPaymentMethods = usePaymentMethods();
+  useEffect(() => {
+    setPaymentMethod((current) => resolvePaymentMethod(enabledPaymentMethods, current));
+    setSettlePayMethod((current) => resolvePaymentMethod(enabledPaymentMethods, current));
+  }, [enabledPaymentMethods]);
 
   // Reloj nativo estilo iOS
   useEffect(() => {
@@ -1385,48 +1393,8 @@ export function CashierView() {
                     </button>
                   </div>
 
-                  {/* Segmented Payment Tabs (Efectivo / Datáfono / QR) */}
-                  <div className="cpos-pay-tabs-grid">
-                    {/* Tab 1: Efectivo */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        sfx.playTap();
-                        setPaymentMethod('CASH');
-                      }}
-                      className={`ui-pill-pay-tab ${paymentMethod === 'CASH' ? 'is-active' : ''}`}
-                    >
-                      <Banknote className="cpos-pay-icon-cash" />
-                      <span>Efectivo</span>
-                    </button>
-
-                    {/* Tab 2: Datáfono */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        sfx.playTap();
-                        setPaymentMethod('CARD');
-                      }}
-                      className={`ui-pill-pay-tab ${paymentMethod === 'CARD' ? 'is-active' : ''}`}
-                    >
-                      <CreditCard className="cpos-pay-icon-card" />
-                      <span>Datáfono</span>
-                    </button>
-
-                    {/* Tab 3: QR / Transferencia */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        sfx.playTap();
-                        setPaymentMethod('WOMPI_QR');
-                      }}
-                      className={`ui-pill-pay-tab ${paymentMethod === 'WOMPI_QR' ? 'is-active' : ''
-                        }`}
-                    >
-                      <QrCode className="cpos-pay-icon-qr" />
-                      <span>QR</span>
-                    </button>
-                  </div>
+                  {/* Pestañas de método de pago (solo los habilitados en Admin) */}
+                  <PaymentMethodTabs methods={enabledPaymentMethods} value={paymentMethod} onChange={setPaymentMethod} />
 
                   {paymentMethod === 'CASH' && (
                     <>
@@ -1795,6 +1763,7 @@ export function CashierView() {
         settlePayMethod={settlePayMethod}
         settlePayMethodChange={setSettlePayMethod}
         setSettlePayMethod={setSettlePayMethod}
+        enabledPaymentMethods={enabledPaymentMethods}
         settleCashTendered={settleCashTendered}
         setSettleCashTendered={setSettleCashTendered}
         isSubmitting={isSubmitting}

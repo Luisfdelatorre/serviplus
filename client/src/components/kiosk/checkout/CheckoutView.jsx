@@ -4,6 +4,8 @@ import { createOrder, fetchTables, sendDigitalReceipt, createWompiQr, fetchWompi
 import { sfx } from '../../../utils/audio';
 import { socket } from '../../../socket';
 import { KIOSK_CONFIG } from '../../../config/kioskConfig';
+import { usePaymentMethods } from '../../../hooks/usePaymentMethods';
+import { resolvePaymentMethod } from '../../../shared/paymentMethods';
 
 import { CheckoutFlowHeader } from './CheckoutFlowHeader';
 import { ReviewStep } from './ReviewStep';
@@ -14,6 +16,9 @@ import { SuccessStep } from './SuccessStep';
 
 import { showAlert } from '../../../store/useAlertDialogStore';
 import './CheckoutView.css';
+
+/** Orden de preferencia del kiosco cuando el método predeterminado está desactivado. */
+const KIOSK_PAYMENT_ORDER = ['WOMPI_QR', 'CASH', 'CARD'];
 
 export function CheckoutView({ isOpen = true, onClose, onOrderCompleted }) {
   // Pasos del Checkout:
@@ -28,6 +33,15 @@ export function CheckoutView({ isOpen = true, onClose, onOrderCompleted }) {
   const [tableGroup, setTableGroup] = useState('');
   const [orderType, setOrderType] = useState(KIOSK_CONFIG.orderDefaults.defaultOrderType); // 'EAT_IN' | 'TAKE_OUT'
   const [paymentMethod, setPaymentMethod] = useState(KIOSK_CONFIG.orderDefaults.defaultPaymentMethod);
+  // Métodos habilitados en Admin: el kiosco solo ofrece esos, y arranca con el predeterminado si está activo.
+  const enabledPaymentMethods = usePaymentMethods();
+  useEffect(() => {
+    setPaymentMethod((current) => resolvePaymentMethod(
+      enabledPaymentMethods,
+      current,
+      [KIOSK_CONFIG.orderDefaults.defaultPaymentMethod, ...KIOSK_PAYMENT_ORDER]
+    ));
+  }, [enabledPaymentMethods]);
   const [createdOrderNumber, setCreatedOrderNumber] = useState(null);
   const [createdOrderId, setCreatedOrderId] = useState(null);
   const [createdReceiptCode, setCreatedReceiptCode] = useState(null);
@@ -427,6 +441,7 @@ export function CheckoutView({ isOpen = true, onClose, onOrderCompleted }) {
             tableId={tableId}
             total={total}
             paymentMethod={paymentMethod}
+            enabledMethods={enabledPaymentMethods}
             onSelectPaymentMethod={(methodId) => {
               sfx.playTap();
               setPaymentMethod(methodId);

@@ -510,6 +510,20 @@ export function AdminSettingsModal({ isOpen, onClose, currentAdmin }) {
                         />
                         <span>💵 Pago en Caja / Efectivo</span>
                       </label>
+                      <label className="admin-checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={config.wompi?.methods?.wompiLink !== false}
+                          onChange={(e) => setConfig({
+                            ...config,
+                            wompi: {
+                              ...config.wompi,
+                              methods: { ...config.wompi?.methods, wompiLink: e.target.checked }
+                            }
+                          })}
+                        />
+                        <span>💳 Tarjeta / Datáfono</span>
+                      </label>
                     </div>
                   </div>
                 </div>

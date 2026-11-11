@@ -4,18 +4,17 @@ import {
   X,
   Utensils,
   ShoppingBag,
-  Banknote,
-  CreditCard,
-  QrCode,
   CheckCircle2
 } from 'lucide-react';
 import { formatCOP } from '../../utils/format';
 import { sfx } from '../../utils/audio';
+import { PaymentMethodTabs } from './PaymentMethodTabs';
 
 export function SettlePaymentModal({
   settlingOrder,
   settlePayMethod,
   setSettlePayMethod,
+  enabledPaymentMethods,
   settleCashTendered,
   setSettleCashTendered,
   isSubmitting,
@@ -101,44 +100,7 @@ export function SettlePaymentModal({
             <label className="ui-label-md cpos-spm-pay-label">Método de pago recibido:</label>
           </div>
 
-          {/* Segmented 3-Way Tabs (Efectivo / Datáfono / QR) */}
-          <div className="cpos-pay-tabs-grid">
-            <button
-              type="button"
-              onClick={() => {
-                sfx.playTap();
-                setSettlePayMethod('CASH');
-              }}
-              className={`ui-pill-pay-tab ${settlePayMethod === 'CASH' ? 'is-active' : ''}`}
-            >
-              <Banknote className="cpos-pay-icon-cash" />
-              <span>Efectivo</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                sfx.playTap();
-                setSettlePayMethod('CARD');
-              }}
-              className={`ui-pill-pay-tab ${settlePayMethod === 'CARD' ? 'is-active' : ''}`}
-            >
-              <CreditCard className="cpos-pay-icon-card" />
-              <span>Datáfono</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                sfx.playTap();
-                setSettlePayMethod('WOMPI_QR');
-              }}
-              className={`ui-pill-pay-tab ${settlePayMethod === 'WOMPI_QR' ? 'is-active' : ''}`}
-            >
-              <QrCode className="cpos-pay-icon-qr" />
-              <span>QR</span>
-            </button>
-          </div>
+          <PaymentMethodTabs methods={enabledPaymentMethods} value={settlePayMethod} onChange={setSettlePayMethod} />
 
           {settlePayMethod === 'CASH' && (
             <>
