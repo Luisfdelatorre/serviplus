@@ -4,13 +4,32 @@ export function getProductImageUrl(item = {}, categoryName = '') {
   if (item.image) return item.image;
   if (item.imageUrl) return item.imageUrl;
 
-  const target = `${item.name || ''} ${categoryName || ''}`.toLowerCase();
+  const target = `${item.name || ''} ${categoryName || item.categoryName || ''}`.toLowerCase();
 
+  if (target.includes('shawarma') && (target.includes('mixto') || target.includes('pollo') || target.includes('carne'))) {
+    return '/images/kebab_mixto.jpg';
+  }
   if (target.includes('shawarma')) return '/images/shawarma.png';
+  if (target.includes('hamburguesa') || target.includes('burger')) return '/images/aperitivo.jpg';
+  if (target.includes('especial') && target.includes('carne')) return '/images/kebab_carne.jpg';
+  if (target.includes('especial') && target.includes('pollo')) return '/images/kebab_pollo.jpg';
+  if (target.includes('especial')) return '/images/kebab_carne.jpg';
+  if (target.includes('mixto')) return '/images/kebab_mixto.jpg';
+  if (target.includes('carne') || target.includes('ranchero')) return '/images/kebab_carne.jpg';
+  if (target.includes('pollo')) return '/images/kebab_pollo.jpg';
+  if (target.includes('kebab')) return '/images/kebab_pollo.jpg';
   if (target.includes('pizza')) return '/images/pizza.jpg';
   if (target.includes('calzon')) return '/images/calzone.jpg';
   if (target.includes('lasa') || target.includes('pasta')) return '/images/lasana.jpg';
-  if (target.includes('refresco') || target.includes('gaseosa') || target.includes('bebida') || target.includes('drink') || target.includes('agua') || target.includes('jugo')) {
+  if (
+    target.includes('refresco') ||
+    target.includes('gaseosa') ||
+    target.includes('bebida') ||
+    target.includes('drink') ||
+    target.includes('agua') ||
+    target.includes('jugo') ||
+    target.includes('coca')
+  ) {
     return '/images/bebidas.jpg';
   }
   if (target.includes('cerveza') || target.includes('vino') || target.includes('beer') || target.includes('trago') || target.includes('licor')) {
@@ -22,9 +41,6 @@ export function getProductImageUrl(item = {}, categoryName = '') {
   if (target.includes('promo') || target.includes('domicilio')) {
     return '/images/banner.jpg';
   }
-  if (target.includes('kebab')) {
-    return '/images/kebab.png';
-  }
 
   // Default fallback
   return '/images/kebab.png';
@@ -32,8 +48,11 @@ export function getProductImageUrl(item = {}, categoryName = '') {
 
 export function getCategoryImageUrl(catName = '') {
   const lower = (catName || '').toLowerCase();
-  if (lower.includes('kebab')) return '/images/kebab.png';
-  if (lower.includes('shawarma')) return '/images/shawarma.png';
+  if (lower.includes('pollo')) return '/images/kebab_pollo.jpg';
+  if (lower.includes('carne') || lower.includes('ranchero')) return '/images/kebab_carne.jpg';
+  if (lower.includes('mixto')) return '/images/kebab_mixto.jpg';
+  if (lower.includes('kebab')) return '/images/kebab_pollo.jpg';
+  if (lower.includes('shawarma')) return '/images/kebab_mixto.jpg';
   if (lower.includes('refresco') || lower.includes('gaseosa') || lower.includes('bebida') || lower.includes('drink')) return '/images/bebidas.jpg';
   if (lower.includes('cerveza') || lower.includes('vino') || lower.includes('beer') || lower.includes('trago')) return '/images/bebidas.jpg';
   if (lower.includes('pizza')) return '/images/pizza.jpg';
@@ -41,7 +60,7 @@ export function getCategoryImageUrl(catName = '') {
   if (lower.includes('lasa') || lower.includes('pasta')) return '/images/lasana.jpg';
   if (lower.includes('calzon')) return '/images/calzone.jpg';
   if (lower.includes('promo') || lower.includes('domicilio')) return '/images/banner.jpg';
-  return '/images/kebab.png';
+  return '/images/kebab_pollo.jpg';
 }
 
 export function getCategoryIcon(name = '') {
