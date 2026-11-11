@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { socket } from '../socket';
 import { useKdsStore } from '../store/useKdsStore';
 import { useMenuStore } from '../store/useMenuStore';
@@ -6,6 +7,7 @@ import { fetchMenu } from '../api';
 import { sfx } from '../utils/audio';
 
 export function useSocket() {
+  const queryClient = useQueryClient();
   const addOrder = useKdsStore((state) => state.addOrder);
   const updateLocalOrder = useKdsStore((state) => state.updateLocalOrder);
   const setCategories = useMenuStore((state) => state.setCategories);
@@ -66,6 +68,12 @@ export function useSocket() {
         .catch((err) => console.error('[Socket] Error al refrescar menú:', err));
     }
 
+    // El administrador guardó cambios (métodos de pago, kiosco, restaurante...): releer la configuración pública.
+    function handleConfigUpdated() {
+      queryClient.invalidateQueries({ queryKey: ['public-config'] });
+    }
+
+    socket.on('config:updated', handleConfigUpdated);
     socket.on('order:new', handleNewOrder);
     socket.on('order:status_changed', handleStatusChanged);
     socket.on('kds:status_changed', handleKdsStatusChanged);
@@ -74,6 +82,7 @@ export function useSocket() {
     socket.on('menu:updated', handleMenuUpdated);
 
     return () => {
+      socket.off('config:updated', handleConfigUpdated);
       socket.off('order:new', handleNewOrder);
       socket.off('order:status_changed', handleStatusChanged);
       socket.off('kds:status_changed', handleKdsStatusChanged);
@@ -81,5 +90,5 @@ export function useSocket() {
       socket.off('kiosk:menu_updated', handleMenuUpdated);
       socket.off('menu:updated', handleMenuUpdated);
     };
-  }, [addOrder, updateLocalOrder, setCategories]);
+  }, [addOrder, updateLocalOrder, setCategories, queryClient]);
 }

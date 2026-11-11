@@ -5,7 +5,7 @@ const paymentStore = require('../paymentStore');
 const auditService = require('../auditService');
 const { pinRateLimiter, signSessionToken, requireRole } = require('../middleware/auth');
 
-function createAdminRoutes() {
+function createAdminRoutes(io) {
   const router = express.Router();
 
   router.post('/auth', pinRateLimiter, async (req, res) => {
@@ -79,6 +79,8 @@ function createAdminRoutes() {
       });
 
       console.log('[Admin] Configuración actualizada (secretos en .env, ajustes en config.json)');
+      // Las pantallas abiertas (caja, kiosco) vuelven a leer la configuración pública sin recargar.
+      if (io) io.emit('config:updated');
       res.json({
         success: true,
         data: updated,

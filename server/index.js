@@ -234,7 +234,7 @@ app.post('/api/products/:id/toggle-active', requireRole('cashier', 'admin'), asy
 // ============================================================================
 
 app.use('/api/cashier/shift', createCashShiftRoutes(io));
-app.use('/api/admin', createAdminRoutes());
+app.use('/api/admin', createAdminRoutes(io));
 
 // ============================================================================
 // 3. EMPLEADOS, AUTENTICACIÓN Y MESAS

@@ -686,7 +686,7 @@ export function AdminSettingsView() {
                 <div className="asv-card-header">
                   <div>
                     <h3>Métodos de Pago Activos en Checkout del Kiosco / POS</h3>
-                    <p>Habilita los canales autorizados para recaudar pagos directos en Serviplus</p>
+                    <p>Habilita los canales de pago que se ofrecen en el kiosco y en la caja</p>
                   </div>
                 </div>
 
@@ -752,8 +752,8 @@ export function AdminSettingsView() {
                     />
                     <div className="asv-method-icon-box">💳</div>
                     <div className="asview-s-17">
-                      <span className="asview-s-18">Tarjeta Débito / Crédito Wompi</span>
-                      <span className="asview-s-19">Pasarela Segura Web</span>
+                      <span className="asview-s-18">Tarjeta / Datáfono</span>
+                      <span className="asview-s-19">Cobro con datáfono en caja</span>
                     </div>
                   </label>
                 </div>

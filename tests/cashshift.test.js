@@ -37,3 +37,18 @@ test('CashShift: a sale with no open shift is ignored', () => {
   svc.closeShift({ actualCashInDrawer: 50000 });
   assert.equal(svc.recordSale({ orderId: 9, total: 1000 }), null);
 });
+
+test('CashShift: the printed Z slip shows the real cash, QR and card totals of the shift', () => {
+  const printer = require('../server/printerService');
+  const svc = freshService();
+  svc.recordSale({ orderId: 1, total: 12, paymentMethod: 'CASH' });
+  svc.recordSale({ orderId: 2, total: 8, paymentMethod: 'WOMPI_QR' });
+  svc.recordSale({ orderId: 3, total: 18, paymentMethod: 'CARD' });
+  const closed = svc.closeShift({ actualCashInDrawer: 50062, notes: 'Sin novedad' });
+
+  const ticket = printer.generateCashShiftTicketBuffer(closed, true).toString('latin1');
+  for (const amount of [12, 8, 18, 38]) {
+    assert.ok(ticket.includes(printer.formatCOP(amount)), `ticket should include ${printer.formatCOP(amount)}`);
+  }
+  assert.ok(ticket.includes('Sin novedad'), 'ticket should include the closing notes');
+});

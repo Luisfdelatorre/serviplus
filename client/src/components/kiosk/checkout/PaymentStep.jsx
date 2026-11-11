@@ -79,6 +79,7 @@ export function PaymentStep({
   tableId,
   total,
   paymentMethod,
+  enabledMethods,
   onSelectPaymentMethod,
   wompiQrData,
   qrLoading,
@@ -100,7 +101,7 @@ export function PaymentStep({
     }
   }, [wompiQrData?.checkoutUrl, wompiQrData?.qrImage]);
 
-  const methods = [
+  const allMethods = [
     {
       id: 'WOMPI_QR',
       Icon: QrCode,
@@ -126,6 +127,8 @@ export function PaymentStep({
       badgeTone: 'neutral'
     }
   ];
+  // Solo los métodos que el administrador dejó habilitados.
+  const methods = allMethods.filter((m) => enabledMethods.includes(m.id));
 
   const resolvedQrImgSrc = wompiQrData?.qrImage
     ? wompiQrData.qrImage.startsWith('data:')
