@@ -15,6 +15,7 @@ import {
   markPrinterDone,
   verifyAdmin
 } from '../../api/setup';
+import { MdbFilePicker } from './MdbFilePicker';
 import './SetupWizard.css';
 
 const STEPS = [
@@ -213,26 +214,30 @@ function DatabaseStep({ status, onDone, onBack }) {
       </label>
 
       {mode === 'adodb' && (
-        <div className="setup-field">
-          <label className="setup-label" htmlFor="mdbpath">Ruta del archivo kebab.mdb</label>
-          <input id="mdbpath" className="setup-input" value={mdbPath} onChange={(e) => setMdbPath(e.target.value)} placeholder="C:\\SP\\B\\kebab.mdb" />
-        </div>
+        <MdbFilePicker
+          id="mdbpath"
+          label="Ubicación del archivo kebab.mdb"
+          value={mdbPath}
+          onChange={setMdbPath}
+          placeholder="C:\SP\B\kebab.mdb"
+          detected={detected}
+        />
       )}
 
       {mode === 'sqlite' && (
-        <div className="setup-field">
-          <label className="setup-label" htmlFor="importfrom">Importar datos desde (opcional)</label>
-          <input id="importfrom" className="setup-input" value={importFrom} onChange={(e) => setImportFrom(e.target.value)} placeholder="Dejar vacío para empezar en blanco" />
-        </div>
-      )}
-
-      {detected.length > 0 && (
-        <p className="setup-note">Archivos Aldelo detectados: {detected.map((d) => d.path).join(', ')}</p>
+        <MdbFilePicker
+          id="importfrom"
+          label="Importar datos desde (opcional)"
+          value={importFrom}
+          onChange={setImportFrom}
+          placeholder="Dejar vacío para empezar en blanco"
+          detected={detected}
+        />
       )}
       {result && result.restartRequired && <p className="setup-note setup-note--warn">Se aplicará al reiniciar el servicio.</p>}
 
       <StepError message={error} />
-      <StepNav onBack={onBack} onNext={apply} busy={busy} nextLabel="Guardar y continuar" />
+      <StepNav onBack={onBack} onNext={apply} busy={busy} nextDisabled={mode === 'adodb' && !mdbPath.trim()} nextLabel="Guardar y continuar" />
     </div>
   );
 }

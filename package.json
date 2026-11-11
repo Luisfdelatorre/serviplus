@@ -5,7 +5,7 @@
   "description": "sever",
   "scripts": {
     "start": "node server/index.js",
-    "test": "node --test tests/pos.test.js tests/db.sqlite.test.js tests/license.test.js tests/setup.test.js tests/update.test.js tests/security.test.js tests/access.test.js tests/release-keys.test.js",
+    "test": "node --test tests/pos.test.js tests/db.sqlite.test.js tests/license.test.js tests/setup.test.js tests/update.test.js tests/security.test.js tests/access.test.js tests/release-keys.test.js tests/cashshift.test.js",
     "kiosk": "node server/index.js",
     "agent:cloud": "node server/cloudBridgeClient.js",
     "legacy": "node server.js",
@@ -15,6 +15,7 @@
     "simulate": "node simulate_orders_session.js",
     "simulate:fast": "node simulate_orders_session.js --speed 10",
     "build:client": "cd client && npm run build",
+    "dev": "node scripts/dev.js",
     "dev:client": "cd client && npm run dev",
     "dev:pm2": "npx pm2 start ecosystem.config.js --env development",
     "pm2:stop": "npx pm2 stop ecosystem.config.js",

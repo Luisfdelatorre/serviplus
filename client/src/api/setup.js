@@ -22,6 +22,22 @@ export async function detectMdb() {
   return json.data.found;
 }
 
+/** Lista carpetas y archivos .mdb del servidor. Sin `dir`, empieza en la ubicación sugerida. */
+export async function browseMdb(dir) {
+  const query = dir === undefined ? '' : `?dir=${encodeURIComponent(dir)}`;
+  const json = await requestJson(`/api/setup/browse${query}`, { noStore: true, headers: setupHeaders(), preferAdminToken: true, defaultError: 'No se pudo abrir la carpeta' });
+  return json.data;
+}
+
+/**
+ * Abre el diálogo nativo del sistema en el servidor.
+ * Devuelve `{ path }`, `{ cancelled: true }` o `{ unavailable: true }` si no hay escritorio (usar el explorador integrado).
+ */
+export async function pickMdbNative() {
+  const json = await requestJson('/api/setup/pick-file', { method: 'POST', headers: setupHeaders(), preferAdminToken: true, defaultError: 'No se pudo abrir el selector de archivos' });
+  return json.data;
+}
+
 export async function applyDatabase(payload) {
   const json = await requestJson('/api/setup/database', { method: 'POST', body: payload, headers: setupHeaders(), preferAdminToken: true, defaultError: 'No se pudo configurar la base de datos' });
   return json.data;

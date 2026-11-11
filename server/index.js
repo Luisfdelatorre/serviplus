@@ -51,9 +51,13 @@ const smsService = new SmsService(getConfig);
 const whatsappService = new WhatsAppService(getConfig);
 
 const licenseService = createLicenseService({ getConfig });
+// En desarrollo (NODE_ENV=development, p. ej. `npm run dev`) no se exige el asistente de primera
+// ejecución. Nunca aplica al exe empaquetado. SP_SETUP_ENFORCE=1 lo fuerza para probar el asistente.
+const SETUP_BYPASS = process.env.NODE_ENV === 'development' && !appPaths.IS_PACKAGED && process.env.SP_SETUP_ENFORCE !== '1';
 const setupService = createSetupService({
   configStore,
   aldeloService,
+  bypass: SETUP_BYPASS,
   getActiveDb: () => require('./db').name
 });
 
@@ -293,6 +297,16 @@ app.get('/api/orders/active', async (req, res) => {
   }
 });
 
+/** Suma una venta cobrada al turno de caja abierto y avisa a las pantallas para refrescar el resumen. */
+function recordShiftSale({ orderId, total, paymentMethod, customer }) {
+  try {
+    const shift = cashShiftService.recordSale({ orderId, total, paymentMethod, details: { customer } });
+    if (shift) io.emit('cashier:shift_updated', { shiftId: shift.id, sales: shift.sales });
+  } catch (err) {
+    console.warn(`[CashShift] No se pudo registrar la venta de la orden #${orderId}:`, err.message);
+  }
+}
+
 app.post('/api/orders', validateOrderPayload, async (req, res) => {
   try {
     const {
@@ -323,6 +337,15 @@ app.post('/api/orders', validateOrderPayload, async (req, res) => {
 
     const activeOrders = await aldeloService.getActiveOrders();
     const fullOrder = activeOrders.find((o) => o.id === newOrder.orderId) || newOrder;
+
+    // Orden ya cobrada al crearla (caja, kiosko con QR): entra al arqueo del turno.
+    if (newOrder.isPaid) {
+      recordShiftSale({
+        orderId: newOrder.orderId,
+        total: newOrder.total,
+        paymentMethod: paymentMethod || 'CASH'
+      });
+    }
 
     const receiptInfo = receiptService.generateReceiptCode(newOrder.orderId);
     fullOrder.receiptCode = receiptInfo.urlCode;
@@ -371,6 +394,15 @@ app.put('/api/orders/:id/status', requireRole('cashier', 'admin'), validateOrder
     const orderId = parseInt(req.params.id, 10);
     const { status, tableReady, paymentMethod, employeeId } = req.body;
 
+    // El total se lee antes de cambiar el estado: una orden liquidada deja de estar activa.
+    let settledTotal = 0;
+    if (status === '2') {
+      try {
+        const open = (await aldeloService.getActiveOrders()).find((o) => o.id === orderId);
+        settledTotal = open ? open.total : 0;
+      } catch (_) {}
+    }
+
     const result = await aldeloService.updateOrderStatus(
       orderId,
       status,
@@ -381,6 +413,7 @@ app.put('/api/orders/:id/status', requireRole('cashier', 'admin'), validateOrder
 
     if (status === '2') {
       io.emit('kds:status_changed', { orderId, kdsStatus: 'PREPARING', tableReady: false });
+      recordShiftSale({ orderId, total: settledTotal, paymentMethod: paymentMethod || 'CASH' });
     }
 
     auditService.record({

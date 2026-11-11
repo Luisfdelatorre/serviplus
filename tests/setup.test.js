@@ -45,14 +45,47 @@ test('Setup: fresh install reports all steps pending and not completed', () => {
   assert.deepEqual(status.pending, ['database', 'business', 'printer', 'admin']);
 });
 
-test('Setup: adodb mode writes connection string and flags restart', async () => {
+/** Carpeta temporal con un kebab.mdb falso en una ruta con espacios (ubicación personalizada). */
+function makeCustomMdb() {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sp mdb '));
+  const file = path.join(dir, 'kebab.mdb');
+  fs.writeFileSync(file, 'x');
+  return { dir, file };
+}
+
+test('Setup: adodb mode writes connection string for a custom location and flags restart', async () => {
   const { service, configStore } = makeService();
-  const res = await service.applyDatabase({ mode: 'adodb', mdbPath: 'C:\\SP\\B\\kebab.mdb' });
+  const { file } = makeCustomMdb();
+  const res = await service.applyDatabase({ mode: 'adodb', mdbPath: `"${file}"` });
   assert.equal(res.restartRequired, true);
+  assert.equal(res.mdbPath, file);
   const db = configStore.getConfig().db;
   assert.equal(db.driver, 'adodb');
-  assert.match(db.connectionString, /Data Source=C:\\SP\\B\\kebab.mdb/);
+  assert.equal(db.connectionString, `Provider=Microsoft.Jet.OLEDB.4.0;Data Source=${file};`);
   assert.equal(service.getStatus().steps.database, true);
+});
+
+test('Setup: adodb mode rejects missing files, wrong extensions and unsafe paths', async () => {
+  const { service } = makeService();
+  const { dir, file } = makeCustomMdb();
+  await assert.rejects(service.applyDatabase({ mode: 'adodb', mdbPath: path.join(dir, 'nope.mdb') }), /No se encontró/);
+  fs.writeFileSync(path.join(dir, 'datos.txt'), 'x');
+  await assert.rejects(service.applyDatabase({ mode: 'adodb', mdbPath: path.join(dir, 'datos.txt') }), /\.mdb/);
+  await assert.rejects(service.applyDatabase({ mode: 'adodb', mdbPath: `${file};Mode=Share` }), /no permitidos/);
+  await assert.rejects(service.applyDatabase({ mode: 'adodb', mdbPath: dir }), /\.mdb/);
+});
+
+test('Setup: browse lists subfolders and .mdb files only, folders first, and reports the parent', () => {
+  const { service } = makeService();
+  const { dir } = makeCustomMdb();
+  fs.mkdirSync(path.join(dir, 'sub'));
+  fs.writeFileSync(path.join(dir, 'notas.txt'), 'x');
+  fs.writeFileSync(path.join(dir, '.oculto.mdb'), 'x');
+  const listing = service.browse(dir);
+  assert.equal(listing.path, dir);
+  assert.equal(listing.parent, path.dirname(dir));
+  assert.deepEqual(listing.entries.map((e) => [e.name, e.type]), [['sub', 'dir'], ['kebab.mdb', 'file']]);
+  assert.throws(() => service.browse(path.join(dir, 'no-existe')), /No se pudo abrir/);
 });
 
 test('Setup: adodb mode without a path or detected file is rejected', async () => {
@@ -173,4 +206,58 @@ test('Setup: once the saved mode is running, the restart is no longer pending', 
   assert.equal(service.getStatus().restartPending, false);
   const res = await service.verifyAdmin('4321');
   assert.equal(res.success, true);
+});
+
+test('Setup: dev bypass reports the wizard as complete without touching the saved config', () => {
+  const configStore = fakeConfigStore({});
+  const service = createSetupService({ configStore, aldeloService: {}, bypass: true });
+  assert.equal(service.isComplete(), true);
+  assert.equal(service.getStatus().completed, true);
+  assert.equal(service.getStatus().bypassed, true);
+  assert.equal(configStore.getConfig().setup, undefined);
+});
+
+const { pickFile } = require('../server/setup/nativeFilePicker');
+
+/** execFile falso: responde lo que se le indique al terminar el "diálogo". */
+const fakeExec = (err, stdout = '', stderr = '') => (_file, _args, _opts, cb) => cb(err, stdout, stderr);
+
+test('Native picker: returns the chosen path on each platform', async () => {
+  for (const platform of ['win32', 'darwin', 'linux']) {
+    const res = await pickFile({ platform, exec: fakeExec(null, 'C:\\Datos Aldelo\\kebab.mdb\n') });
+    assert.deepEqual(res, { path: 'C:\\Datos Aldelo\\kebab.mdb' });
+  }
+});
+
+test('Native picker: closing the dialog is a cancellation, not an error', async () => {
+  assert.deepEqual(await pickFile({ platform: 'win32', exec: fakeExec(Object.assign(new Error('x'), { code: 1 })) }), { cancelled: true });
+  assert.deepEqual(await pickFile({ platform: 'linux', exec: fakeExec(Object.assign(new Error('x'), { code: 1 })) }), { cancelled: true });
+  assert.deepEqual(
+    await pickFile({ platform: 'darwin', exec: fakeExec(Object.assign(new Error('x'), { code: 1 }), '', 'execution error: User canceled. (-128)') }),
+    { cancelled: true }
+  );
+});
+
+test('Native picker: no desktop or missing command is reported as unavailable', async () => {
+  await assert.rejects(pickFile({ platform: 'win32', exec: fakeExec(Object.assign(new Error('x'), { code: 2 })) }), (e) => e.code === 'NATIVE_UNAVAILABLE' && /escritorio/.test(e.message));
+  await assert.rejects(pickFile({ platform: 'linux', exec: fakeExec(Object.assign(new Error('x'), { code: 'ENOENT' })) }), (e) => e.code === 'NATIVE_UNAVAILABLE');
+  await assert.rejects(pickFile({ platform: 'darwin', exec: fakeExec(Object.assign(new Error('x'), { killed: true })) }), (e) => e.code === 'NATIVE_UNAVAILABLE');
+});
+
+test('Setup: pickNative proxies the dialog and refuses a second one while it is open', async () => {
+  let release;
+  const gate = new Promise((r) => { release = r; });
+  const configStore = fakeConfigStore({});
+  const service = createSetupService({
+    configStore,
+    aldeloService: {},
+    seedMdbPath: '/nonexistent/kebab.mdb',
+    pickFile: async () => { await gate; return { path: '/datos/kebab.mdb' }; }
+  });
+  const first = service.pickNative();
+  await assert.rejects(service.pickNative(), (e) => e.code === 'PICKER_BUSY');
+  release();
+  assert.deepEqual(await first, { path: '/datos/kebab.mdb' });
+  release();
+  assert.deepEqual(await service.pickNative(), { path: '/datos/kebab.mdb' });
 });
