@@ -38,6 +38,15 @@
         "SP_LICENSE_SERVER_URL": "http://localhost:3100"
       },
       "port": 3081
+      "name": "vendor-portal",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "vendor-portal",
+        "run",
+        "dev"
+      ],
+      "port": 3100
     }
   ]
 }

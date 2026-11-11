@@ -20,14 +20,7 @@ jobs:
       - name: Derivar versión del tag
         id: ver
         shell: bash
-        # Tag vX.Y.Z -> X.Y.Z. Ejecución manual desde una rama: versión de package.json + sufijo del commit
-        # (el nombre de la rama tiene "/" y no sirve en el nombre del archivo).
-        run: |
-          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
-            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-          else
-            echo "version=$(node -p "require('./package.json').version")-dev.${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
-          fi
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
       - name: Instalar dependencias (raíz y cliente)
         run: |

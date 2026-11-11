@@ -1,0 +1,173 @@
+// Esquema del portal del proveedor ServiPlus.
+// Contrato de licencias: docs/deployment-licensing.md (sección 8).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url       = env("DATABASE_URL")
+  // Conexión directa (sin pooler) para migraciones. En local puede ser la misma que DATABASE_URL.
+  directUrl = env("DIRECT_URL")
+}
+
+// Contadores de rate-limit compartidos entre instancias (Vercel ejecuta muchas a la vez).
+model RateLimit {
+  key         String   @id
+  windowStart DateTime
+  count       Int
+}
+
+model Operator {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String
+  passwordHash String
+  active       Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  lastLoginAt  DateTime?
+  auditLogs    AuditLog[]
+  escrowGrants EscrowGrant[]
+}
+
+model Restaurant {
+  id           String    @id @default(cuid())
+  name         String
+  legalName    String?
+  nit          String    @unique
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
+  address      String?
+  city         String?
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  licenses     License[]
+}
+
+enum LicenseStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum Channel {
+  stable
+  beta
+}
+
+model License {
+  id           String        @id @default(cuid())
+  restaurantId String
+  restaurant   Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+  // Solo se guarda el hash SHA-256 de la clave; la clave completa se muestra una sola vez al emitirla.
+  keyHash      String        @unique
+  keyLast4     String
+  status       LicenseStatus @default(ACTIVE)
+  channel      Channel       @default(stable)
+  features     String[]      @default([])
+  maxSeats     Int           @default(1)
+  issuedAt     DateTime      @default(now())
+  expiresAt    DateTime?     // null = perpetua
+  revokedAt    DateTime?
+  revokeReason String?
+  notes        String?
+  updatedAt    DateTime      @updatedAt
+  seats        Seat[]
+  escrow       EscrowKey?
+  escrowGrants EscrowGrant[]
+
+  @@index([restaurantId])
+}
+
+enum SeatStatus {
+  ACTIVE
+  RELEASED
+  REVOKED
+}
+
+model Seat {
+  id              String     @id @default(cuid())
+  licenseId       String
+  license         License    @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  status          SeatStatus @default(ACTIVE)
+  // Componentes del fingerprint (hashes enviados por la app): boardUuid, machineGuid, diskSerial, cpuId.
+  fingerprint     Json
+  fingerprintHash String
+  appVersion      String?
+  activatedAt     DateTime   @default(now())
+  lastHeartbeatAt DateTime?
+  lastIp          String?
+  // Se marca cuando el mismo puesto reporta desde otro fingerprint.
+  duplicateFlag   Boolean    @default(false)
+  duplicateOfId   String?
+  releasedAt      DateTime?
+  revokedAt       DateTime?
+  statusReason    String?
+
+  @@index([licenseId, status])
+}
+
+model EscrowKey {
+  id         String   @id @default(cuid())
+  licenseId  String   @unique
+  license    License  @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  // Clave de envoltura por licencia, cifrada en reposo con ESCROW_MASTER_KEY (AES-256-GCM).
+  wrapKeyEnc String
+  // Clave de datos envuelta por la app (opaca para el servidor). Nunca se muestra en el panel.
+  wrappedKey String?
+  wrappedSha String?
+  storedAt   DateTime?
+  // Puesto que subió la clave; solo un puesto posterior (con este ya inactivo) puede reemplazarla.
+  storedBySeatId String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model EscrowGrant {
+  id           String    @id @default(cuid())
+  licenseId    String
+  license      License   @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  operatorId   String
+  operator     Operator  @relation(fields: [operatorId], references: [id])
+  reason       String
+  createdAt    DateTime  @default(now())
+  expiresAt    DateTime
+  usedAt       DateTime?
+  usedBySeatId String?
+  cancelledAt  DateTime?
+
+  @@index([licenseId])
+}
+
+model Release {
+  id          String   @id @default(cuid())
+  channel     Channel
+  version     String
+  url         String
+  sha256      String
+  signature   String
+  notes       String?
+  publishedAt DateTime @default(now())
+  yanked      Boolean  @default(false)
+
+  @@unique([channel, version])
+}
+
+model AuditLog {
+  id         String    @id @default(cuid())
+  at         DateTime  @default(now())
+  operatorId String?
+  operator   Operator? @relation(fields: [operatorId], references: [id])
+  // "app" cuando la acción viene de una instalación (activación, heartbeat, escrow).
+  actor      String
+  action     String
+  entity     String
+  entityId   String?
+  details    Json?
+  ip         String?
+
+  @@index([entity, entityId])
+  @@index([at])
+}

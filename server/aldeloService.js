@@ -34,7 +34,8 @@ const aldeloService = {
         m.ItemDelComp as commission,
         m.MenuItemDescription as description,
         m.DisplayIndex as itemOrder,
-        m.MenuItemNotification as menuItemNotification
+        m.MenuItemNotification as menuItemNotification,
+        m.PictureName as pictureName
       FROM MenuItems m
       LEFT JOIN MenuGroups g ON m.MenuGroupID = g.MenuGroupID
       WHERE m.DefaultUnitPrice > 0
@@ -107,6 +108,9 @@ const aldeloService = {
         commission: item.commission ? Number(item.commission.toFixed(2)) : 0,
         prepTime: prepTime,
         description: item.description || '',
+        categoryName: catName,
+        categoryId: item.categoryId || 0,
+        pictureName: item.pictureName || null,
         modifiers: itemMods,
         hasModifiers: itemMods.length > 0,
         menuItemNotification: String(item.menuItemNotification || '1'),

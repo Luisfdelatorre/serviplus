@@ -1,0 +1,20 @@
+# Postgres solo para desarrollo local. En producción se usa la instancia remota vía DATABASE_URL.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: serviplus-vendor-db
+    environment:
+      POSTGRES_USER: serviplus
+      POSTGRES_PASSWORD: serviplus_dev
+      POSTGRES_DB: serviplus_vendor
+    ports:
+      - "5433:5432"
+    volumes:
+      - vendor_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U serviplus -d serviplus_vendor"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+volumes:
+  vendor_pgdata:

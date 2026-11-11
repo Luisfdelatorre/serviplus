@@ -62,19 +62,13 @@ import { ProductAvailabilityModal } from '../admin/ProductAvailabilityModal';
 import { showAlert, showConfirm } from '../../store/useAlertDialogStore';
 import './CashierView.css';
 
-const STITCH_PRODUCT_IMAGES = {
-  kebab_pollo:
-    'https://lh3.googleusercontent.com/aida/AEtjO1XuSF12CFK0ixz15Amj3Y6E87KbXkcYos1uICHylp5WH1rtZcvF4KXUZVgUpbyAoNWiwRsUlTN6nd9_5oarqs54UKH4ujTEpXMcvVHHRusWISoZgEG4WQMJJNwVc4EN4C7NnZbDE5AGpoxX5kT5rv1d6PssMzCjDefzsUxote1FVmLkUwb-TJkEy7YJOqDMTDeICBezpFzuBuYgkah5tnokVtI1_S-pALnKEQL5NZCNXeU12jqw',
-  kebab_carne:
-    'https://lh3.googleusercontent.com/aida/AEtjO1UWcSS8HNLoTpqJnsnS7CzrzpiUcxa4guArG8RiWjuiuh5GqcKaVE39ndD4S91TabWS1cqDig_W7SqxlAwVrUVsH2YT60bEzU85kK-CC6HpSdSCark6-WGgCePIjhEak7c_aHwRj6Gw6sxJlO6Jvv-BigitJOD5wm9PhZQfooH5_a99b5CJEugxWwuhE5HsNa_JAOTFyoFo3notuvWDHWrxHSaPHOnC-Jp349Mez9P-9jBMimHD',
-  kebab_mixto:
-    'https://lh3.googleusercontent.com/aida/AEtjO1WgTAcCldeP4r_pwN6TGZmob-Qef8I3MFYNVszB0REQZ-H-sBtXcVmuHfltIZEyu87EPtzfDiv71iUDvqk5ZxD3vJozET33HZzT7xktdfCaj1F06gkrMR1HjV97XTiBes06iBExhnKxIsSX78E75col4q93AEuPFyt6vOP5-4a3cvtjL3VG8_zPJkDHZZL9MzVYgUVBe_zs5bU55BVW_ew8HrVqsdatzYp8aIIFRlc8eYODhrl4',
-  kebab_especial:
-    'https://lh3.googleusercontent.com/aida/AEtjO1VlDkPPpxkQuPH4yN7op1zCKRoGw3qyuRxTjm6xcTJL3ImfInapDvD-Hfm0POgXf8VvUkxoc6jHbqt8P6NYl71LBGZXnEMfoF3CQbicVb0hFpqiO7WhqXC0SgF_4ErhhXByyc5w88uXKaALXDreZTaDnoIO5_2MoIyz7O9Uj6n-y9l1uAs8Rbriz_FNCrACtBbF8z8gVmO0qDHZa19tTnvMqNWVlJt0qxpGUfPq2Gk1MOe1X4xumG-dfA',
-  hamburguesa:
-    'https://lh3.googleusercontent.com/aida/AEtjO1U8R-QmJhBG6F8Ge0EIgZJpq7dga68iLppOzGb_ruT12VdLG8lYJJLEitlYUraC3MDkb75EV0uQqbTl3CF0th48O565GaFX4eHh-AujA8soKAlbsfraKMysQ8QTc3jrGteQGicf4Y05vnaM5LfkqoTsz3UUWk-aQghiq_x4f75SZbmkrHlh85om2aq8O_EAvpGVSTUqdXfKW1jAIMLRyIQ5UguXVAXJztX2Sh7ZuXTr3G045P9y',
-  shawarma:
-    'https://lh3.googleusercontent.com/aida/AEtjO1Wh_8m1_LyqR92Rzx2srYjVMwbPTVspyURxD3_M2bz_gwr7J__Z9v4FnN35rOYpFi2XBR7v6u9e_7fg_HEBsF7XgsWR97DOZ4Ml1Skz9sR_KPLf1rg3z_mv4Vj74I0ZAxUN1OoIkcpuzbXvH0MDCzcP4ID5arGNaR4m6rRCM-wYv0iBjhM756CPaSk8DwZzlSSXVc4o6c3NMsMn5KWZ7KpxfrejcxJpgPBbaHOGi4B6ID2j'
+const POS_PRODUCT_IMAGES = {
+  kebab_pollo: '/images/kebab_pollo.jpg',
+  kebab_carne: '/images/kebab_carne.jpg',
+  kebab_mixto: '/images/kebab_mixto.jpg',
+  kebab_especial: '/images/kebab_carne.jpg',
+  hamburguesa: '/images/aperitivo.jpg',
+  shawarma: '/images/kebab_mixto.jpg'
 };
 
 function getPosProductImage(item = {}) {
@@ -84,15 +78,15 @@ function getPosProductImage(item = {}) {
   const n = (item.name || '').toLowerCase();
   const c = (item.categoryName || '').toLowerCase();
 
-  if (n.includes('hamburguesa') || n.includes('burger')) return STITCH_PRODUCT_IMAGES.hamburguesa;
-  if (n.includes('shawarma') && n.includes('mixto')) return STITCH_PRODUCT_IMAGES.kebab_mixto;
-  if (n.includes('shawarma') || c.includes('shawarma')) return STITCH_PRODUCT_IMAGES.shawarma;
-  if (n.includes('especial') && n.includes('carne')) return STITCH_PRODUCT_IMAGES.kebab_especial;
-  if (n.includes('especial') && n.includes('pollo')) return STITCH_PRODUCT_IMAGES.kebab_pollo;
-  if (n.includes('especial')) return STITCH_PRODUCT_IMAGES.kebab_especial;
-  if (n.includes('mixto')) return STITCH_PRODUCT_IMAGES.kebab_mixto;
-  if (n.includes('carne') || n.includes('ranchero')) return STITCH_PRODUCT_IMAGES.kebab_carne;
-  if (n.includes('pollo') || n.includes('kebab') || c.includes('kebab')) return STITCH_PRODUCT_IMAGES.kebab_pollo;
+  if (n.includes('hamburguesa') || n.includes('burger')) return POS_PRODUCT_IMAGES.hamburguesa;
+  if (n.includes('shawarma') && n.includes('mixto')) return POS_PRODUCT_IMAGES.kebab_mixto;
+  if (n.includes('shawarma') || c.includes('shawarma')) return POS_PRODUCT_IMAGES.shawarma;
+  if (n.includes('especial') && n.includes('carne')) return POS_PRODUCT_IMAGES.kebab_especial;
+  if (n.includes('especial') && n.includes('pollo')) return POS_PRODUCT_IMAGES.kebab_pollo;
+  if (n.includes('especial')) return POS_PRODUCT_IMAGES.kebab_especial;
+  if (n.includes('mixto')) return POS_PRODUCT_IMAGES.kebab_mixto;
+  if (n.includes('carne') || n.includes('ranchero')) return POS_PRODUCT_IMAGES.kebab_carne;
+  if (n.includes('pollo') || n.includes('kebab') || c.includes('kebab')) return POS_PRODUCT_IMAGES.kebab_pollo;
 
   return getProductImageUrl(item, item.categoryName);
 }
