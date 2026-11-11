@@ -17,6 +17,19 @@ const printerService = require('./printerService');
 const auditService = require('./auditService');
 const { createCashShiftRoutes } = require('./routes/cashShiftRoutes');
 const { createAdminRoutes } = require('./routes/adminRoutes');
+const { createLicenseRoutes } = require('./routes/licenseRoutes');
+const { createLicenseGate } = require('./middleware/licenseGate');
+const { createLicenseService } = require('./license/licenseService');
+const { createSetupRoutes } = require('./routes/setupRoutes');
+const { createSetupGate } = require('./middleware/setupGate');
+const { createSetupService } = require('./setup/setupService');
+const appPaths = require('./lib/appPaths');
+const { createUpdateService, createDefaultSpawnUpdater, readCurrentVersion } = require('./update/updateService');
+const { createUpdateRoutes } = require('./routes/updateRoutes');
+const { createBackupService } = require('./security/backupService');
+const { createBackupRoutes } = require('./routes/backupRoutes');
+const { loadOrCreateSetupToken } = require('./security/setupAccess');
+const dbDriver = require('./db');
 const {
   pinRateLimiter,
   signSessionToken,
@@ -37,12 +50,48 @@ const wompiService = new WompiService(getConfig);
 const smsService = new SmsService(getConfig);
 const whatsappService = new WhatsAppService(getConfig);
 
+const licenseService = createLicenseService({ getConfig });
+// En desarrollo (NODE_ENV=development, p. ej. `npm run dev`) no se exige el asistente de primera
+// ejecución. Nunca aplica al exe empaquetado. SP_SETUP_ENFORCE=1 lo fuerza para probar el asistente.
+const SETUP_BYPASS = process.env.NODE_ENV === 'development' && !appPaths.IS_PACKAGED && process.env.SP_SETUP_ENFORCE !== '1';
+const setupService = createSetupService({
+  configStore,
+  aldeloService,
+  bypass: SETUP_BYPASS,
+  getActiveDb: () => require('./db').name
+});
+
+const PORT_NUMBER = Number(process.env.PORT) || 80;
+const updateService = createUpdateService({
+  appRoot: appPaths.APP_ROOT,
+  dataDir: appPaths.DATA_DIR,
+  currentVersion: readCurrentVersion(appPaths.APP_ROOT, require('../package.json').version),
+  isPackaged: appPaths.IS_PACKAGED,
+  getConfig,
+  getChannel: () => (licenseService.getStatus().license || {}).channel || 'stable',
+  spawnUpdater: appPaths.IS_PACKAGED
+    ? createDefaultSpawnUpdater({
+        execPath: process.execPath,
+        workDir: path.join(appPaths.DATA_DIR, 'update-work'),
+        serviceExe: path.join(appPaths.APP_ROOT, 'serviplus-service.exe'),
+        port: PORT_NUMBER,
+        appRoot: appPaths.APP_ROOT,
+        dataDir: appPaths.DATA_DIR
+      })
+    : null
+});
+
 const initialConfig = getConfig();
 let cloudBridgeClient = null;
-if (initialConfig.cloud && initialConfig.cloud.enabled) {
+// El puente cloud solo arranca con licencia vigente (o en cuanto se active).
+function startCloudBridgeIfLicensed() {
+  if (cloudBridgeClient || !(initialConfig.cloud && initialConfig.cloud.enabled)) return;
+  if (!licenseService.getStatus().allowed) return;
   cloudBridgeClient = new CloudBridgeClient(getConfig);
   cloudBridgeClient.start();
 }
+startCloudBridgeIfLicensed();
+licenseService.onChange(startCloudBridgeIfLicensed);
 
 const app = express();
 const server = http.createServer(app);
@@ -85,6 +134,25 @@ app.use('/api', (req, res, next) => {
   });
   next();
 });
+
+// Licencia: el gate va antes de cualquier ruta operativa o estática.
+app.use('/api/license', createLicenseRoutes(licenseService));
+app.use('/api/setup', createSetupRoutes(setupService));
+app.use('/api/updates', createUpdateRoutes(updateService));
+
+const backupService = createBackupService({
+  dataDir: appPaths.DATA_DIR,
+  getConnection: () => dbDriver.connection
+});
+app.use('/api/backups', createBackupRoutes({
+  backupService,
+  licenseService,
+  dbDriver,
+  isSetupComplete: () => setupService.isComplete()
+}));
+app.use(createLicenseGate(licenseService));
+app.use(createSetupGate(setupService));
+licenseService.onChange((summary) => io.emit('license:status', summary));
 
 // Ping legacy endpoint for connectivity discovery
 app.all('/ping', (req, res) => {
@@ -166,7 +234,7 @@ app.post('/api/products/:id/toggle-active', requireRole('cashier', 'admin'), asy
 // ============================================================================
 
 app.use('/api/cashier/shift', createCashShiftRoutes(io));
-app.use('/api/admin', createAdminRoutes());
+app.use('/api/admin', createAdminRoutes(io));
 
 // ============================================================================
 // 3. EMPLEADOS, AUTENTICACIÓN Y MESAS
@@ -229,6 +297,16 @@ app.get('/api/orders/active', async (req, res) => {
   }
 });
 
+/** Suma una venta cobrada al turno de caja abierto y avisa a las pantallas para refrescar el resumen. */
+function recordShiftSale({ orderId, total, paymentMethod, customer }) {
+  try {
+    const shift = cashShiftService.recordSale({ orderId, total, paymentMethod, details: { customer } });
+    if (shift) io.emit('cashier:shift_updated', { shiftId: shift.id, sales: shift.sales });
+  } catch (err) {
+    console.warn(`[CashShift] No se pudo registrar la venta de la orden #${orderId}:`, err.message);
+  }
+}
+
 app.post('/api/orders', validateOrderPayload, async (req, res) => {
   try {
     const {
@@ -259,6 +337,15 @@ app.post('/api/orders', validateOrderPayload, async (req, res) => {
 
     const activeOrders = await aldeloService.getActiveOrders();
     const fullOrder = activeOrders.find((o) => o.id === newOrder.orderId) || newOrder;
+
+    // Orden ya cobrada al crearla (caja, kiosko con QR): entra al arqueo del turno.
+    if (newOrder.isPaid) {
+      recordShiftSale({
+        orderId: newOrder.orderId,
+        total: newOrder.total,
+        paymentMethod: paymentMethod || 'CASH'
+      });
+    }
 
     const receiptInfo = receiptService.generateReceiptCode(newOrder.orderId);
     fullOrder.receiptCode = receiptInfo.urlCode;
@@ -307,6 +394,15 @@ app.put('/api/orders/:id/status', requireRole('cashier', 'admin'), validateOrder
     const orderId = parseInt(req.params.id, 10);
     const { status, tableReady, paymentMethod, employeeId } = req.body;
 
+    // El total se lee antes de cambiar el estado: una orden liquidada deja de estar activa.
+    let settledTotal = 0;
+    if (status === '2') {
+      try {
+        const open = (await aldeloService.getActiveOrders()).find((o) => o.id === orderId);
+        settledTotal = open ? open.total : 0;
+      } catch (_) {}
+    }
+
     const result = await aldeloService.updateOrderStatus(
       orderId,
       status,
@@ -317,6 +413,7 @@ app.put('/api/orders/:id/status', requireRole('cashier', 'admin'), validateOrder
 
     if (status === '2') {
       io.emit('kds:status_changed', { orderId, kdsStatus: 'PREPARING', tableReady: false });
+      recordShiftSale({ orderId, total: settledTotal, paymentMethod: paymentMethod || 'CASH' });
     }
 
     auditService.record({
@@ -835,10 +932,10 @@ app.get(['/p/:code', '/p/p/:code', '/receipt/:code', '/r/:code'], async (req, re
 });
 
 // Rutas directas hacia la SPA React (Rutas Limpias sin prefijo /react)
-const reactDistDir = path.join(__dirname, '../client/dist');
+const reactDistDir = appPaths.CLIENT_DIST;
 app.use(express.static(reactDistDir));
 app.use('/assets', express.static(path.join(reactDistDir, 'assets')));
-app.get(['/kiosk', '/kds', '/kds/*', '/display', '/front', '/front/*', '/admin', '/pos', '/pos/*', '/cashier', '/cash-in'], (req, res) => {
+app.get(['/activate', '/setup', '/kiosk', '/kds', '/kds/*', '/display', '/front', '/front/*', '/admin', '/pos', '/pos/*', '/cashier', '/cash-in'], (req, res) => {
   res.sendFile(path.join(reactDistDir, 'index.html'));
 });
 
@@ -847,11 +944,11 @@ app.get(['/react', '/react/*'], (req, res) => {
 });
 
 app.get(['/turns', '/monitor'], (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/modern/turns.html'));
+  res.sendFile(path.join(appPaths.PUBLIC_DIR, 'modern/turns.html'));
 });
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
+  res.sendFile(path.join(appPaths.PUBLIC_DIR, 'index.html'));
 });
 
 app.get(['/old', '/old/*'], (req, res) => {
@@ -859,7 +956,7 @@ app.get(['/old', '/old/*'], (req, res) => {
 });
 
 app.get(['/modern', '/modern/*'], (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/modern/index.html'));
+  res.sendFile(path.join(appPaths.PUBLIC_DIR, 'modern/index.html'));
 });
 
 app.get('/visor', (req, res) => {
@@ -867,7 +964,7 @@ app.get('/visor', (req, res) => {
 });
 
 // Servir archivos estáticos públicos (imágenes, sonidos, app clásica)
-const publicDir = path.join(__dirname, '../public');
+const publicDir = appPaths.PUBLIC_DIR;
 app.use(express.static(publicDir));
 
 // Manejador de errores centralizado
@@ -881,7 +978,16 @@ app.use((err, _req, res, _next) => {
 });
 
 const PORT = process.env.PORT || 80;
-if (require.main === module) {
+
+/** Arranca la licencia y pone el servidor a escuchar. Lo llama el dev (abajo) y el exe (SEA). */
+function start() {
+  if (!setupService.isComplete()) {
+    loadOrCreateSetupToken(appPaths.DATA_DIR);
+    console.log(`[Setup] Configuración pendiente. Desde la red, usa el token de ${path.join(appPaths.DATA_DIR, 'setup-token.txt')}`);
+  }
+  licenseService.start();
+  updateService.start();
+  backupService.start();
   server.listen(PORT, '0.0.0.0', () => {
     console.log('====================================================');
     console.log('🚀 Serviplus Unified POS & Kiosk Gateway Server on:');
@@ -889,6 +995,10 @@ if (require.main === module) {
     console.log(`📦 Productos DB: ${aldeloService.getProductsSource ? aldeloService.getProductsSource() : 'C:\\SP\\B\\kebab.mdb'}`);
     console.log('====================================================');
   });
+  return { app, server, io };
 }
 
-module.exports = { app, server, io };
+// En desarrollo (`node server/index.js`) arranca solo. En el exe lo arranca el cargador SEA.
+if (require.main === module) start();
+
+module.exports = { app, server, io, licenseService, setupService, updateService, backupService, start };

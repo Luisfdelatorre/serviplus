@@ -97,6 +97,11 @@ class CashShiftService {
       return null;
     }
 
+    // Una orden se cuenta una sola vez (p. ej. creada pagada y luego marcada como liquidada).
+    if (Array.isArray(openShift.orders) && openShift.orders.some((o) => String(o.orderId) === String(orderId))) {
+      return openShift;
+    }
+
     const amount = Number(total) || 0;
     const method = String(paymentMethod || 'CASH').toUpperCase();
 

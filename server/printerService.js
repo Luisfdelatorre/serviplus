@@ -23,11 +23,36 @@ function savePrinterSection(printerSettings) {
 }
 
 // Ruta al ejecutable compilado nativo de Windows RawPrint
-const RAWPRINT_EXE = path.join(__dirname, 'rawprint.exe');
+const appPaths = require('./lib/appPaths');
+const RAWPRINT_EXE = appPaths.RAWPRINT_EXE;
 
 // Constantes ESC/POS
 const ESC = 0x1B;
 const GS = 0x1D;
+
+/**
+ * El turno guarda `sales.cashTotal / wompiTotal / cardTotal / totalSales` y `closing.expectedCashInDrawer /
+ * difference / closingNotes`; el ticket usa nombres más cortos. Acepta ambos formatos.
+ */
+function normalizeShiftForTicket(shift = {}) {
+  const sales = shift.sales || {};
+  const closing = shift.closing || null;
+  return {
+    ...shift,
+    sales: {
+      cash: sales.cashTotal ?? sales.cash ?? 0,
+      wompiQr: sales.wompiTotal ?? sales.wompiQr ?? 0,
+      card: sales.cardTotal ?? sales.card ?? 0,
+      total: sales.totalSales ?? sales.total ?? 0
+    },
+    expectedCash: shift.expectedCash ?? (closing && closing.expectedCashInDrawer) ?? shift.expectedCashInDrawer ?? 0,
+    closing: closing && {
+      ...closing,
+      discrepancy: closing.discrepancy ?? closing.difference,
+      notes: closing.notes ?? closing.closingNotes
+    }
+  };
+}
 
 class EscPosBuilder {
   constructor(paperWidth = 58) {
@@ -200,8 +225,10 @@ class PrinterService {
     this.ensureRawPrintExecutable();
   }
 
-  // Asegura que rawprint.exe existe o lo compila de inmediato con csc.exe
+  // Asegura que rawprint.exe existe o lo compila de inmediato con csc.exe.
+  // En builds empaquetados rawprint.exe ya viene compilado: nunca se invoca csc.exe en runtime.
   ensureRawPrintExecutable() {
+    if (appPaths.IS_PACKAGED) return;
     if (!fs.existsSync(RAWPRINT_EXE)) {
       try {
         console.log('[PrinterService] Compilando helper rawprint.exe con csc.exe...');
@@ -758,7 +785,8 @@ class PrinterService {
   }
 
   // Generar Ticket de Turno de Caja (Apertura o Cierre Z)
-  generateCashShiftTicketBuffer(shiftData, isClosing = false) {
+  generateCashShiftTicketBuffer(rawShiftData, isClosing = false) {
+    const shiftData = normalizeShiftForTicket(rawShiftData);
     const config = this.getPrinterConfig();
     const builder = new EscPosBuilder(config.paperWidth);
     const now = new Date();
@@ -791,7 +819,9 @@ class PrinterService {
           CASHIER_NAME: shiftData.cashierName || 'Cajero Central',
           SHIFT_ID: shiftData.id || 'SHIFT-01',
           INITIAL_CASH: this.formatCOP(shiftData.initialCash || 0),
-          IF_CLOSING: isClosing,
+          // [IF_CLOSING] evalúa CLOSING y [IF_NOTES] evalúa ORDER_NOTES (ver rtfTemplate.js).
+          CLOSING: isClosing,
+          ORDER_NOTES: closingNotes,
           SALES_CASH: this.formatCOP(shiftData.sales?.cash || 0),
           SALES_QR: this.formatCOP(shiftData.sales?.wompiQr || 0),
           SALES_CARD: this.formatCOP(shiftData.sales?.card || 0),

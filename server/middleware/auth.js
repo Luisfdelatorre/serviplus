@@ -146,7 +146,19 @@ function securityHeaders(_req, res, next) {
   next();
 }
 
+/**
+ * Exige una sesión de administrador válida, sin excepciones. A diferencia de requireRole, no
+ * deja pasar peticiones sin token aunque STRICT_AUTH esté apagado: úsalo en acciones que
+ * cambian el equipo (actualizar, respaldar, restaurar).
+ */
+function requireAdminSession(req, res, next) {
+  if (!req.user) return res.status(401).json({ success: false, code: 'UNAUTHORIZED', error: 'Inicia sesión como administrador.' });
+  if (req.user.role !== 'admin') return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Se requiere rol de administrador.' });
+  return next();
+}
+
 module.exports = {
+  requireAdminSession,
   pinRateLimiter,
   signSessionToken,
   extractToken,

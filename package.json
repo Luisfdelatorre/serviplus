@@ -1,24 +1,31 @@
 {
   "name": "serviplus",
+  "version": "1.0.0",
   "main": "index.html",
   "description": "sever",
   "scripts": {
     "start": "node server/index.js",
-    "test": "node --test tests/pos.test.js tests/db.sqlite.test.js",
+    "test": "node --test tests/pos.test.js tests/db.sqlite.test.js tests/license.test.js tests/setup.test.js tests/update.test.js tests/security.test.js tests/access.test.js tests/release-keys.test.js tests/cashshift.test.js tests/paymentMethods.test.js",
     "kiosk": "node server/index.js",
     "agent:cloud": "node server/cloudBridgeClient.js",
     "legacy": "node server.js",
+    "license": "node scripts/license-tool.js",
     "db:import": "node scripts/import-mdb-to-sqlite.js",
     "db:reset": "node scripts/import-mdb-to-sqlite.js --force",
     "simulate": "node simulate_orders_session.js",
     "simulate:fast": "node simulate_orders_session.js --speed 10",
     "build:client": "cd client && npm run build",
+    "dev": "node scripts/dev.js",
     "dev:client": "cd client && npm run dev",
     "dev:pm2": "npx pm2 start ecosystem.config.js --env development",
     "pm2:stop": "npx pm2 stop ecosystem.config.js",
     "pm2:restart": "npx pm2 restart ecosystem.config.js",
     "pm2:logs": "npx pm2 logs",
-    "pm2:status": "npx pm2 status"
+    "pm2:status": "npx pm2 status",
+    "build:stage": "node scripts/build/stage-server.js",
+    "build:assemble": "node scripts/build/assemble.js",
+    "build:sea": "node scripts/build/make-sea.js",
+    "build:app": "npm run build:client && node scripts/build/assemble.js && node scripts/build/make-sea.js"
   },
   "window": {
     "title": "SeriPlus",
@@ -33,11 +40,13 @@
     "resizable": false
   },
   "dependencies": {
+    "better-sqlite3-multiple-ciphers": "^11.10.0",
     "body-parser": "^1.12.4",
     "cors": "^2.8.6",
     "dotenv": "^18.0.9",
     "express": "^4.22.3",
     "jsonwebtoken": "^5.0.0",
+    "mdb-reader": "^3.2.0",
     "mime-db": "^1.54.0",
     "mime-types": "^3.0.2",
     "moment": "^2.31.0",
@@ -48,6 +57,7 @@
     "node-adodb": "^5.0.3"
   },
   "devDependencies": {
-    "mdb-reader": "^3.2.0"
+    "esbuild": "^0.24.2",
+    "javascript-obfuscator": "^4.1.1"
   }
 }

@@ -25,6 +25,19 @@
       "port": 3000
     },
     {
+      "name": "server-licensed",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "server/index.js"
+      ],
+      "env": {
+        "PORT": "3081",
+        "DB_DRIVER": "sqlite",
+        "SP_LICENSE_ENFORCE": "1",
+        "SP_DATA_DIR": "data/license-dev",
+        "SP_LICENSE_SERVER_URL": "http://localhost:3100"
+      },
+      "port": 3081
       "name": "vendor-portal",
       "runtimeExecutable": "npm",
       "runtimeArgs": [

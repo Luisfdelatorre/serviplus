@@ -5,7 +5,7 @@ node_modules/
 # Production build artifacts
 client/dist/
 dist/
-build/
+/build/
 **/build/
 
 # Logs
@@ -60,3 +60,34 @@ audit_log.json
 data/*.db
 data/*.db-wal
 data/*.db-shm
+
+# Licencia instalada por equipo (nunca se versiona)
+license.lic
+data/license.lic
+data/license-state.json
+data/license-dev/
+
+# Los scripts de build SÍ se versionan (son código fuente, no artefactos)
+!scripts/build/
+!scripts/build/**
+
+# Estado y respaldos de actualizaciones (datos de runtime, nunca se versionan)
+data/update-state.json
+data/updates/
+data/update-backup/
+data/update-work/
+data/logs/
+
+# Llaves, secretos y respaldos del equipo (datos de runtime, nunca se versionan)
+data/keystore.json
+data/secrets.enc
+data/escrow-state.json
+data/backups/
+data/*.restore-pending
+data/*.before-restore
+data/*.enc-tmp
+data/*.rekey-tmp
+data/license-dev/
+
+# Token de configuración inicial (secreto del equipo)
+data/setup-token.txt
