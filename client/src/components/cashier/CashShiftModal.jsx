@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   X,
   QrCode,
+  CreditCard,
   History,
   TrendingUp,
   RefreshCw,
@@ -239,6 +240,10 @@ export function CashShiftModal({ isOpen, onClose }) {
                         <span>Base: <strong>{formatCurrency(h.initialCash || 0)}</strong></span>
                         <span>Ventas efectivo: <strong>{formatCurrency(h.sales?.cashTotal || 0)}</strong></span>
                         <span>Wompi QR: <strong>{formatCurrency(h.sales?.wompiTotal || 0)}</strong></span>
+                        <span>Datáfono: <strong>{formatCurrency(h.sales?.cardTotal || 0)}</strong></span>
+                        {(h.sales?.otherTotal || 0) > 0 && (
+                          <span>Otros: <strong>{formatCurrency(h.sales.otherTotal)}</strong></span>
+                        )}
                         <span>Total ventas: <strong className="cshift-text-accent">{formatCurrency(h.sales?.totalSales || 0)}</strong></span>
                         {h.closing && (
                           <span className={h.closing.difference >= 0 ? 'cshift-diff-pos' : 'cshift-diff-neg'}>
@@ -282,6 +287,24 @@ export function CashShiftModal({ isOpen, onClose }) {
                     {formatCurrency(currentShift.sales?.wompiTotal || 0)}
                   </div>
                 </div>
+
+                <div className="cshift-stat cshift-stat--amber">
+                  <span className="cshift-stat-label">
+                    <CreditCard size={12} /> Datáfono / Tarjeta
+                  </span>
+                  <div className="cshift-stat-value">
+                    {formatCurrency(currentShift.sales?.cardTotal || 0)}
+                  </div>
+                </div>
+
+                {(currentShift.sales?.otherTotal || 0) > 0 && (
+                  <div className="cshift-stat">
+                    <span className="cshift-stat-label">Otros medios</span>
+                    <div className="cshift-stat-value">
+                      {formatCurrency(currentShift.sales.otherTotal)}
+                    </div>
+                  </div>
+                )}
 
                 <div className="cshift-stat cshift-stat--total">
                   <span className="cshift-stat-label">

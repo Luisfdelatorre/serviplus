@@ -1803,14 +1803,18 @@
 
 /* 3 Payment Tiles Grid */
 .kpay-tiles-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
   gap: 14px;
+}
+
+.kpay-tiles-grid > * {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 @media (max-width: 640px) {
   .kpay-tiles-grid {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
 }
 

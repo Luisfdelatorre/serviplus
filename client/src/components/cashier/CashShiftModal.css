@@ -107,6 +107,13 @@
   border-color: var(--ios-blue-border);
 }
 
+.cshift-stat--amber {
+  --cshift-stat-color: var(--ios-amber-dark);
+  --cshift-stat-label: var(--ios-amber-text);
+  background: var(--ios-amber-soft);
+  border-color: var(--ios-amber-border);
+}
+
 .cshift-stat--total {
   --cshift-stat-color: var(--ios-on-surface);
   background: var(--ios-surface);
